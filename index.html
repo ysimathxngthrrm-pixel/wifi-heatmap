@@ -50,9 +50,7 @@
             background-color: #ffffff; 
             
             /* สร้างตาราง Grid ระยะ 2x2 เมตร (ช่องละ 100x100px) */
-            background-image: 
-                linear-gradient(to right, #e0e0e0 1px, transparent 1px),
-                linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+            background-image: none; /* ตั้งค่าเริ่มต้นให้ซ่อนตารางไว้ก่อน */
             background-size: 100px 100px;
             background-position: left top;
 
@@ -80,28 +78,18 @@
             height: 420px; 
             border: 4px solid #333; 
             box-sizing: border-box;
-            background-color: transparent; /* โปร่งใสเพื่อให้เห็นเส้น Grid */
+            background-color: transparent; 
         }
 
-        /* ช่องประตู (เจาะผนังตรงกลาง) */
+        /* ช่องประตู (เจาะผนังด้านล่าง) */
         .door-gap {
             position: absolute;
-            top: 416px; 
-            left: 280px; 
-            width: 80px; 
-            height: 8px; 
-            background-color: #ffffff; 
-        } /* สีขาวเพื่อบังเส้นขอบกำแพง */
-            /* ช่องประตูหลัง (เจาะผนังด้านบน ใกล้เสาที่ 2) */
-        .door-gap-back {
-            position: absolute;
-            top: 0px; /* เริ่มที่พิกัด 0 จะได้ไม่ล้นขอบบน */
-            left: 150px; /* วางห่างจากเสานิดนึงให้ดูสมจริง (เสาอยู่ที่ 210px) */
-            width: 50px; 
-            height: 4px; /* ความหนา 4px ลบเส้นขอบกำแพงได้พอดีเป๊ะ */
-            background-color: #ffffff; 
+            top: 416px; /* วางทับเส้นขอบล่างพอดี */
+            left: 280px; /* ระยะห่างจากมุมซ้าย */
+            width: 80px; /* ความกว้างประตูบานคู่ */
+            height: 8px; /* ความหนาเพื่อบังเส้นกำแพง */
+            background-color: #ffffff; /* ใช้สีขาวกลืนไปกับพื้นหลัง */
         }
-        
 
         /* รูปแบบเสา */
         .pillar {
@@ -109,12 +97,15 @@
             background-color: #fff; border: 2px solid #0000ff;
             transform: translate(-50%, -50%); 
         }
-        /* ตำแหน่งเสา */
+        
+        /* ตำแหน่งเสาฝั่งบน */
         .top-1 { top: 0; left: 0px; }            
         .top-2 { top: 0; left: 210px; }          
         .top-3 { top: 0; left: 420px; }          
         .top-4 { top: 0; left: 600px; }          
         .top-5 { top: 0; left: 780px; }          
+        
+        /* ตำแหน่งเสาฝั่งล่าง */
         .bot-1 { top: 420px; left: 0px; }        
         .bot-2 { top: 420px; left: 210px; }      
         .bot-3 { top: 420px; left: 420px; }      
@@ -199,12 +190,10 @@
             <span style="font-weight: bold; color: #666;">โหมดแสดงผลแผนที่:</span>
             <button class="btn active" id="freq-24" onclick="setFreqMode('2.4GHz')">คลื่น 2.4 GHz</button>
             <button class="btn" id="freq-5" onclick="setFreqMode('5GHz')">คลื่น 5 GHz</button>
-
-            <!-- ปุ่มใหม่สำหรับซ่อน/แสดงตาราง Grid -->
-            <button class="btn" id="btn-grid" onclick="toggleGrid()" style="margin-left: 15px; border: 1px solid #ccc;">ปิดตาราง Grid 🔲</button>
-        
+            
+            <!-- ปุ่มเปิด-ปิดตาราง Grid -->
+            <button class="btn" id="btn-grid" onclick="toggleGrid()" style="margin-left: 15px; border: 1px solid #ccc;">เปิดตาราง Grid 🔳</button>
         </div>
-        
 
         <p style="color: #888; font-size: 14px;">📍 คำแนะนำ: จุดตัดตารางแต่ละช่องคือระยะ 2x2 เมตร เล็งคลิกตามจุดตัดได้เลย!</p>
 
@@ -214,8 +203,7 @@
             <!-- โครงสร้างห้อง LAB -->
             <div id="lab-plan">
                 <div class="room-outline"></div>
-                <div class="door-gap"></div> <!-- รอยเจาะประตูบานคู่ -->
-                <div class="door-gap-back"></div>
+                <div class="door-gap"></div> <!-- รอยเจาะประตูบานคู่ด้านหน้า -->
                 
                 <!-- เสาฝั่งบน -->
                 <div class="pillar top-1"></div>
@@ -423,6 +411,25 @@
             document.body.removeChild(link);
         }
 
+        // ฟังก์ชันสำหรับเปิด-ปิดตาราง Grid
+        let isGridVisible = false; // เริ่มต้นปิดไว้
+        function toggleGrid() {
+            const mapContainer = document.getElementById('map-container');
+            const btnGrid = document.getElementById('btn-grid');
+            
+            isGridVisible = !isGridVisible;
+            
+            if (isGridVisible) {
+                mapContainer.style.backgroundImage = 'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
+                btnGrid.innerText = 'ปิดตาราง Grid 🔲';
+                btnGrid.classList.add('active');
+            } else {
+                mapContainer.style.backgroundImage = 'none';
+                btnGrid.innerText = 'เปิดตาราง Grid 🔳';
+                btnGrid.classList.remove('active');
+            }
+        }
+
         if (isFirebaseActive) {
             db.ref('ESP32_Current/').on('value', (snapshot) => {
                 if(snapshot.exists()) {
@@ -438,26 +445,6 @@
 
         // โหลดข้อมูลเริ่มต้น
         setLocation('Lab1');
-        let isGridVisible = true;
-
-        function toggleGrid() {
-            const mapContainer = document.getElementById('map-container');
-            const btnGrid = document.getElementById('btn-grid');
-            
-            isGridVisible = !isGridVisible;
-            
-            if (isGridVisible) {
-                // แสดงตารางเหมือนเดิม
-                mapContainer.style.backgroundImage = 'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
-                btnGrid.innerText = 'ปิดตาราง Grid 🔲';
-                btnGrid.classList.remove('active');
-            } else {
-                // ซ่อนตารางให้เหลือแต่พื้นขาว
-                mapContainer.style.backgroundImage = 'none';
-                btnGrid.innerText = 'เปิดตาราง Grid 🔳';
-                btnGrid.classList.add('active');
-            }
-        }
     </script>
 </body>
 </html>
