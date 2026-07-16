@@ -25,7 +25,7 @@
         .color-dot { width: 16px; height: 16px; border-radius: 50%; }
         .dot-green { background-color: #2ECC71; }
         .dot-yellow { background-color: #F1C40F; }
-        .dot-red { background-color: #EEEEEE; }
+        .dot-red { background-color: #E74C3C; }
         .legend-text { font-size: 14px; text-align: left; }
         .legend-text strong { display: block; font-size: 16px; }
 
@@ -91,6 +91,16 @@
             width: 80px; 
             height: 8px; 
             background-color: #ffffff; /* สีขาวเพื่อบังเส้นขอบกำแพง */
+            /* ช่องประตูหลัง (เจาะผนังด้านบน ใกล้เสาที่ 2) */
+        .door-gap-back {
+            position: absolute;
+            top: -4px; /* ขยับขึ้นไปทับเส้นขอบกำแพงด้านบน */
+            left: 160px; /* วางชิดซ้ายของเสาต้นที่ 2 (พิกัด 210px) */
+            width: 50px; /* ความกว้างประตูบานเดี่ยว (สเกลประมาณ 1 เมตร) */
+            height: 12px; /* ความหนาสำหรับบังเส้นขอบ */
+            background-color: #ffffff; 
+            z-index: 1;
+        }
         }
 
         /* รูปแบบเสา */
@@ -205,6 +215,7 @@
             <div id="lab-plan">
                 <div class="room-outline"></div>
                 <div class="door-gap"></div> <!-- รอยเจาะประตูบานคู่ -->
+                <div class="door-gap-back"></div>
                 
                 <!-- เสาฝั่งบน -->
                 <div class="pillar top-1"></div>
