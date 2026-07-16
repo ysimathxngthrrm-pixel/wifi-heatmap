@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Heatmap Dashboard</title>
+    <style>
+        /* สไตล์หลัก */
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #FDFBF7;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: auto; }
+        
+        /* ---------------- แถบอธิบายสี (Legend) ---------------- */
+        .legend-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .legend-box {
+            background: white; padding: 10px 20px; border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px;
+        }
+        .color-dot { width: 16px; height: 16px; border-radius: 50%; }
+        .dot-green { background-color: #2ECC71; }
+        .dot-yellow { background-color: #F1C40F; }
+        .dot-red { background-color: #E74C3C; }
+        .legend-text { font-size: 14px; text-align: left; }
+        .legend-text strong { display: block; font-size: 16px; }
+
+        /* ---------------- ปุ่มและสถานะ ---------------- */
+        .btn-group { margin: 15px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 20px;
+            background-color: #E0E5EC; color: #555; cursor: pointer;
+            font-size: 16px; font-weight: bold; transition: 0.3s;
+        }
+        .btn.active { background-color: #8CA6B4; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-install { background-color: #F0E6D2; color: #7A6C5D; }
+        .btn-install.active { background-color: #D4A373; color: white; }
+        .btn-csv { background-color: #4CAF50; color: white; margin-top: 15px; }
+        .btn-csv:hover { background-color: #45a049; }
+
+        /* ---------------- พื้นที่แผนที่หลัก (รวมโถงทางเดิน + ตาราง Grid) ---------------- */
+        #map-container {
+            position: relative; 
+            width: 780px;  /* ความกว้างห้อง 15.60m */
+            height: 570px; /* ความลึกห้อง 420px + โถงทางเดิน 150px */
+            background-color: #ffffff; 
+            
+            /* สร้างตาราง Grid ระยะ 2x2 เมตร (ช่องละ 100x100px) */
+            background-image: 
+                linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+                linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+            background-size: 100px 100px;
+            background-position: left top;
+
+            border: 2px dashed #B0C4DE;
+            border-radius: 10px; 
+            margin: 20px auto; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: crosshair;
+            overflow: hidden;
+        }
+
+        /* ---------------- โครงสร้างห้อง LAB ---------------- */
+        #lab-plan {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; /* ป้องกันการคลิกโดนองค์ประกอบห้อง */
+        }
+
+        /* กรอบผนังห้องทึบ (สูงแค่ 420px) */
+        .room-outline {
+            position: absolute;
+            top: 0; left: 0;
+            width: 780px; 
+            height: 420px; 
+            border: 4px solid #333; 
+            box-sizing: border-box;
+            background-color: transparent; /* โปร่งใสเพื่อให้เห็นเส้น Grid */
+        }
+
+        /* ช่องประตู (เจาะผนังตรงกลาง) */
+        .door-gap {
+            position: absolute;
+            top: 416px; 
+            left: 280px; 
+            width: 80px; 
+            height: 8px; 
+            background-color: #ffffff; /* สีขาวเพื่อบังเส้นขอบกำแพง */
+        }
+
+        /* รูปแบบเสา */
+        .pillar {
+            position: absolute; width: 14px; height: 14px;
+            background-color: #fff; border: 2px solid #0000ff;
+            transform: translate(-50%, -50%); 
+        }
+        /* ตำแหน่งเสา */
+        .top-1 { top: 0; left: 0px; }            
+        .top-2 { top: 0; left: 210px; }          
+        .top-3 { top: 0; left: 420px; }          
+        .top-4 { top: 0; left: 600px; }          
+        .top-5 { top: 0; left: 780px; }          
+        .bot-1 { top: 420px; left: 0px; }        
+        .bot-2 { top: 420px; left: 210px; }      
+        .bot-3 { top: 420px; left: 420px; }      
+        .bot-4 { top: 420px; left: 600px; }      
+        .bot-5 { top: 420px; left: 780px; }
+
+        /* เลเยอร์แยกสำหรับวาดจุด Heatmap เท่านั้น */
+        #heatmap-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; 
+        }
+
+        /* จุด Heatmap */
+        .heatmap-blur {
+            position: absolute; width: 70px; height: 70px; border-radius: 50%;
+            transform: translate(-50%, -50%); mix-blend-mode: multiply; filter: blur(8px);
+        }
+        .heatmap-dot {
+            position: absolute; width: 6px; height: 6px; background-color: #333;
+            border: 1.5px solid #ffffff; border-radius: 50%;
+            transform: translate(-50%, -50%); box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* ---------------- การ์ดและตาราง ---------------- */
+        .data-card {
+            background: white; padding: 15px; border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 15px;
+            display: inline-block; width: 100%; max-width: 600px;
+        }
+        table {
+            width: 100%; border-collapse: collapse; margin-top: 20px; background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden;
+        }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: center; }
+        th { background-color: #f4f4f4; color: #333; }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>✨ Wi-Fi Heatmap Dashboard ✨</h2>
+
+        <!-- แถบอธิบายสี -->
+        <div class="legend-container">
+            <div class="legend-box">
+                <div class="color-dot dot-green"></div>
+                <div class="legend-text"><strong>ดีมาก (0 ถึง -50 dBm)</strong><span style="color: #888;">ดูวิดีโอ 4K, โหลดไฟล์ใหญ่ลื่นไหล</span></div>
+            </div>
+            <div class="legend-box">
+                <div class="color-dot dot-yellow"></div>
+                <div class="legend-text"><strong>ปานกลาง (-51 ถึง -70 dBm)</strong><span style="color: #888;">เล่นเน็ตทั่วไป, โซเชียลมีเดีย, แชท</span></div>
+            </div>
+            <div class="legend-box">
+                <div class="color-dot dot-red"></div>
+                <div class="legend-text"><strong>อ่อน (ต่ำกว่า -70 dBm)</strong><span style="color: #888;">จุดอับสัญญาณ, โหลดช้า, หลุดบ่อย</span></div>
+            </div>
+        </div>
+
+        <!-- สถานะการติดตั้ง -->
+        <div class="btn-group">
+            <span style="font-weight: bold; color: #666;">สถานะทดสอบ:</span>
+            <button class="btn btn-install active" id="btn-before" onclick="setInstallMode('Before')">ก่อนติดตั้ง AP</button>
+            <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')">หลังติดตั้ง AP</button>
+        </div>
+
+        <!-- เลือกสถานที่ -->
+        <div class="btn-group">
+            <button class="btn" id="loc-hall" onclick="setLocation('Hall')">โถงทางเดิน</button>
+            <button class="btn" id="loc-room1" onclick="setLocation('Room1')">ห้องเรียน 1</button>
+            <button class="btn active" id="loc-lab1" onclick="setLocation('Lab1')">ห้องแล็บ 1</button>
+        </div>
+
+        <!-- การ์ดแสดงค่าปัจจุบัน -->
+        <div class="data-card">
+            <h3 style="margin: 0 0 10px 0; color: #555;">📡 ค่าจาก ESP32 ปัจจุบัน:</h3>
+            <span style="font-size: 20px; margin-right: 20px;">2.4GHz: <strong id="val-24g" style="color: #D9534F;">-80 dBm</strong></span>
+            <span style="font-size: 20px;">5GHz: <strong id="val-5g" style="color: #F0AD4E;">-65 dBm</strong></span>
+        </div>
+
+        <!-- คลื่นที่ต้องการดูบนแผนที่ -->
+        <div class="btn-group" style="margin-top: 20px;">
+            <span style="font-weight: bold; color: #666;">โหมดแสดงผลแผนที่:</span>
+            <button class="btn active" id="freq-24" onclick="setFreqMode('2.4GHz')">คลื่น 2.4 GHz</button>
+            <button class="btn" id="freq-5" onclick="setFreqMode('5GHz')">คลื่น 5 GHz</button>
+
+            <!-- ปุ่มใหม่สำหรับซ่อน/แสดงตาราง Grid -->
+            <button class="btn" id="btn-grid" onclick="toggleGrid()" style="margin-left: 15px; border: 1px solid #ccc;">ปิดตาราง Grid 🔲</button>
+        
+        </div>
+        
+
+        <p style="color: #888; font-size: 14px;">📍 คำแนะนำ: จุดตัดตารางแต่ละช่องคือระยะ 2x2 เมตร เล็งคลิกตามจุดตัดได้เลย!</p>
+
+        <!-- พื้นที่แผนที่ -->
+        <div id="map-container" onclick="addPoint(event)">
+            
+            <!-- โครงสร้างห้อง LAB -->
+            <div id="lab-plan">
+                <div class="room-outline"></div>
+                <div class="door-gap"></div> <!-- รอยเจาะประตูบานคู่ -->
+                
+                <!-- เสาฝั่งบน -->
+                <div class="pillar top-1"></div>
+                <div class="pillar top-2"></div>
+                <div class="pillar top-3"></div>
+                <div class="pillar top-4"></div>
+                <div class="pillar top-5"></div>
+                <!-- เสาฝั่งล่าง -->
+                <div class="pillar bot-1"></div>
+                <div class="pillar bot-2"></div>
+                <div class="pillar bot-3"></div>
+                <div class="pillar bot-4"></div>
+                <div class="pillar bot-5"></div>
+            </div>
+
+            <!-- เลเยอร์จุดสี Heatmap -->
+            <div id="heatmap-layer"></div>
+        </div>
+
+        <!-- ตารางแสดงข้อมูล และปุ่ม CSV -->
+        <div style="text-align: right;">
+            <button class="btn btn-csv" onclick="exportCSV()">📥 ดาวน์โหลด CSV (ของพื้นที่นี้)</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>เวลาที่บันทึก</th>
+                    <th>สถานะ</th>
+                    <th>สถานที่</th>
+                    <th>คลื่นความถี่</th>
+                    <th>พิกัด (X, Y)</th>
+                    <th>ความแรงสัญญาณ (RSSI)</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFRMtLJVy07MrxJ6S8IbftnXcGcZhfxMo",
+            authDomain: "wi-fi-heatmap-1d73a.firebaseapp.com",
+            databaseURL: "https://wi-fi-heatmap-1d73a-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "wi-fi-heatmap-1d73a",
+            storageBucket: "wi-fi-heatmap-1d73a.firebasestorage.app",
+            messagingSenderId: "255026660024",
+            appId: "1:255026660024:web:b5382f797711555bebaa4d",
+            measurementId: "G-RE4WX3CC8S"
+        };
+
+        let isFirebaseActive = false;
+        let db = null;
+        let currentDbListener = null;
+
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+            db = firebase.database();
+            isFirebaseActive = true;
+        }
+
+        let currentInstallMode = 'Before';
+        let currentLocation = 'Lab1'; 
+        let currentFreq = '2.4GHz';
+        let currentRssi24 = -80; 
+        let currentRssi5 = -65;  
+        let currentTableData = []; 
+
+        function setInstallMode(mode) {
+            currentInstallMode = mode;
+            document.getElementById('btn-before').classList.remove('active');
+            document.getElementById('btn-after').classList.remove('active');
+            if(mode === 'Before') document.getElementById('btn-before').classList.add('active');
+            if(mode === 'After') document.getElementById('btn-after').classList.add('active');
+            loadHeatmapData(); 
+        }
+
+        function setLocation(loc) {
+            currentLocation = loc;
+            
+            document.getElementById('loc-hall').classList.remove('active');
+            document.getElementById('loc-room1').classList.remove('active');
+            document.getElementById('loc-lab1').classList.remove('active');
+            
+            if(loc === 'Hall') {
+                document.getElementById('loc-hall').classList.add('active');
+                document.getElementById('lab-plan').style.display = 'none';
+            }
+            if(loc === 'Room1') {
+                document.getElementById('loc-room1').classList.add('active');
+                document.getElementById('lab-plan').style.display = 'none';
+            }
+            if(loc === 'Lab1') {
+                document.getElementById('loc-lab1').classList.add('active');
+                document.getElementById('lab-plan').style.display = 'block';
+            }
+            
+            loadHeatmapData();
+        }
+
+        function setFreqMode(freq) {
+            currentFreq = freq;
+            document.getElementById('freq-24').classList.remove('active');
+            document.getElementById('freq-5').classList.remove('active');
+            if(freq === '2.4GHz') document.getElementById('freq-24').classList.add('active');
+            if(freq === '5GHz') document.getElementById('freq-5').classList.add('active');
+            loadHeatmapData();
+        }
+
+        function getColorByRssi(rssi) {
+            if (rssi >= -50) return 'radial-gradient(circle, rgba(46,204,113,0.8) 0%, rgba(46,204,113,0) 70%)';
+            if (rssi >= -70) return 'radial-gradient(circle, rgba(241,196,15,0.8) 0%, rgba(241,196,15,0) 70%)';
+            return 'radial-gradient(circle, rgba(231,76,60,0.8) 0%, rgba(231,76,60,0) 70%)';
+        }
+
+        function drawPoint(x, y, rssi) {
+            const container = document.getElementById('heatmap-layer');
+            const blurCircle = document.createElement('div');
+            blurCircle.className = 'heatmap-blur';
+            blurCircle.style.left = `${x}px`; blurCircle.style.top = `${y}px`;
+            blurCircle.style.background = getColorByRssi(rssi);
+            container.appendChild(blurCircle);
+
+            const dot = document.createElement('div');
+            dot.className = 'heatmap-dot';
+            dot.style.left = `${x}px`; dot.style.top = `${y}px`;
+            container.appendChild(dot);
+        }
+
+        function addPoint(event) {
+            const container = document.getElementById('map-container');
+            const rect = container.getBoundingClientRect();
+            const x = Math.round(event.clientX - rect.left);
+            const y = Math.round(event.clientY - rect.top);
+            const rssiValue = (currentFreq === '2.4GHz') ? currentRssi24 : currentRssi5;
+
+            const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
+            
+            processIncomingData(newPointData);
+
+            if (isFirebaseActive) {
+                const safeFreq = currentFreq.replace('.', '_'); 
+                const dbPath = `HeatmapData/${currentInstallMode}/${currentLocation}/${safeFreq}`;
+                db.ref(dbPath).push(newPointData).catch(err => console.log("Firebase Upload Failed:", err));
+            }
+        }
+
+        function processIncomingData(data) {
+            let signalStatus = data.rssi >= -50 ? 'ดีมาก' : (data.rssi >= -70 ? 'ปานกลาง' : 'อ่อน');
+            drawPoint(data.x, data.y, data.rssi);
+            const dateStr = new Date(data.timestamp).toLocaleTimeString('th-TH');
+            const tableBody = document.getElementById('table-body');
+            const row = `<tr>
+                <td>${dateStr}</td>
+                <td>${currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง'}</td>
+                <td>${currentLocation}</td>
+                <td>${currentFreq}</td>
+                <td>(${data.x}, ${data.y})</td>
+                <td style="color:${data.rssi >= -50 ? '#2ECC71' : data.rssi >= -70 ? '#F1C40F' : '#E74C3C'}; font-weight:bold;">${data.rssi} dBm (${signalStatus})</td>
+            </tr>`;
+            tableBody.insertAdjacentHTML('afterbegin', row);
+            
+            currentTableData.push([dateStr, currentInstallMode, currentLocation, currentFreq, data.x, data.y, data.rssi, signalStatus]);
+        }
+
+        function loadHeatmapData() {
+            document.getElementById('heatmap-layer').innerHTML = ''; 
+            document.getElementById('table-body').innerHTML = '';
+            currentTableData = []; 
+
+            if (!isFirebaseActive) return;
+
+            const safeFreq = currentFreq.replace('.', '_');
+            const dbPath = `HeatmapData/${currentInstallMode}/${currentLocation}/${safeFreq}`;
+            
+            if (currentDbListener) { currentDbListener.off(); }
+            
+            currentDbListener = db.ref(dbPath);
+            currentDbListener.once('value', (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    processIncomingData(childSnapshot.val());
+                });
+            });
+        }
+
+        function exportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "เวลา,สถานะ,สถานที่,คลื่น,พิกัด X,พิกัด Y,RSSI (dBm),ระดับสัญญาณ\n";
+            
+            currentTableData.forEach(rowArray => {
+                let row = rowArray.join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Heatmap_${currentInstallMode}_${currentLocation}_${currentFreq}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        if (isFirebaseActive) {
+            db.ref('ESP32_Current/').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    currentRssi24 = snapshot.val().rssi_24g || -80;
+                    currentRssi5 = snapshot.val().rssi_5g || -65;
+                    document.getElementById('val-24g').innerText = currentRssi24 + " dBm";
+                    document.getElementById('val-24g').style.color = (currentRssi24 >= -50) ? '#2ECC71' : (currentRssi24 >= -70) ? '#F1C40F' : '#E74C3C';
+                    document.getElementById('val-5g').innerText = currentRssi5 + " dBm";
+                    document.getElementById('val-5g').style.color = (currentRssi5 >= -50) ? '#2ECC71' : (currentRssi5 >= -70) ? '#F1C40F' : '#E74C3C';
+                }
+            });
+        }
+
+        // โหลดข้อมูลเริ่มต้น
+        setLocation('Lab1');
+        let isGridVisible = true;
+
+        function toggleGrid() {
+            const mapContainer = document.getElementById('map-container');
+            const btnGrid = document.getElementById('btn-grid');
+            
+            isGridVisible = !isGridVisible;
+            
+            if (isGridVisible) {
+                // แสดงตารางเหมือนเดิม
+                mapContainer.style.backgroundImage = 'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
+                btnGrid.innerText = 'ปิดตาราง Grid 🔲';
+                btnGrid.classList.remove('active');
+            } else {
+                // ซ่อนตารางให้เหลือแต่พื้นขาว
+                mapContainer.style.backgroundImage = 'none';
+                btnGrid.innerText = 'เปิดตาราง Grid 🔳';
+                btnGrid.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
