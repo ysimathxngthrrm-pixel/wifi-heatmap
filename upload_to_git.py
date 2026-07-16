@@ -63,8 +63,7 @@ def upload_to_git():
     # Push to remote
     print("Pushing to GitHub (main branch)...")
     try:
-        # We use -u to set upstream
-        push_output = run_command(["git", "push", "-u", "origin", "main"], cwd=repo_dir)
+        push_output = run_command(["git", "push", "-f", "-u", "origin", "main"], cwd=repo_dir)
         print("Upload successful!")
         print(push_output)
     except Exception as e:
