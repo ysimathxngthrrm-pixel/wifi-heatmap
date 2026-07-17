@@ -42,11 +42,11 @@
         .btn-csv { background-color: #4CAF50; color: white; margin-top: 15px; }
         .btn-csv:hover { background-color: #45a049; }
 
-        /* ---------------- พื้นที่แผนที่หลัก (รวมโถงทางเดิน + ตาราง Grid) ---------------- */
+        /* ---------------- พื้นที่แผนที่หลัก (ปรับความสูงเหลือพอดีห้อง) ---------------- */
         #map-container {
             position: relative; 
             width: 780px;  /* ความกว้างห้อง 15.60m */
-            height: 570px; /* ความลึกห้อง 420px + โถงทางเดิน 150px */
+            height: 420px; /* ความลึกห้อง 8.40m ตัดโถง 150px ออกแล้ว */
             background-color: #ffffff; 
             
             /* สร้างตาราง Grid ระยะ 2x2 เมตร (ช่องละ 100x100px) */
@@ -70,7 +70,7 @@
             pointer-events: none; /* ป้องกันการคลิกโดนองค์ประกอบห้อง */
         }
 
-        /* กรอบผนังห้องทึบ (สูงแค่ 420px) */
+        /* กรอบผนังห้องทึบ */
         .room-outline {
             position: absolute;
             top: 0; left: 0;
@@ -85,10 +85,10 @@
         .door-gap {
             position: absolute;
             top: 416px; /* วางทับเส้นขอบล่างพอดี */
-            left: 280px; /* ระยะห่างจากมุมซ้าย */
-            width: 80px; /* ความกว้างประตูบานคู่ */
+            left: 280px; /* ระยะห่างจากมุมซ้าย รอวัดจริงมาแก้ตรงนี้ */
+            width: 80px; /* ความกว้างประตูบานคู่ รอวัดจริงมาแก้ตรงนี้ */
             height: 8px; /* ความหนาเพื่อบังเส้นกำแพง */
-            background-color: #ffffff; /* ใช้สีขาวกลืนไปกับพื้นหลัง */
+            background-color: #ffffff; 
         }
 
         /* รูปแบบเสา */
@@ -171,9 +171,8 @@
             <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')">หลังติดตั้ง AP</button>
         </div>
 
-        <!-- เลือกสถานที่ -->
+        <!-- เลือกสถานที่ (เหลือแค่ 2 ห้อง) -->
         <div class="btn-group">
-            <button class="btn" id="loc-hall" onclick="setLocation('Hall')">โถงทางเดิน</button>
             <button class="btn" id="loc-room1" onclick="setLocation('Room1')">ห้องเรียน 1</button>
             <button class="btn active" id="loc-lab1" onclick="setLocation('Lab1')">ห้องแล็บ 1</button>
         </div>
@@ -288,14 +287,9 @@
         function setLocation(loc) {
             currentLocation = loc;
             
-            document.getElementById('loc-hall').classList.remove('active');
             document.getElementById('loc-room1').classList.remove('active');
             document.getElementById('loc-lab1').classList.remove('active');
             
-            if(loc === 'Hall') {
-                document.getElementById('loc-hall').classList.add('active');
-                document.getElementById('lab-plan').style.display = 'none';
-            }
             if(loc === 'Room1') {
                 document.getElementById('loc-room1').classList.add('active');
                 document.getElementById('lab-plan').style.display = 'none';

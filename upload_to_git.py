@@ -14,7 +14,7 @@ def run_command(command, cwd=None):
     return result.stdout.strip()
 
 def upload_to_git():
-    repo_dir = "/Users/asinay/Desktop/pro"
+    repo_dir = "/Users/asinay/Desktop/Project_yr4"
     remote_url = "https://github.com/ysimathxngthrrm-pixel/wifi-heatmap.git"
     
     if not os.path.exists(repo_dir):
