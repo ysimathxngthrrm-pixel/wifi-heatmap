@@ -1122,30 +1122,24 @@
             const x = Math.round(rawClickX / scale);
             const y = Math.round(rawClickY / scale);
 
-            const threshold = 80;
-            const findClosest = (arr) => {
-                let closest = null;
-                let minDist = Infinity;
-                arr.forEach(p => {
-                    const dist = Math.hypot(p.x - x, p.y - y);
-                    if (dist <= threshold && dist < minDist) {
-                        minDist = dist;
-                        closest = p;
-                    }
-                });
-                return closest;
-            };
+            const searchArr = (clickedSide === 'Before') ? compareBeforeData : compareAfterData;
+            let closest = null;
+            let minDist = Infinity;
+            searchArr.forEach(p => {
+                const dist = Math.hypot(p.x - x, p.y - y);
+                if (dist <= 35 && dist < minDist) {
+                    minDist = dist;
+                    closest = p;
+                }
+            });
 
-            const pointBefore = findClosest(compareBeforeData);
-            const pointAfter = findClosest(compareAfterData);
-
-            if (!pointBefore && !pointAfter) {
+            if (!closest) {
                 closeInspectPopup();
                 return;
             }
 
-            const activePt = (clickedSide === 'Before' ? pointBefore : pointAfter) || pointBefore || pointAfter;
-            triggerInspectForPoint(activePt, event);
+            closest.isBefore = (clickedSide === 'Before');
+            triggerInspectForPoint(closest, event);
         }
 
         function drawComparePoint(x, y, rssi, targetContainer, isBefore, pointObj) {
@@ -1161,7 +1155,7 @@
             dot.style.pointerEvents = 'auto';
             dot.style.cursor = 'pointer';
 
-            const pData = pointObj || { x: x, y: y, rssi: rssi, isBefore: isBefore };
+            const pData = pointObj ? Object.assign({}, pointObj) : { x: x, y: y, rssi: rssi };
             pData.isBefore = isBefore;
 
             dot.onclick = (e) => {
@@ -1177,12 +1171,13 @@
             const x = p.x;
             const y = p.y;
 
-            const findExactOrClosest = (arr, targetX, targetY) => {
+            // Strict spatial matching within 25px radius to pair overlapping Before & After points
+            const findClosePoint = (arr, targetX, targetY) => {
                 let closest = null;
                 let minDist = Infinity;
                 arr.forEach(pt => {
                     const dist = Math.hypot(pt.x - targetX, pt.y - targetY);
-                    if (dist <= 80 && dist < minDist) {
+                    if (dist <= 25 && dist < minDist) {
                         minDist = dist;
                         closest = pt;
                     }
@@ -1190,8 +1185,28 @@
                 return closest;
             };
 
-            const pointBefore = findExactOrClosest(compareBeforeData, x, y);
-            const pointAfter = findExactOrClosest(compareAfterData, x, y);
+            let beforeRssi = null;
+            let afterRssi = null;
+
+            if (p.isBefore === true) {
+                beforeRssi = p.rssi;
+                const matchAfter = findClosePoint(compareAfterData, x, y);
+                afterRssi = matchAfter ? matchAfter.rssi : null;
+            } else if (p.isBefore === false) {
+                afterRssi = p.rssi;
+                const matchBefore = findClosePoint(compareBeforeData, x, y);
+                beforeRssi = matchBefore ? matchBefore.rssi : null;
+            } else {
+                const matchBefore = findClosePoint(compareBeforeData, x, y);
+                const matchAfter = findClosePoint(compareAfterData, x, y);
+                beforeRssi = matchBefore ? matchBefore.rssi : null;
+                afterRssi = matchAfter ? matchAfter.rssi : null;
+            }
+
+            if (beforeRssi === null && afterRssi === null) {
+                closeInspectPopup();
+                return;
+            }
 
             const popup = document.getElementById('inspect-popup');
             popup.style.position = 'fixed';
@@ -1207,9 +1222,6 @@
 
             document.getElementById('popup-coord').innerText = `📍 พิกัด (${x}, ${y})`;
             
-            const beforeRssi = pointBefore ? pointBefore.rssi : (p.isBefore ? p.rssi : null);
-            const afterRssi = pointAfter ? pointAfter.rssi : (!p.isBefore ? p.rssi : null);
-
             document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
             document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
 
