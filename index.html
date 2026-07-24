@@ -467,6 +467,40 @@
             cursor: pointer;
         }
 
+        /* CRITICAL FIX: Inspect Popup Structural & Background Styling */
+        .inspect-popup {
+            position: absolute;
+            z-index: 2500;
+            background: #ffffff !important;
+            border-radius: 14px;
+            padding: 14px 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+            border: 2px solid #7048E8 !important;
+            font-size: 13px;
+            transform: translate(-50%, -120%);
+            min-width: 230px;
+            display: none; 
+            text-align: left;
+            color: #333 !important;
+        }
+        .inspect-popup.show { 
+            display: block !important; 
+        }
+        .inspect-popup-close {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #999;
+        }
+        .inspect-popup-close:hover { color: #333; }
+
+        @keyframes popupFade {
+            from { opacity: 0; transform: translate(-50%, -110%); }
+            to { opacity: 1; transform: translate(-50%, -120%); }
+        }
+
         /* Mix Blend Mode for Overlay Heatmap Layers to Eliminate Muddy Colors */
         #heatmap-layer-before,
         #heatmap-layer-after {
@@ -493,25 +527,25 @@
             height: 70px !important;
         }
         
-        /* BEFORE = Hollow Red Circle (วงกลมโปร่งสีแดง) */
+        /* BEFORE = Hollow Red Circle */
         .dot-before-marker {
             background-color: transparent !important;
             border: 3px solid #FF2E63 !important;
             border-radius: 50% !important;
-            box-shadow: 0 0 8px rgba(255, 46, 99, 0.7) !important;
             width: 14px !important;
             height: 14px !important;
+            box-shadow: 0 0 5px rgba(255, 46, 99, 0.5) !important;
         }
 
-        /* AFTER = Solid Cyan Diamond (เพชรทึบสีฟ้าสด ขอบเข้ม) */
+        /* AFTER = Solid Cyan Diamond */
         .dot-after-marker {
             background-color: #00E5FF !important;
             border: 1.5px solid #004D40 !important;
-            border-radius: 2px !important;
+            border-radius: 0 !important;
             transform: translate(-50%, -50%) rotate(45deg) !important;
-            box-shadow: 0 0 8px rgba(0, 229, 255, 0.9) !important;
             width: 10px !important;
             height: 10px !important;
+            box-shadow: 0 0 8px rgba(0, 229, 255, 0.9) !important;
         }
 
         /* Soft Split View Styling */
