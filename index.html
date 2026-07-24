@@ -1367,8 +1367,17 @@
             });
         }
 
+        function refreshCurrentMapView() {
+            if (currentInstallMode === 'Compare') {
+                loadCompareHeatmapData();
+            } else {
+                loadHeatmapData();
+            }
+        }
+
         function handleProfileChange(val) {
             disableClearSelectedMode();
+            closeInspectPopup();
             if (val === '__CREATE_NEW__') {
                 const newName = prompt('ระบุชื่อโปรไฟล์ใหม่ (หลีกเลี่ยงอักขระพิเศษห้ามใช้ เช่น #, $, ., [, ]):');
                 if (newName) {
@@ -1384,7 +1393,7 @@
                             updated_at: now
                         }).then(() => {
                             currentProfile = trimmedName;
-                            loadHeatmapData();
+                            refreshCurrentMapView();
                         });
                     } else {
                         alert('ชื่อโปรไฟล์ไม่ถูกต้อง หรือมีอักขระพิเศษห้ามใช้ (เช่น #, $, ., [, ])');
@@ -1395,7 +1404,7 @@
                 }
             } else {
                 currentProfile = val;
-                loadHeatmapData();
+                refreshCurrentMapView();
             }
         }
 

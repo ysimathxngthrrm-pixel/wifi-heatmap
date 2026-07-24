@@ -398,11 +398,32 @@
 
     <!-- Data Summary View Modal -->
     <div id="summary-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 750px;">
+        <div class="modal-card" style="max-width: 780px;">
             <h3 class="modal-title" id="summary-title">📊 สรุปข้อมูลโปรไฟล์</h3>
             <div class="modal-body">
+                <!-- Filter Controls for Summary View -->
+                <div style="background: #F8F9FA; padding: 12px 16px; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 12px; font-weight: bold; color: #495057;">🏢 กรองตามห้อง:</span>
+                        <div class="segmented-control" style="background: #EDF2F7; padding: 2px; border-radius: 8px;">
+                            <button class="segmented-btn active" id="summary-room-all" onclick="filterSummaryData('room', 'all')" style="font-size: 11px; padding: 4px 10px;">ทั้งหมด</button>
+                            <button class="segmented-btn" id="summary-room-room1" onclick="filterSummaryData('room', 'Room1')" style="font-size: 11px; padding: 4px 10px;">ห้องเรียน 1</button>
+                            <button class="segmented-btn" id="summary-room-lab1" onclick="filterSummaryData('room', 'Lab1')" style="font-size: 11px; padding: 4px 10px;">ห้องแล็บ 1</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 12px; font-weight: bold; color: #495057;">📡 สถานะติดตั้ง:</span>
+                        <div class="segmented-control" style="background: #EDF2F7; padding: 2px; border-radius: 8px;">
+                            <button class="segmented-btn active" id="summary-mode-all" onclick="filterSummaryData('mode', 'all')" style="font-size: 11px; padding: 4px 10px;">ทั้งหมด</button>
+                            <button class="segmented-btn" id="summary-mode-before" onclick="filterSummaryData('mode', 'Before')" style="font-size: 11px; padding: 4px 10px;">ก่อนติดตั้ง AP</button>
+                            <button class="segmented-btn" id="summary-mode-after" onclick="filterSummaryData('mode', 'After')" style="font-size: 11px; padding: 4px 10px;">หลังติดตั้ง AP</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="summary-stats">
-                    <div class="stat-box"><div class="num" id="stat-total">0</div><div class="lbl">จุดทั้งหมด</div></div>
+                    <div class="stat-box"><div class="num" id="stat-total">0</div><div class="lbl">จุดทั้งหมดในมุมมองนี้</div></div>
                     <div class="stat-box"><div class="num" id="stat-before">0</div><div class="lbl">ก่อนติดตั้ง AP</div></div>
                     <div class="stat-box"><div class="num" id="stat-after">0</div><div class="lbl">หลังติดตั้ง AP</div></div>
                     <div class="stat-box"><div class="num" id="stat-room1">0</div><div class="lbl">ห้องเรียน 1</div></div>
@@ -665,14 +686,20 @@
             }).catch(err => alert('เกิดข้อผิดพลาดในการลบโปรไฟล์: ' + err.message));
         }
 
+        let currentSummaryProfileName = '';
+        let activeSummaryPointsList = [];
+        let summaryFilterRoom = 'all';
+        let summaryFilterMode = 'all';
+
         function openSummaryModal(profileName) {
+            currentSummaryProfileName = profileName;
             document.getElementById('summary-title').innerText = `📊 สรุปข้อมูลโปรไฟล์: ${profileName}`;
-            const tableBody = document.getElementById('summary-table-body');
-            tableBody.innerHTML = '';
+            
+            activeSummaryPointsList = [];
+            summaryFilterRoom = 'all';
+            summaryFilterMode = 'all';
 
-            let total = 0, countBefore = 0, countAfter = 0, countRoom1 = 0, countLab1 = 0;
             const profileData = allHeatmapDataCache[profileName];
-
             if (profileData) {
                 ['Before', 'After'].forEach(mode => {
                     if (profileData[mode]) {
@@ -683,22 +710,15 @@
                                         const pointsObj = profileData[mode][loc][freq];
                                         Object.keys(pointsObj).forEach(key => {
                                             const p = pointsObj[key];
-                                            total++;
-                                            if (mode === 'Before') countBefore++;
-                                            if (mode === 'After') countAfter++;
-                                            if (loc === 'Room1') countRoom1++;
-                                            if (loc === 'Lab1') countLab1++;
-
-                                            const freqLabel = freq === '2_4GHz' ? '2.4 GHz' : '5 GHz';
-                                            const modeLabel = mode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง';
-                                            const row = `<tr>
-                                                <td>${modeLabel}</td>
-                                                <td>${loc}</td>
-                                                <td>${freqLabel}</td>
-                                                <td>(${p.x}, ${p.y})</td>
-                                                <td style="font-weight:bold; color:${p.rssi >= -50 ? '#2ECC71' : p.rssi >= -70 ? '#F1C40F' : '#E74C3C'}">${p.rssi} dBm</td>
-                                            </tr>`;
-                                            tableBody.insertAdjacentHTML('beforeend', row);
+                                            activeSummaryPointsList.push({
+                                                mode: mode,
+                                                loc: loc,
+                                                freq: freq,
+                                                x: p.x,
+                                                y: p.y,
+                                                rssi: p.rssi,
+                                                timestamp: p.timestamp || 0
+                                            });
                                         });
                                     }
                                 });
@@ -708,6 +728,57 @@
                 });
             }
 
+            renderSummaryView();
+            openModal('summary-modal');
+        }
+
+        function filterSummaryData(type, value) {
+            if (type === 'room') summaryFilterRoom = value;
+            if (type === 'mode') summaryFilterMode = value;
+            renderSummaryView();
+        }
+
+        function renderSummaryView() {
+            // Update filter button active states
+            ['all', 'Room1', 'Lab1'].forEach(r => {
+                const btn = document.getElementById(`summary-room-${r.toLowerCase()}`);
+                if (btn) btn.classList.toggle('active', summaryFilterRoom === r);
+            });
+            ['all', 'Before', 'After'].forEach(m => {
+                const btn = document.getElementById(`summary-mode-${m.toLowerCase()}`);
+                if (btn) btn.classList.toggle('active', summaryFilterMode === m);
+            });
+
+            const tableBody = document.getElementById('summary-table-body');
+            tableBody.innerHTML = '';
+
+            let total = 0, countBefore = 0, countAfter = 0, countRoom1 = 0, countLab1 = 0;
+
+            const filteredPoints = activeSummaryPointsList.filter(p => {
+                const matchRoom = (summaryFilterRoom === 'all' || p.loc === summaryFilterRoom);
+                const matchMode = (summaryFilterMode === 'all' || p.mode === summaryFilterMode);
+                return matchRoom && matchMode;
+            });
+
+            filteredPoints.forEach(p => {
+                total++;
+                if (p.mode === 'Before') countBefore++;
+                if (p.mode === 'After') countAfter++;
+                if (p.loc === 'Room1') countRoom1++;
+                if (p.loc === 'Lab1') countLab1++;
+
+                const freqLabel = p.freq === '2_4GHz' ? '2.4 GHz' : '5 GHz';
+                const modeLabel = p.mode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง';
+                const row = `<tr>
+                    <td>${modeLabel}</td>
+                    <td>${p.loc}</td>
+                    <td>${freqLabel}</td>
+                    <td>(${p.x}, ${p.y})</td>
+                    <td style="font-weight:bold; color:${p.rssi >= -50 ? '#2ECC71' : p.rssi >= -70 ? '#F1C40F' : '#E74C3C'}">${p.rssi} dBm</td>
+                </tr>`;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+
             document.getElementById('stat-total').innerText = total;
             document.getElementById('stat-before').innerText = countBefore;
             document.getElementById('stat-after').innerText = countAfter;
@@ -715,10 +786,8 @@
             document.getElementById('stat-lab1').innerText = countLab1;
 
             if (total === 0) {
-                tableBody.innerHTML = `<tr><td colspan="5" style="color:#A0AEC0; padding:20px;">ยังไม่มีข้อมูลจุดสัญญาณในโปรไฟล์นี้</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="5" style="color:#A0AEC0; padding:20px;">ไม่พบข้อมูลในเงื่อนไขการกรองนี้</td></tr>`;
             }
-
-            openModal('summary-modal');
         }
 
         // Initialize Realtime Listener
