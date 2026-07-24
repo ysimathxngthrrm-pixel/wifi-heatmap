@@ -992,13 +992,29 @@
             currentTableData = activePoints.map(p => p.tableRowData);
         }
 
-        function loadHeatmapData() {
+        function resetHeatmapLayers() {
             closeInspectPopup();
             const beforeLayer = document.getElementById('heatmap-layer-before');
             const afterLayer = document.getElementById('heatmap-layer-after');
             if (beforeLayer) { beforeLayer.innerHTML = ''; beforeLayer.style.opacity = 1; }
             if (afterLayer) { afterLayer.innerHTML = ''; afterLayer.style.opacity = 1; }
-            
+
+            const parent = document.getElementById('heatmap-layer');
+            if (parent) {
+                const directChildren = Array.from(parent.children).filter(child => 
+                    child.id !== 'heatmap-layer-before' && child.id !== 'heatmap-layer-after'
+                );
+                directChildren.forEach(el => el.remove());
+            }
+
+            const splitBefore = document.getElementById('split-map-before-content');
+            const splitAfter = document.getElementById('split-map-after-content');
+            if (splitBefore) splitBefore.innerHTML = '';
+            if (splitAfter) splitAfter.innerHTML = '';
+        }
+
+        function loadHeatmapData() {
+            resetHeatmapLayers();
             document.getElementById('table-body').innerHTML = '';
             activePoints = [];
             currentTableData = []; 
@@ -1010,7 +1026,9 @@
             if (currentDbListener) { currentDbListener.off(); }
             currentDbListener = db.ref(dbPath);
             currentDbListener.once('value', (snapshot) => {
-                snapshot.forEach((child) => { processIncomingData(child.val(), child.key); });
+                if (snapshot.exists()) {
+                    snapshot.forEach((child) => { processIncomingData(child.val(), child.key); });
+                }
             });
         }
 
@@ -1213,11 +1231,7 @@
         }
 
         function loadCompareHeatmapData() {
-            closeInspectPopup();
-            const beforeLayer = document.getElementById('heatmap-layer-before');
-            const afterLayer = document.getElementById('heatmap-layer-after');
-            if (beforeLayer) beforeLayer.innerHTML = '';
-            if (afterLayer) afterLayer.innerHTML = '';
+            resetHeatmapLayers();
             document.getElementById('table-body').innerHTML = '';
             activePoints = [];
             currentTableData = [];
@@ -1227,6 +1241,8 @@
 
             const safeFreq = currentFreq.replace('.', '_');
             const basePath = `HeatmapData/${currentProfile}`;
+            const beforeLayer = document.getElementById('heatmap-layer-before');
+            const afterLayer = document.getElementById('heatmap-layer-after');
             
             // Read both Before and After in parallel
             db.ref(`${basePath}/Before/${currentLocation}/${safeFreq}`).once('value', (beforeSnap) => {
@@ -1236,7 +1252,7 @@
                         beforeSnap.forEach(child => {
                             const p = child.val();
                             compareBeforeData.push(p);
-                            drawComparePoint(p.x, p.y, p.rssi, beforeLayer, true);
+                            drawComparePoint(p.x, p.y, p.rssi, beforeLayer, true, p);
                             processIncomingData(p, child.key);
                         });
                     }
@@ -1245,16 +1261,13 @@
                         afterSnap.forEach(child => {
                             const p = child.val();
                             compareAfterData.push(p);
-                            drawComparePoint(p.x, p.y, p.rssi, afterLayer, false);
+                            drawComparePoint(p.x, p.y, p.rssi, afterLayer, false, p);
                             processIncomingData(p, child.key);
                         });
                     }
 
                     if (currentCompareViewType === 'split') {
                         renderSplitViewMaps();
-                    } else {
-                        const range = document.getElementById('overlay-blend-range');
-                        if (range) handleOverlayBlend(range.value);
                     }
                 });
             });
