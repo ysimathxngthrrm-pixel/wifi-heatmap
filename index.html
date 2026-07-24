@@ -420,20 +420,52 @@
         .btn-compare.active { background-color: #5F3DC4; color: white; box-shadow: 0 4px 10px rgba(112,72,232,0.3); }
 
         .overlay-slider-container {
-            margin: 15px auto;
-            max-width: 600px;
-            background: white;
-            padding: 12px 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin: 20px auto;
+            max-width: 640px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 18px 24px;
+            border-radius: 20px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 15px;
-            justify-content: center;
         }
         .overlay-slider-container input[type="range"] {
             flex: 1;
             cursor: pointer;
+        }
+
+        /* Segmented Control View Switcher */
+        .segmented-control {
+            display: inline-flex;
+            background: #F1F5F9;
+            padding: 4px;
+            border-radius: 14px;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .segmented-btn {
+            border: none;
+            background: transparent;
+            padding: 8px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            outline: none;
+        }
+        .segmented-btn:hover {
+            color: #1E293B;
+        }
+        .segmented-btn.active {
+            background: #FFFFFF;
+            color: #7048E8;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .inspect-popup {
@@ -492,36 +524,43 @@
             height: 10px !important;
         }
 
+        /* Soft Split View Styling */
         .split-view-wrapper {
             display: flex;
-            gap: 20px;
+            gap: 24px;
             justify-content: center;
             align-items: flex-start;
             flex-wrap: wrap;
-            margin: 20px auto;
+            margin: 24px auto;
         }
         .split-map-box {
             position: relative;
             background-color: #ffffff;
-            border: 4px solid #212529;
-            border-radius: 6px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .split-map-box:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
         }
         .split-title-tag {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 12px;
+            left: 12px;
             z-index: 100;
-            padding: 4px 12px;
-            border-radius: 8px;
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
             color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(8px);
+            letter-spacing: 0.3px;
         }
-        .split-tag-before { background-color: #E74C3C; }
-        .split-tag-after { background-color: #2ECC71; }
+        .split-tag-before { background: rgba(255, 46, 99, 0.92); }
+        .split-tag-after { background: rgba(0, 180, 216, 0.92); }
 
         .gain-positive { background-color: #D3F9D8; color: #2B8A3E; }
         .gain-negative { background-color: #FFE3E3; color: #C92A2A; }
@@ -531,9 +570,9 @@
     <!-- Floating Controls Dashboard -->
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1001; display: flex; gap: 10px;">
         <button class="controls-toggle-btn" style="position: static;" onclick="toggleControlsMenu()">⚙️ ตั้งค่า & แผงควบคุม</button>
-        <button class="controls-toggle-btn" style="position: static; background-color: #7048E8;" onclick="setInstallMode('Compare')">📊 เปรียบเทียบสัญญาณ</button>
+        <button class="controls-toggle-btn" id="btn-floating-compare" style="position: static; background-color: #7048E8;" onclick="toggleCompareMode()">📊 เปรียบเทียบสัญญาณ</button>
     </div>
-    
+
     <div id="controls-dropdown" class="controls-dropdown">
         <h3 style="margin-top: 0; color: #2B7A78; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 16px;">✨ Wi-Fi Heatmap Dashboard ✨</h3>
         
@@ -549,7 +588,7 @@
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <button class="btn btn-install active" id="btn-before" onclick="setInstallMode('Before')" style="font-size: 11px; padding: 6px 8px; flex: 1;">ก่อนติดตั้ง AP</button>
                 <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')" style="font-size: 11px; padding: 6px 8px; flex: 1;">หลังติดตั้ง AP</button>
-                <button class="btn btn-install btn-compare" id="btn-compare" onclick="setInstallMode('Compare')" style="font-size: 11px; padding: 6px 8px; flex: 1.2;">📊 เปรียบเทียบ</button>
+                <button class="btn btn-install btn-compare" id="btn-compare" onclick="toggleCompareMode()" style="font-size: 11px; padding: 6px 8px; flex: 1.2;">📊 เปรียบเทียบ</button>
             </div>
         </div>
 
@@ -591,19 +630,18 @@
     </div>
 
     <div class="container" style="margin-top: 60px;">
-        <!-- Overlay Blend Slider Bar & Compare Controls (Compare Mode) -->
-        <div id="overlay-slider-box" class="overlay-slider-container" style="display: none; flex-direction: column; gap: 10px;">
-            <div style="display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap;">
-                <button class="btn btn-secondary active" id="btn-view-overlay" onclick="setCompareViewType('overlay')" style="font-size: 12px; padding: 6px 14px;">🔀 โหมดทับกัน (Overlay)</button>
-                <button class="btn btn-secondary" id="btn-view-split" onclick="setCompareViewType('split')" style="font-size: 12px; padding: 6px 14px;">↔️ โหมดแยก 2 ฝั่ง (Side-by-Side)</button>
-                <button class="btn btn-danger" onclick="setInstallMode('Before')" style="font-size: 12px; padding: 6px 14px; margin-left: 10px;">✖️ ออกจากโหมดเปรียบเทียบ (สู่หน้าปกติ)</button>
+        <!-- Overlay Blend Slider Bar & Segmented Control (Compare Mode) -->
+        <div id="overlay-slider-box" class="overlay-slider-container" style="display: none;">
+            <div class="segmented-control">
+                <button class="segmented-btn active" id="btn-view-overlay" onclick="setCompareViewType('overlay')">🔀 โหมดทับกัน (Overlay)</button>
+                <button class="segmented-btn" id="btn-view-split" onclick="setCompareViewType('split')">↔️ โหมดแยก 2 ฝั่ง (Side-by-Side)</button>
             </div>
             
-            <div id="slider-blend-controls" style="display: flex; gap: 12px; align-items: center; width: 100%;">
-                <span style="font-size: 12px; font-weight: bold; color: #FF2E63; white-space: nowrap;">🔴 ก่อนติดตั้ง (วงกลมสีแดง)</span>
+            <div id="slider-blend-controls" style="display: flex; gap: 14px; align-items: center; width: 100%; margin-top: 10px;">
+                <span style="font-size: 12px; font-weight: 600; color: #FF2E63; white-space: nowrap;">🔴 ก่อนติดตั้ง (วงกลมสีแดง)</span>
                 <input type="range" id="overlay-blend-range" min="0" max="100" value="50" oninput="handleOverlayBlend(this.value)">
-                <span style="font-size: 12px; font-weight: bold; color: #00E5FF; white-space: nowrap; text-shadow: 0 0 2px #000;">🔷 หลังติดตั้ง (เพชรสีฟ้า)</span>
-                <span id="blend-val-label" style="font-size: 11px; background: #7048E8; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold;">50%</span>
+                <span style="font-size: 12px; font-weight: 600; color: #00E5FF; white-space: nowrap; text-shadow: 0 0 2px rgba(0,0,0,0.5);">🔷 หลังติดตั้ง (เพชรสีฟ้า)</span>
+                <span id="blend-val-label" style="font-size: 11px; background: #7048E8; color: white; padding: 3px 10px; border-radius: 12px; font-weight: 600;">50%</span>
             </div>
         </div>
 
@@ -767,6 +805,14 @@
         let compareBeforeData = [];
         let compareAfterData = [];
 
+        function toggleCompareMode() {
+            if (currentInstallMode === 'Compare') {
+                setInstallMode('Before');
+            } else {
+                setInstallMode('Compare');
+            }
+        }
+
         function setInstallMode(mode) {
             disableClearSelectedMode();
             closeInspectPopup();
@@ -775,7 +821,9 @@
             document.getElementById('btn-before').classList.remove('active');
             document.getElementById('btn-after').classList.remove('active');
             const btnComp = document.getElementById('btn-compare');
+            const btnFloatComp = document.getElementById('btn-floating-compare');
             if (btnComp) btnComp.classList.remove('active');
+            if (btnFloatComp) btnFloatComp.classList.remove('active');
 
             const sliderBox = document.getElementById('overlay-slider-box');
             const splitWrapper = document.getElementById('split-view-wrapper');
@@ -786,6 +834,7 @@
             
             if (mode === 'Compare') {
                 if (btnComp) btnComp.classList.add('active');
+                if (btnFloatComp) btnFloatComp.classList.add('active');
                 if (sliderBox) sliderBox.style.display = 'flex';
                 setCompareViewType(currentCompareViewType);
                 loadCompareHeatmapData();
