@@ -1310,11 +1310,11 @@
 
         function inspectPointAt(event) {
             const container = document.getElementById('map-container');
+            if (!container) return;
             const rect = container.getBoundingClientRect();
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
 
-            // Find closest points within 40px radius from Before and After sets
             const threshold = 40;
             const findClosest = (arr) => {
                 let closest = null;
@@ -1337,15 +1337,96 @@
                 return;
             }
 
+            const activePt = pointBefore || pointAfter;
+            triggerInspectForPoint(activePt, event);
+        }
+
+        function triggerInspectForPoint(p, event) {
+            if (!p) return;
+            const x = p.x;
+            const y = p.y;
+
+            // Strict spatial matching within 25px radius to pair overlapping Before & After points
+            const findClosePoint = (arr, targetX, targetY) => {
+                let closest = null;
+                let minDist = Infinity;
+                arr.forEach(pt => {
+                    const dist = Math.hypot(pt.x - targetX, pt.y - targetY);
+                    if (dist <= 25 && dist < minDist) {
+                        minDist = dist;
+                        closest = pt;
+                    }
+                });
+                return closest;
+            };
+
+            let beforeRssi = null;
+            let afterRssi = null;
+
+            if (p.isBefore === true) {
+                beforeRssi = p.rssi;
+                const matchAfter = findClosePoint(compareAfterData, x, y);
+                afterRssi = matchAfter ? matchAfter.rssi : null;
+            } else if (p.isBefore === false) {
+                afterRssi = p.rssi;
+                const matchBefore = findClosePoint(compareBeforeData, x, y);
+                beforeRssi = matchBefore ? matchBefore.rssi : null;
+            } else {
+                const matchBefore = findClosePoint(compareBeforeData, x, y);
+                const matchAfter = findClosePoint(compareAfterData, x, y);
+                beforeRssi = matchBefore ? matchBefore.rssi : null;
+                afterRssi = matchAfter ? matchAfter.rssi : null;
+            }
+
+            if (beforeRssi === null && afterRssi === null) {
+                closeInspectPopup();
+                return;
+            }
+
             const popup = document.getElementById('inspect-popup');
-            popup.style.left = `${x}px`;
-            popup.style.top = `${y}px`;
+            popup.style.position = 'fixed';
+            
+            let clickX = event.clientX;
+            let clickY = event.clientY;
+
+            if (!clickX || !clickY) {
+                const mapComp = document.getElementById('map-container');
+                if (mapComp) {
+                    const r = mapComp.getBoundingClientRect();
+                    clickX = r.left + x;
+                    clickY = r.top + y;
+                } else {
+                    clickX = window.innerWidth / 2;
+                    clickY = window.innerHeight / 2;
+                }
+            }
+
+            const popupWidth = 240;
+            const popupHeight = 150;
+            const padding = 15;
+
+            let posX = clickX;
+            let posY = clickY - 20;
+
+            if (posX + popupWidth / 2 > window.innerWidth - padding) {
+                posX = window.innerWidth - popupWidth / 2 - padding;
+            }
+            if (posX - popupWidth / 2 < padding) {
+                posX = popupWidth / 2 + padding;
+            }
+
+            if (posY - popupHeight < padding) {
+                posY = clickY + 30;
+            }
+            if (posY > window.innerHeight - padding) {
+                posY = window.innerHeight - padding;
+            }
+
+            popup.style.left = `${Math.round(posX)}px`;
+            popup.style.top = `${Math.round(posY)}px`;
 
             document.getElementById('popup-coord').innerText = `📍 พิกัด (${x}, ${y})`;
             
-            const beforeRssi = pointBefore ? pointBefore.rssi : null;
-            const afterRssi = pointAfter ? pointAfter.rssi : null;
-
             document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
             document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
 
