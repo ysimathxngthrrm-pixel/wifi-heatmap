@@ -1054,8 +1054,16 @@
 
             const boxBefore = document.getElementById('split-box-before');
             const boxAfter = document.getElementById('split-box-after');
-            if (boxBefore) { boxBefore.style.width = `${scaledW}px`; boxBefore.style.height = `${scaledH}px`; }
-            if (boxAfter) { boxAfter.style.width = `${scaledW}px`; boxAfter.style.height = `${scaledH}px`; }
+            if (boxBefore) {
+                boxBefore.style.width = `${scaledW}px`; boxBefore.style.height = `${scaledH}px`;
+                boxBefore.style.cursor = 'pointer';
+                boxBefore.onclick = (e) => handleSplitMapClick(e, 'Before');
+            }
+            if (boxAfter) {
+                boxAfter.style.width = `${scaledW}px`; boxAfter.style.height = `${scaledH}px`;
+                boxAfter.style.cursor = 'pointer';
+                boxAfter.onclick = (e) => handleSplitMapClick(e, 'After');
+            }
 
             const planHtml = `
                 <div style="width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin: top left; position:relative; background-color:#fff;">
@@ -1082,6 +1090,70 @@
             afterLayer.style.cssText = `position:absolute; top:0; left:0; width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; pointer-events:none;`;
             compareAfterData.forEach(p => drawComparePoint(p.x, p.y, p.rssi, afterLayer, false));
             splitAfter.appendChild(afterLayer);
+        }
+
+        function handleSplitMapClick(event, clickedSide) {
+            const box = document.getElementById(clickedSide === 'Before' ? 'split-box-before' : 'split-box-after');
+            if (!box) return;
+            const rect = box.getBoundingClientRect();
+            
+            const scale = 0.52;
+            const rawClickX = event.clientX - rect.left;
+            const rawClickY = event.clientY - rect.top;
+            const x = Math.round(rawClickX / scale);
+            const y = Math.round(rawClickY / scale);
+
+            const threshold = 50;
+            const findClosest = (arr) => {
+                let closest = null;
+                let minDist = Infinity;
+                arr.forEach(p => {
+                    const dist = Math.hypot(p.x - x, p.y - y);
+                    if (dist <= threshold && dist < minDist) {
+                        minDist = dist;
+                        closest = p;
+                    }
+                });
+                return closest;
+            };
+
+            const pointBefore = findClosest(compareBeforeData);
+            const pointAfter = findClosest(compareAfterData);
+
+            if (!pointBefore && !pointAfter) {
+                closeInspectPopup();
+                return;
+            }
+
+            const popup = document.getElementById('inspect-popup');
+            popup.style.position = 'fixed';
+            popup.style.left = `${Math.round(rect.left + rawClickX)}px`;
+            popup.style.top = `${Math.round(rect.top + rawClickY)}px`;
+
+            document.getElementById('popup-coord').innerText = `📍 พิกัด (${x}, ${y})`;
+            
+            const beforeRssi = pointBefore ? pointBefore.rssi : null;
+            const afterRssi = pointAfter ? pointAfter.rssi : null;
+
+            document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
+            document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
+
+            const badge = document.getElementById('popup-gain-badge');
+            if (beforeRssi !== null && afterRssi !== null) {
+                const diff = afterRssi - beforeRssi;
+                if (diff >= 0) {
+                    badge.className = 'gain-badge gain-positive';
+                    badge.innerText = `+${diff} dBm (สัญญาณดีขึ้น 🚀)`;
+                } else {
+                    badge.className = 'gain-badge gain-negative';
+                    badge.innerText = `${diff} dBm (สัญญาณลดลง)`;
+                }
+            } else {
+                badge.className = 'gain-badge';
+                badge.innerText = 'ข้อมูลไม่ครบ';
+            }
+
+            popup.classList.add('show');
         }
 
         function loadCompareHeatmapData() {
