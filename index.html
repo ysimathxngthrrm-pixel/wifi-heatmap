@@ -593,9 +593,10 @@
     <div class="container" style="margin-top: 60px;">
         <!-- Overlay Blend Slider Bar & Compare Controls (Compare Mode) -->
         <div id="overlay-slider-box" class="overlay-slider-container" style="display: none; flex-direction: column; gap: 10px;">
-            <div style="display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%;">
+            <div style="display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap;">
                 <button class="btn btn-secondary active" id="btn-view-overlay" onclick="setCompareViewType('overlay')" style="font-size: 12px; padding: 6px 14px;">🔀 โหมดทับกัน (Overlay)</button>
                 <button class="btn btn-secondary" id="btn-view-split" onclick="setCompareViewType('split')" style="font-size: 12px; padding: 6px 14px;">↔️ โหมดแยก 2 ฝั่ง (Side-by-Side)</button>
+                <button class="btn btn-danger" onclick="setInstallMode('Before')" style="font-size: 12px; padding: 6px 14px; margin-left: 10px;">✖️ ออกจากโหมดเปรียบเทียบ (สู่หน้าปกติ)</button>
             </div>
             
             <div id="slider-blend-controls" style="display: flex; gap: 12px; align-items: center; width: 100%;">
@@ -777,15 +778,21 @@
             if (btnComp) btnComp.classList.remove('active');
 
             const sliderBox = document.getElementById('overlay-slider-box');
+            const splitWrapper = document.getElementById('split-view-wrapper');
+            const mapContainer = document.getElementById('map-container');
 
             if (mode === 'Before') document.getElementById('btn-before').classList.add('active');
             if (mode === 'After') document.getElementById('btn-after').classList.add('active');
+            
             if (mode === 'Compare') {
                 if (btnComp) btnComp.classList.add('active');
                 if (sliderBox) sliderBox.style.display = 'flex';
+                setCompareViewType(currentCompareViewType);
                 loadCompareHeatmapData();
             } else {
                 if (sliderBox) sliderBox.style.display = 'none';
+                if (splitWrapper) splitWrapper.style.display = 'none';
+                if (mapContainer) mapContainer.style.display = 'block';
                 loadHeatmapData(); 
             }
         }
