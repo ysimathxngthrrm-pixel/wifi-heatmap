@@ -413,6 +413,69 @@
         .controls-dropdown.show {
             display: block;
         }
+
+        /* ---------------- โหมดเปรียบเทียบและการซ้อนทับ (Map Overlay & Inspector) ---------------- */
+        .btn-compare { background-color: #7048E8; color: white; }
+        .btn-compare:hover { background-color: #5F3DC4; color: white; }
+        .btn-compare.active { background-color: #5F3DC4; color: white; box-shadow: 0 4px 10px rgba(112,72,232,0.3); }
+
+        .overlay-slider-container {
+            margin: 15px auto;
+            max-width: 600px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+        }
+        .overlay-slider-container input[type="range"] {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .inspect-popup {
+            position: absolute;
+            z-index: 2500;
+            background: white;
+            border-radius: 14px;
+            padding: 14px 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border: 2px solid #7048E8;
+            font-size: 13px;
+            transform: translate(-50%, -120%);
+            min-width: 230px;
+            display: none;
+            text-align: left;
+            animation: popupFade 0.2s ease;
+        }
+        .inspect-popup.show { display: block; }
+        .inspect-popup-close {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #999;
+        }
+        .inspect-popup-close:hover { color: #333; }
+
+        @keyframes popupFade {
+            from { opacity: 0; transform: translate(-50%, -110%); }
+            to { opacity: 1; transform: translate(-50%, -120%); }
+        }
+
+        .gain-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .gain-positive { background-color: #D3F9D8; color: #2B8A3E; }
+        .gain-negative { background-color: #FFE3E3; color: #C92A2A; }
     </style>
 </head>
 <body>
@@ -430,10 +493,11 @@
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
-            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">สถานะทดสอบ:</span>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-install active" id="btn-before" onclick="setInstallMode('Before')" style="font-size: 11px; padding: 6px 12px; flex: 1;">ก่อนติดตั้ง AP</button>
-                <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')" style="font-size: 11px; padding: 6px 12px; flex: 1;">หลังติดตั้ง AP</button>
+            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">สถานะทดสอบ / เปรียบเทียบ:</span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="btn btn-install active" id="btn-before" onclick="setInstallMode('Before')" style="font-size: 11px; padding: 6px 8px; flex: 1;">ก่อนติดตั้ง AP</button>
+                <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')" style="font-size: 11px; padding: 6px 8px; flex: 1;">หลังติดตั้ง AP</button>
+                <button class="btn btn-install btn-compare" id="btn-compare" onclick="setInstallMode('Compare')" style="font-size: 11px; padding: 6px 8px; flex: 1.2;">📊 เปรียบเทียบ</button>
             </div>
         </div>
 
@@ -475,7 +539,15 @@
     </div>
 
     <div class="container" style="margin-top: 60px;">
-        <div id="map-container" onclick="addPoint(event)">
+        <!-- Overlay Blend Slider Bar (Compare Mode) -->
+        <div id="overlay-slider-box" class="overlay-slider-container" style="display: none;">
+            <span style="font-size: 12px; font-weight: bold; color: #E74C3C;">🔴 ก่อนติดตั้ง (Before)</span>
+            <input type="range" id="overlay-blend-range" min="0" max="100" value="50" oninput="handleOverlayBlend(this.value)">
+            <span style="font-size: 12px; font-weight: bold; color: #2ECC71;">🟢 หลังติดตั้ง (After)</span>
+            <span id="blend-val-label" style="font-size: 11px; background: #7048E8; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold;">50%</span>
+        </div>
+
+        <div id="map-container" onclick="handleMapClick(event)">
             
             <div id="classroom-plan">
                 <div class="cr-top-cabinet">ตู้บิลท์อิน (8.4m)</div>
@@ -544,7 +616,22 @@
                 <div class="lab-table lab-tb-right"></div>
             </div>
 
-            <div id="heatmap-layer"></div>
+            <div id="heatmap-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;">
+                <div id="heatmap-layer-before" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                <div id="heatmap-layer-after" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+            </div>
+
+            <!-- Inspect Popup Card (Compare Mode) -->
+            <div id="inspect-popup" class="inspect-popup">
+                <span class="inspect-popup-close" onclick="closeInspectPopup()">✕</span>
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; color: #7048E8;" id="popup-coord">พิกัด (X, Y)</div>
+                <div style="margin-bottom: 4px; font-size: 12px;">🔴 ก่อนติดตั้ง: <strong id="popup-before-rssi">- dBm</strong></div>
+                <div style="margin-bottom: 6px; font-size: 12px;">🟢 หลังติดตั้ง: <strong id="popup-after-rssi">- dBm</strong></div>
+                <div style="border-top: 1px solid #eee; padding-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; color: #555;">การเปลี่ยนแปลง:</span>
+                    <span id="popup-gain-badge" class="gain-badge gain-positive">+0 dBm</span>
+                </div>
+            </div>
         </div>
 
         <!-- Point Management Section (Danger Zone) -->
@@ -605,14 +692,31 @@
         let isGridVisible = false;
         let isClearSelectedModeActive = false;
 
+        let compareBeforeData = [];
+        let compareAfterData = [];
+
         function setInstallMode(mode) {
             disableClearSelectedMode();
+            closeInspectPopup();
             currentInstallMode = mode;
+
             document.getElementById('btn-before').classList.remove('active');
             document.getElementById('btn-after').classList.remove('active');
-            if(mode === 'Before') document.getElementById('btn-before').classList.add('active');
-            if(mode === 'After') document.getElementById('btn-after').classList.add('active');
-            loadHeatmapData(); 
+            const btnComp = document.getElementById('btn-compare');
+            if (btnComp) btnComp.classList.remove('active');
+
+            const sliderBox = document.getElementById('overlay-slider-box');
+
+            if (mode === 'Before') document.getElementById('btn-before').classList.add('active');
+            if (mode === 'After') document.getElementById('btn-after').classList.add('active');
+            if (mode === 'Compare') {
+                if (btnComp) btnComp.classList.add('active');
+                if (sliderBox) sliderBox.style.display = 'flex';
+                loadCompareHeatmapData();
+            } else {
+                if (sliderBox) sliderBox.style.display = 'none';
+                loadHeatmapData(); 
+            }
         }
 
         function setLocation(loc) {
@@ -745,7 +849,12 @@
         }
 
         function loadHeatmapData() {
-            document.getElementById('heatmap-layer').innerHTML = ''; 
+            closeInspectPopup();
+            const beforeLayer = document.getElementById('heatmap-layer-before');
+            const afterLayer = document.getElementById('heatmap-layer-after');
+            if (beforeLayer) { beforeLayer.innerHTML = ''; beforeLayer.style.opacity = 1; }
+            if (afterLayer) { afterLayer.innerHTML = ''; afterLayer.style.opacity = 1; }
+            
             document.getElementById('table-body').innerHTML = '';
             activePoints = [];
             currentTableData = []; 
@@ -759,6 +868,152 @@
             currentDbListener.once('value', (snapshot) => {
                 snapshot.forEach((child) => { processIncomingData(child.val(), child.key); });
             });
+        }
+
+        /* ---------------- โลจิกเปรียบเทียบและซ้อนทับแผนที่ (Compare & Overlay) ---------------- */
+        function handleOverlayBlend(val) {
+            const beforeLayer = document.getElementById('heatmap-layer-before');
+            const afterLayer = document.getElementById('heatmap-layer-after');
+            const label = document.getElementById('blend-val-label');
+            if (label) label.innerText = `${val}%`;
+            
+            if (beforeLayer && afterLayer) {
+                const opacityAfter = val / 100;
+                const opacityBefore = 1 - opacityAfter;
+                beforeLayer.style.opacity = opacityBefore;
+                afterLayer.style.opacity = opacityAfter;
+            }
+        }
+
+        function loadCompareHeatmapData() {
+            closeInspectPopup();
+            const beforeLayer = document.getElementById('heatmap-layer-before');
+            const afterLayer = document.getElementById('heatmap-layer-after');
+            if (beforeLayer) beforeLayer.innerHTML = '';
+            if (afterLayer) afterLayer.innerHTML = '';
+            document.getElementById('table-body').innerHTML = '';
+            activePoints = [];
+            currentTableData = [];
+            compareBeforeData = [];
+            compareAfterData = [];
+            clearSelection();
+
+            const safeFreq = currentFreq.replace('.', '_');
+            const basePath = `HeatmapData/${currentProfile}`;
+            
+            // Read both Before and After in parallel
+            db.ref(`${basePath}/Before/${currentLocation}/${safeFreq}`).once('value', (beforeSnap) => {
+                db.ref(`${basePath}/After/${currentLocation}/${safeFreq}`).once('value', (afterSnap) => {
+                    
+                    if (beforeSnap.exists()) {
+                        beforeSnap.forEach(child => {
+                            const p = child.val();
+                            compareBeforeData.push(p);
+                            drawComparePoint(p.x, p.y, p.rssi, beforeLayer);
+                            processIncomingData(p, child.key);
+                        });
+                    }
+
+                    if (afterSnap.exists()) {
+                        afterSnap.forEach(child => {
+                            const p = child.val();
+                            compareAfterData.push(p);
+                            drawComparePoint(p.x, p.y, p.rssi, afterLayer);
+                            processIncomingData(p, child.key);
+                        });
+                    }
+
+                    // Set default opacity blend to 50%
+                    const range = document.getElementById('overlay-blend-range');
+                    if (range) handleOverlayBlend(range.value);
+                });
+            });
+        }
+
+        function drawComparePoint(x, y, rssi, targetContainer) {
+            if (!targetContainer) return;
+            const blurCircle = document.createElement('div');
+            blurCircle.className = 'heatmap-blur';
+            blurCircle.style.left = `${x}px`; blurCircle.style.top = `${y}px`;
+            blurCircle.style.background = getColorByRssi(rssi);
+            targetContainer.appendChild(blurCircle);
+
+            const dot = document.createElement('div');
+            dot.className = 'heatmap-dot';
+            dot.style.left = `${x}px`; dot.style.top = `${y}px`;
+            targetContainer.appendChild(dot);
+        }
+
+        function handleMapClick(event) {
+            if (currentInstallMode === 'Compare') {
+                inspectPointAt(event);
+            } else {
+                addPoint(event);
+            }
+        }
+
+        function inspectPointAt(event) {
+            const container = document.getElementById('map-container');
+            const rect = container.getBoundingClientRect();
+            const x = Math.round(event.clientX - rect.left);
+            const y = Math.round(event.clientY - rect.top);
+
+            // Find closest points within 40px radius from Before and After sets
+            const threshold = 40;
+            const findClosest = (arr) => {
+                let closest = null;
+                let minDist = Infinity;
+                arr.forEach(p => {
+                    const dist = Math.hypot(p.x - x, p.y - y);
+                    if (dist <= threshold && dist < minDist) {
+                        minDist = dist;
+                        closest = p;
+                    }
+                });
+                return closest;
+            };
+
+            const pointBefore = findClosest(compareBeforeData);
+            const pointAfter = findClosest(compareAfterData);
+
+            if (!pointBefore && !pointAfter) {
+                closeInspectPopup();
+                return;
+            }
+
+            const popup = document.getElementById('inspect-popup');
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+
+            document.getElementById('popup-coord').innerText = `📍 พิกัด (${x}, ${y})`;
+            
+            const beforeRssi = pointBefore ? pointBefore.rssi : null;
+            const afterRssi = pointAfter ? pointAfter.rssi : null;
+
+            document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
+            document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
+
+            const badge = document.getElementById('popup-gain-badge');
+            if (beforeRssi !== null && afterRssi !== null) {
+                const diff = afterRssi - beforeRssi;
+                if (diff >= 0) {
+                    badge.className = 'gain-badge gain-positive';
+                    badge.innerText = `+${diff} dBm (สัญญาณดีขึ้น 🚀)`;
+                } else {
+                    badge.className = 'gain-badge gain-negative';
+                    badge.innerText = `${diff} dBm (สัญญาณลดลง)`;
+                }
+            } else {
+                badge.className = 'gain-badge';
+                badge.innerText = 'ข้อมูลไม่ครบ';
+            }
+
+            popup.classList.add('show');
+        }
+
+        function closeInspectPopup() {
+            const popup = document.getElementById('inspect-popup');
+            if (popup) popup.classList.remove('show');
         }
 
         function exportCSV() {
