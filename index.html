@@ -1078,7 +1078,7 @@
 
             const beforeLayer = document.createElement('div');
             beforeLayer.style.cssText = `position:absolute; top:0; left:0; width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; pointer-events:none;`;
-            compareBeforeData.forEach(p => drawComparePoint(p.x, p.y, p.rssi, beforeLayer, true));
+            compareBeforeData.forEach(p => drawComparePoint(p.x, p.y, p.rssi, beforeLayer, true, p));
             splitBefore.appendChild(beforeLayer);
 
             // Render After Side
@@ -1088,7 +1088,7 @@
 
             const afterLayer = document.createElement('div');
             afterLayer.style.cssText = `position:absolute; top:0; left:0; width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; pointer-events:none;`;
-            compareAfterData.forEach(p => drawComparePoint(p.x, p.y, p.rssi, afterLayer, false));
+            compareAfterData.forEach(p => drawComparePoint(p.x, p.y, p.rssi, afterLayer, false, p));
             splitAfter.appendChild(afterLayer);
         }
 
@@ -1103,7 +1103,7 @@
             const x = Math.round(rawClickX / scale);
             const y = Math.round(rawClickY / scale);
 
-            const threshold = 50;
+            const threshold = 80;
             const findClosest = (arr) => {
                 let closest = null;
                 let minDist = Infinity;
@@ -1125,15 +1125,71 @@
                 return;
             }
 
+            const activePt = (clickedSide === 'Before' ? pointBefore : pointAfter) || pointBefore || pointAfter;
+            triggerInspectForPoint(activePt, event);
+        }
+
+        function drawComparePoint(x, y, rssi, targetContainer, isBefore, pointObj) {
+            if (!targetContainer) return;
+            const blurCircle = document.createElement('div');
+            blurCircle.className = `heatmap-blur ${isBefore ? 'blur-before' : 'blur-after'}`;
+            blurCircle.style.left = `${x}px`; blurCircle.style.top = `${y}px`;
+            targetContainer.appendChild(blurCircle);
+
+            const dot = document.createElement('div');
+            dot.className = `heatmap-dot ${isBefore ? 'dot-before-marker' : 'dot-after-marker'}`;
+            dot.style.left = `${x}px`; dot.style.top = `${y}px`;
+            dot.style.pointerEvents = 'auto';
+            dot.style.cursor = 'pointer';
+
+            const pData = pointObj || { x: x, y: y, rssi: rssi, isBefore: isBefore };
+            pData.isBefore = isBefore;
+
+            dot.onclick = (e) => {
+                e.stopPropagation();
+                triggerInspectForPoint(pData, e);
+            };
+
+            targetContainer.appendChild(dot);
+        }
+
+        function triggerInspectForPoint(p, event) {
+            if (!p) return;
+            const x = p.x;
+            const y = p.y;
+
+            const findExactOrClosest = (arr, targetX, targetY) => {
+                let closest = null;
+                let minDist = Infinity;
+                arr.forEach(pt => {
+                    const dist = Math.hypot(pt.x - targetX, pt.y - targetY);
+                    if (dist <= 80 && dist < minDist) {
+                        minDist = dist;
+                        closest = pt;
+                    }
+                });
+                return closest;
+            };
+
+            const pointBefore = findExactOrClosest(compareBeforeData, x, y);
+            const pointAfter = findExactOrClosest(compareAfterData, x, y);
+
             const popup = document.getElementById('inspect-popup');
             popup.style.position = 'fixed';
-            popup.style.left = `${Math.round(rect.left + rawClickX)}px`;
-            popup.style.top = `${Math.round(rect.top + rawClickY)}px`;
+            
+            const clickX = event.clientX || window.innerWidth / 2;
+            const clickY = event.clientY || window.innerHeight / 2;
+
+            const posX = Math.min(window.innerWidth - 130, Math.max(130, clickX));
+            const posY = Math.min(window.innerHeight - 80, Math.max(80, clickY));
+
+            popup.style.left = `${posX}px`;
+            popup.style.top = `${posY}px`;
 
             document.getElementById('popup-coord').innerText = `📍 พิกัด (${x}, ${y})`;
             
-            const beforeRssi = pointBefore ? pointBefore.rssi : null;
-            const afterRssi = pointAfter ? pointAfter.rssi : null;
+            const beforeRssi = pointBefore ? pointBefore.rssi : (p.isBefore ? p.rssi : null);
+            const afterRssi = pointAfter ? pointAfter.rssi : (!p.isBefore ? p.rssi : null);
 
             document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
             document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
