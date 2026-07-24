@@ -465,8 +465,8 @@
 
         /* CRITICAL FIX: Inspect Popup Structural & Background Styling */
         .inspect-popup {
-            position: absolute;
-            z-index: 2500;
+            position: fixed !important;
+            z-index: 9999 !important;
             background: #ffffff !important;
             border-radius: 14px;
             padding: 14px 18px;
@@ -732,16 +732,17 @@
                 <div id="heatmap-layer-after" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
             </div>
 
-            <!-- Inspect Popup Card (Compare Mode) -->
-            <div id="inspect-popup" class="inspect-popup">
-                <span class="inspect-popup-close" onclick="closeInspectPopup()">✕</span>
-                <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; color: #7048E8;" id="popup-coord">พิกัด (X, Y)</div>
-                <div style="margin-bottom: 4px; font-size: 12px;">🔴 ก่อนติดตั้ง: <strong id="popup-before-rssi">- dBm</strong></div>
-                <div style="margin-bottom: 6px; font-size: 12px;">🟢 หลังติดตั้ง: <strong id="popup-after-rssi">- dBm</strong></div>
-                <div style="border-top: 1px solid #eee; padding-top: 6px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11px; color: #555;">การเปลี่ยนแปลง:</span>
-                    <span id="popup-gain-badge" class="gain-badge gain-positive">+0 dBm</span>
-                </div>
+        </div>
+
+        <!-- Inspect Popup Card (Compare Mode) - Placed at root level so it renders in both Overlay and Side-by-Side split modes -->
+        <div id="inspect-popup" class="inspect-popup">
+            <span class="inspect-popup-close" onclick="closeInspectPopup()">✕</span>
+            <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; color: #7048E8;" id="popup-coord">พิกัด (X, Y)</div>
+            <div style="margin-bottom: 4px; font-size: 12px;">🔴 ก่อนติดตั้ง: <strong id="popup-before-rssi">- dBm</strong></div>
+            <div style="margin-bottom: 6px; font-size: 12px;">🟢 หลังติดตั้ง: <strong id="popup-after-rssi">- dBm</strong></div>
+            <div style="border-top: 1px solid #eee; padding-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #555;">การเปลี่ยนแปลง:</span>
+                <span id="popup-gain-badge" class="gain-badge gain-positive">+0 dBm</span>
             </div>
         </div>
 
