@@ -841,11 +841,19 @@
         function handleProfileChange(val) {
             disableClearSelectedMode();
             if (val === '__CREATE_NEW__') {
-                const newName = prompt('ระบุชื่อโปรไฟล์ใหม่ (ภาษาอังกฤษ หรือ ตัวเลข หลีกเลี่ยงอักขระพิเศษห้ามใช้ เช่น #, $, ., [, ]):');
+                const newName = prompt('ระบุชื่อโปรไฟล์ใหม่ (หลีกเลี่ยงอักขระพิเศษห้ามใช้ เช่น #, $, ., [, ]):');
                 if (newName) {
-                    const trimmedName = newName.trim();
+                    let trimmedName = newName.trim();
+                    if (trimmedName.includes('/')) {
+                        trimmedName = trimmedName.replace(/\//g, '-');
+                    }
                     if (trimmedName && !/[#$.[\]]/.test(trimmedName)) {
-                        db.ref(`Profiles/${trimmedName}`).set(true).then(() => {
+                        const now = Date.now();
+                        db.ref(`Profiles/${trimmedName}`).set({
+                            name: trimmedName,
+                            created_at: now,
+                            updated_at: now
+                        }).then(() => {
                             currentProfile = trimmedName;
                             loadHeatmapData();
                         });

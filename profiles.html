@@ -574,9 +574,14 @@
         }
 
         function submitCreateProfile() {
-            const input = document.getElementById('create-name-input').value.trim();
+            let input = document.getElementById('create-name-input').value.trim();
+            // Automatically replace forward slashes '/' with '-' because '/' is a key delimiter in Firebase RTDB
+            if (input.includes('/')) {
+                input = input.replace(/\//g, '-');
+            }
+
             if (!input || /[#$.[\]]/.test(input)) {
-                alert('โปรดระบุชื่อโปรไฟล์ให้ถูกต้อง และไม่มีอักขระพิเศษ (เช่น #, $, ., [, ])');
+                alert('โปรดระบุชื่อโปรไฟล์ให้ถูกต้อง และไม่มีอักขระพิเศษห้ามใช้ (เช่น #, $, ., [, ])');
                 return;
             }
             if (allProfilesData.some(p => p.name === input)) {
@@ -602,7 +607,10 @@
 
         function submitEditProfile() {
             const oldName = document.getElementById('edit-old-name').value;
-            const newName = document.getElementById('edit-name-input').value.trim();
+            let newName = document.getElementById('edit-name-input').value.trim();
+            if (newName.includes('/')) {
+                newName = newName.replace(/\//g, '-');
+            }
 
             if (!newName || /[#$.[\]]/.test(newName)) {
                 alert('โปรดระบุชื่อโปรไฟล์ใหม่ให้ถูกต้อง และไม่มีอักขระพิเศษ');
