@@ -467,13 +467,55 @@
             to { opacity: 1; transform: translate(-50%, -120%); }
         }
 
-        .gain-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 12px;
+        /* Distinct indicators for Compare Mode */
+        .blur-before { background: radial-gradient(circle, rgba(231,76,60,0.85) 0%, rgba(231,76,60,0) 70%) !important; }
+        .blur-after { background: radial-gradient(circle, rgba(46,204,113,0.85) 0%, rgba(46,204,113,0) 70%) !important; }
+        .dot-before-marker {
+            background-color: #E74C3C !important;
+            border: 2px solid #FFFFFF !important;
+            box-shadow: 0 0 6px rgba(231,76,60,0.9) !important;
+            width: 8px !important;
+            height: 8px !important;
         }
+        .dot-after-marker {
+            background-color: #2ECC71 !important;
+            border: 2px solid #111111 !important;
+            box-shadow: 0 0 6px rgba(46,204,113,0.9) !important;
+            width: 8px !important;
+            height: 8px !important;
+        }
+
+        .split-view-wrapper {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            margin: 20px auto;
+        }
+        .split-map-box {
+            position: relative;
+            background-color: #ffffff;
+            border: 4px solid #212529;
+            border-radius: 6px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .split-title-tag {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .split-tag-before { background-color: #E74C3C; }
+        .split-tag-after { background-color: #2ECC71; }
+
         .gain-positive { background-color: #D3F9D8; color: #2B8A3E; }
         .gain-negative { background-color: #FFE3E3; color: #C92A2A; }
     </style>
@@ -542,12 +584,19 @@
     </div>
 
     <div class="container" style="margin-top: 60px;">
-        <!-- Overlay Blend Slider Bar (Compare Mode) -->
-        <div id="overlay-slider-box" class="overlay-slider-container" style="display: none;">
-            <span style="font-size: 12px; font-weight: bold; color: #E74C3C;">🔴 ก่อนติดตั้ง (Before)</span>
-            <input type="range" id="overlay-blend-range" min="0" max="100" value="50" oninput="handleOverlayBlend(this.value)">
-            <span style="font-size: 12px; font-weight: bold; color: #2ECC71;">🟢 หลังติดตั้ง (After)</span>
-            <span id="blend-val-label" style="font-size: 11px; background: #7048E8; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold;">50%</span>
+        <!-- Overlay Blend Slider Bar & Compare Controls (Compare Mode) -->
+        <div id="overlay-slider-box" class="overlay-slider-container" style="display: none; flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%;">
+                <button class="btn btn-secondary active" id="btn-view-overlay" onclick="setCompareViewType('overlay')" style="font-size: 12px; padding: 6px 14px;">🔀 โหมดทับกัน (Overlay)</button>
+                <button class="btn btn-secondary" id="btn-view-split" onclick="setCompareViewType('split')" style="font-size: 12px; padding: 6px 14px;">↔️ โหมดแยก 2 ฝั่ง (Side-by-Side)</button>
+            </div>
+            
+            <div id="slider-blend-controls" style="display: flex; gap: 12px; align-items: center; width: 100%;">
+                <span style="font-size: 12px; font-weight: bold; color: #E74C3C; white-space: nowrap;">🔴 ก่อนติดตั้ง (ขอบขาว)</span>
+                <input type="range" id="overlay-blend-range" min="0" max="100" value="50" oninput="handleOverlayBlend(this.value)">
+                <span style="font-size: 12px; font-weight: bold; color: #2ECC71; white-space: nowrap;">🟢 หลังติดตั้ง (ขอบดำ)</span>
+                <span id="blend-val-label" style="font-size: 11px; background: #7048E8; color: white; padding: 2px 8px; border-radius: 10px; font-weight: bold;">50%</span>
+            </div>
         </div>
 
         <div id="map-container" onclick="handleMapClick(event)">
@@ -634,6 +683,18 @@
                     <span style="font-size: 11px; color: #555;">การเปลี่ยนแปลง:</span>
                     <span id="popup-gain-badge" class="gain-badge gain-positive">+0 dBm</span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Split View Side-by-Side Wrapper (Compare Mode) -->
+        <div id="split-view-wrapper" class="split-view-wrapper" style="display: none;">
+            <div id="split-box-before" class="split-map-box">
+                <div class="split-title-tag split-tag-before">🔴 ก่อนติดตั้ง AP (Before)</div>
+                <div id="split-map-before-content" style="position: relative;"></div>
+            </div>
+            <div id="split-box-after" class="split-map-box">
+                <div class="split-title-tag split-tag-after">🟢 หลังติดตั้ง AP (After)</div>
+                <div id="split-map-after-content" style="position: relative;"></div>
             </div>
         </div>
 
@@ -874,6 +935,8 @@
         }
 
         /* ---------------- โลจิกเปรียบเทียบและซ้อนทับแผนที่ (Compare & Overlay) ---------------- */
+        let currentCompareViewType = 'overlay';
+
         function handleOverlayBlend(val) {
             const beforeLayer = document.getElementById('heatmap-layer-before');
             const afterLayer = document.getElementById('heatmap-layer-after');
@@ -886,6 +949,76 @@
                 beforeLayer.style.opacity = opacityBefore;
                 afterLayer.style.opacity = opacityAfter;
             }
+        }
+
+        function setCompareViewType(viewType) {
+            currentCompareViewType = viewType;
+            const btnOverlay = document.getElementById('btn-view-overlay');
+            const btnSplit = document.getElementById('btn-view-split');
+            const mapContainer = document.getElementById('map-container');
+            const splitWrapper = document.getElementById('split-view-wrapper');
+            const blendControls = document.getElementById('slider-blend-controls');
+
+            if (viewType === 'overlay') {
+                if (btnOverlay) btnOverlay.classList.add('active');
+                if (btnSplit) btnSplit.classList.remove('active');
+                if (mapContainer) mapContainer.style.display = 'block';
+                if (splitWrapper) splitWrapper.style.display = 'none';
+                if (blendControls) blendControls.style.display = 'flex';
+            } else if (viewType === 'split') {
+                if (btnOverlay) btnOverlay.classList.remove('active');
+                if (btnSplit) btnSplit.classList.add('active');
+                if (mapContainer) mapContainer.style.display = 'none';
+                if (splitWrapper) splitWrapper.style.display = 'flex';
+                if (blendControls) blendControls.style.display = 'none';
+                renderSplitViewMaps();
+            }
+        }
+
+        function renderSplitViewMaps() {
+            const splitBefore = document.getElementById('split-map-before-content');
+            const splitAfter = document.getElementById('split-map-after-content');
+            const activePlanId = (currentLocation === 'Room1') ? 'classroom-plan' : 'lab-plan';
+            const activePlanEl = document.getElementById(activePlanId);
+            
+            if (!splitBefore || !splitAfter || !activePlanEl) return;
+
+            const planWidth = (currentLocation === 'Room1') ? 840 : 810;
+            const planHeight = (currentLocation === 'Room1') ? 1035 : 1560;
+            const scale = 0.52;
+            const scaledW = Math.round(planWidth * scale);
+            const scaledH = Math.round(planHeight * scale);
+
+            const boxBefore = document.getElementById('split-box-before');
+            const boxAfter = document.getElementById('split-box-after');
+            if (boxBefore) { boxBefore.style.width = `${scaledW}px`; boxBefore.style.height = `${scaledH}px`; }
+            if (boxAfter) { boxAfter.style.width = `${scaledW}px`; boxAfter.style.height = `${scaledH}px`; }
+
+            const planHtml = `
+                <div style="width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin: top left; position:relative; background-color:#fff;">
+                    ${activePlanEl.outerHTML}
+                </div>
+            `;
+
+            // Render Before Side
+            splitBefore.innerHTML = planHtml;
+            const planInBefore = splitBefore.querySelector('#' + activePlanId);
+            if (planInBefore) planInBefore.style.display = 'block';
+
+            const beforeLayer = document.createElement('div');
+            beforeLayer.style.cssText = `position:absolute; top:0; left:0; width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; pointer-events:none;`;
+            compareBeforeData.forEach(p => drawComparePoint(p.x, p.y, p.rssi, beforeLayer, true));
+            splitBefore.appendChild(beforeLayer);
+
+            // Render After Side
+            splitAfter.innerHTML = planHtml;
+            const planInAfter = splitAfter.querySelector('#' + activePlanId);
+            if (planInAfter) planInAfter.style.display = 'block';
+
+            const afterLayer = document.createElement('div');
+            afterLayer.style.cssText = `position:absolute; top:0; left:0; width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; pointer-events:none;`;
+            compareAfterData.forEach(p => drawComparePoint(p.x, p.y, p.rssi, afterLayer, false));
+            splitAfter.appendChild(afterLayer);
         }
 
         function loadCompareHeatmapData() {
@@ -912,7 +1045,7 @@
                         beforeSnap.forEach(child => {
                             const p = child.val();
                             compareBeforeData.push(p);
-                            drawComparePoint(p.x, p.y, p.rssi, beforeLayer);
+                            drawComparePoint(p.x, p.y, p.rssi, beforeLayer, true);
                             processIncomingData(p, child.key);
                         });
                     }
@@ -921,28 +1054,31 @@
                         afterSnap.forEach(child => {
                             const p = child.val();
                             compareAfterData.push(p);
-                            drawComparePoint(p.x, p.y, p.rssi, afterLayer);
+                            drawComparePoint(p.x, p.y, p.rssi, afterLayer, false);
                             processIncomingData(p, child.key);
                         });
                     }
 
-                    // Set default opacity blend to 50%
-                    const range = document.getElementById('overlay-blend-range');
-                    if (range) handleOverlayBlend(range.value);
+                    if (currentCompareViewType === 'split') {
+                        renderSplitViewMaps();
+                    } else {
+                        const range = document.getElementById('overlay-blend-range');
+                        if (range) handleOverlayBlend(range.value);
+                    }
                 });
             });
         }
 
-        function drawComparePoint(x, y, rssi, targetContainer) {
+        function drawComparePoint(x, y, rssi, targetContainer, isBefore) {
             if (!targetContainer) return;
             const blurCircle = document.createElement('div');
-            blurCircle.className = 'heatmap-blur';
+            blurCircle.className = `heatmap-blur ${isBefore ? 'blur-before' : 'blur-after'}`;
             blurCircle.style.left = `${x}px`; blurCircle.style.top = `${y}px`;
             blurCircle.style.background = getColorByRssi(rssi);
             targetContainer.appendChild(blurCircle);
 
             const dot = document.createElement('div');
-            dot.className = 'heatmap-dot';
+            dot.className = `heatmap-dot ${isBefore ? 'dot-before-marker' : 'dot-after-marker'}`;
             dot.style.left = `${x}px`; dot.style.top = `${y}px`;
             targetContainer.appendChild(dot);
         }
