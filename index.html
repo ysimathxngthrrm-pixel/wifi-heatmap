@@ -480,7 +480,10 @@
 </head>
 <body>
     <!-- Floating Controls Dashboard -->
-    <button class="controls-toggle-btn" onclick="toggleControlsMenu()">⚙️ ตั้งค่า & แผงควบคุม</button>
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 1001; display: flex; gap: 10px;">
+        <button class="controls-toggle-btn" style="position: static;" onclick="toggleControlsMenu()">⚙️ ตั้งค่า & แผงควบคุม</button>
+        <button class="controls-toggle-btn" style="position: static; background-color: #7048E8;" onclick="setInstallMode('Compare')">📊 เปรียบเทียบสัญญาณ</button>
+    </div>
     
     <div id="controls-dropdown" class="controls-dropdown">
         <h3 style="margin-top: 0; color: #2B7A78; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 16px;">✨ Wi-Fi Heatmap Dashboard ✨</h3>
