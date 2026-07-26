@@ -1630,18 +1630,17 @@
 
             // อ่านค่าจริงจาก ESP32 ที่กำลังสตรีมอัปเดตอยู่ ณ วินาทีนั้นทันที 100%
             db.ref('WiFi_Scan/current').once('value').then((snapshot) => {
-                if (!snapshot.exists()) {
-                    alert(`⚠️ ไม่พบข้อมูลจาก ESP32 กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและอัปโหลดโค้ดใหม่เรียบร้อยหรือไม่`);
-                    return;
+                const data = snapshot.exists() ? snapshot.val() : {};
+                
+                let rssiValue = null;
+                if (currentFreq === '2.4GHz') {
+                    rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : currentRssi24;
+                } else {
+                    rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : currentRssi5;
                 }
 
-                const data = snapshot.val();
-                let rssiValue = (currentFreq === '2.4GHz')
-                    ? (data.rssi_24g !== undefined && data.rssi_24g !== null ? Number(data.rssi_24g) : null)
-                    : (data.rssi_5g !== undefined && data.rssi_5g !== null ? Number(data.rssi_5g) : null);
-
                 if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
-                    alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (${currentFreq === '2.4GHz' ? 'katin' : 'katin_5G'})`);
+                    alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (${currentFreq === '2.4GHz' ? 'katin' : 'katin_5G'}) กรุณาตรวจสอบว่า ESP32 แฟลชโค้ดใหม่และต่อ Wi-Fi อยู่หรือไม่`);
                     return;
                 }
 
