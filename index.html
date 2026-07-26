@@ -1627,52 +1627,54 @@
             valLabel24.innerText = "⏳ กำลังสแกน...";
             valLabel5.innerText = "⏳ กำลังสแกน...";
 
-            // 1. เคลียร์ค่าเก่าออก
-            db.ref('ESP32_Current').remove().then(() => {
-                // 2. ส่งคำสั่งสั่ง ESP32 สแกน
-                return db.ref('ESP32_Command/action').set('TRIGGER_SCAN');
-            }).then(() => {
+            // 1. ส่งคำสั่งสั่ง ESP32 สแกนสด
+            db.ref('ESP32_Command/action').set('TRIGGER_SCAN').then(() => {
                 console.log("Sent TRIGGER_SCAN to ESP32...");
 
-                // ตั้ง Timeout เผื่อ ESP32 หลุดเชื่อมต่อ (สูงสุด 10 วินาที)
+                // 2. ฟังการเปลี่ยนแปลงข้อมูลเมื่อ ESP32 อัปเดตกลับมา
+                const ref = db.ref('ESP32_Current');
+                
                 const timeoutId = setTimeout(() => {
-                    db.ref('ESP32_Current').off('value', listener);
+                    ref.off();
                     alert("⚠️ ESP32 ตอบสนองช้าหรือไม่ได้เชื่อมต่อเน็ต กรุณาตรวจสอบบอร์ด");
                     valLabel24.innerText = orig24;
                     valLabel5.innerText = orig5;
-                }, 10000);
+                }, 15000);
 
-                // 3. ฟัง Event ตรงจาก Firebase ทันทีที่ ESP32 เขียนข้อมูลเสร็จ (ไม่ต้องสุ่มเวลา setTimeout)
-                const listener = db.ref('ESP32_Current').on('value', (snapshot) => {
+                ref.on('value', function onData(snapshot) {
                     if (snapshot.exists()) {
                         const data = snapshot.val();
-                        // ยกเลิกตัวฟังและ Timeout ทันทีเมื่อได้รับค่า
-                        db.ref('ESP32_Current').off('value', listener);
-                        clearTimeout(timeoutId);
+                        // ถ้ามี timestamp แสดงว่าเป็นข้อมูลสแกนรอบใหม่ล่าสุดจากบอร์ด
+                        if (data && data.timestamp) {
+                            ref.off('value', onData);
+                            clearTimeout(timeoutId);
 
-                        let rssiValue = null;
-                        if (currentFreq === '2.4GHz') {
-                            rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : null;
-                        } else {
-                            rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : null;
+                            let rssiValue = null;
+                            if (currentFreq === '2.4GHz') {
+                                rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : null;
+                            } else {
+                                rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : null;
+                            }
+
+                            if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
+                                alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (ได้ค่า N/A)`);
+                                valLabel24.innerText = "N/A";
+                                valLabel5.innerText = "N/A";
+                                return;
+                            }
+
+                            const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
+                            const safeFreq = currentFreq.replace('.', '_');
+                            const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
+
+                            const newRef = db.ref(dbPath).push();
+                            const key = newRef.key;
+
+                            processIncomingData(newPointData, key);
+                            newRef.set(newPointData).then(() => {
+                                db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
+                            }).catch(err => console.log("Upload Failed:", err));
                         }
-
-                        if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
-                            alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (ได้ค่า N/A)`);
-                            return;
-                        }
-
-                        const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
-                        const safeFreq = currentFreq.replace('.', '_');
-                        const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
-
-                        const newRef = db.ref(dbPath).push();
-                        const key = newRef.key;
-
-                        processIncomingData(newPointData, key);
-                        newRef.set(newPointData).then(() => {
-                            db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
-                        }).catch(err => console.log("Upload Failed:", err));
                     }
                 });
             }).catch(err => {
