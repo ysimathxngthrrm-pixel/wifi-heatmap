@@ -1643,14 +1643,15 @@
                 alert(`⚠️ ESP32 ไม่ตอบสนองภายใน ${SCAN_TIMEOUT_MS / 1000} วินาที กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและเชื่อมต่อ Wi-Fi อยู่หรือไม่`);
             }, SCAN_TIMEOUT_MS);
 
-            // Push-based listener: Firebase จะแจ้งทันทีที่ ESP32 เขียนค่าใหม่ลงมา ไม่ใช่การ poll
+            // Push-based listener: Firebase จะแจ้งทันทีที่ ESP32 เขียนค่าใหม่ลงมา
             function onScanResult(snapshot) {
                 if (settled) return;
-                const data = snapshot.exists() ? snapshot.val() : {};
-                const resultTimestamp = Number(data.timestamp || 0);
+                if (!snapshot.exists()) return;
 
-                // ค่านี้ใหม่กว่าตอนที่เรากดคลิกไหม (ผลสแกนจริงหลังคำสั่ง ไม่ใช่ค่าค้างเก่า)
-                if (resultTimestamp <= clickTimestamp) return;
+                const data = snapshot.val();
+                
+                // ตรวจสอบว่ามีค่าส่งเข้ามาจริง
+                if (data.rssi_24g === undefined && data.rssi_5g === undefined) return;
 
                 settled = true;
                 clearTimeout(timeoutId);
