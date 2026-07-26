@@ -1274,8 +1274,8 @@
             style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 8px; border-radius: 8px;">
             <h4 style="margin: 0 0 5px 0; font-size: 12px; color: #555;">📡 ค่าจาก ESP32 ปัจจุบัน:</h4>
             <div style="font-size: 13px; display: flex; justify-content: space-between;">
-                <span>2.4GHz: <strong id="val-24g" style="color: #D9534F;">-80 dBm</strong></span>
-                <span>5GHz: <strong id="val-5g" style="color: #F0AD4E;">-65 dBm</strong></span>
+                <span>2.4GHz: <strong id="val-24g" style="color: #666;">รอข้อมูล...</strong></span>
+                <span>5GHz: <strong id="val-5g" style="color: #666;">รอข้อมูล...</strong></span>
             </div>
         </div>
 
@@ -1485,8 +1485,8 @@
         let currentInstallMode = 'Before';
         let currentLocation = 'Room1';
         let currentFreq = '2.4GHz';
-        let currentRssi24 = -80;
-        let currentRssi5 = -65;
+        let currentRssi24 = null;
+        let currentRssi5 = null;
         let currentTableData = [];
         let activePoints = []; // Track points with DOM elements, table data and keys
         let selectedPointKeys = new Set(); // Track selected keys for deletion
@@ -1620,6 +1620,11 @@
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
             const rssiValue = (currentFreq === '2.4GHz') ? currentRssi24 : currentRssi5;
+
+            if (rssiValue === null || rssiValue === undefined || rssiValue <= -100) {
+                alert(`⚠️ ยังไม่ได้รับค่าสัญญาณ ${currentFreq} จาก ESP32 กรุณารอ ESP32 ส่งค่าสัญญาณเข้ามาก่อนทำการมาร์กจุด`);
+                return;
+            }
 
             const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
 
