@@ -1619,26 +1619,43 @@
             const rect = container.getBoundingClientRect();
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
-            const rssiValue = (currentFreq === '2.4GHz') ? currentRssi24 : currentRssi5;
 
-            if (rssiValue === null || rssiValue === undefined || rssiValue <= -100) {
-                alert(`⚠️ ยังไม่ได้รับค่าสัญญาณ ${currentFreq} จาก ESP32 กรุณารอ ESP32 ส่งค่าสัญญาณเข้ามาก่อนทำการมาร์กจุด`);
-                return;
-            }
+            // อ่านค่าสดๆ จาก Firebase (node ESP32_Current) ณ วินาทีที่กดมาร์กจุด
+            db.ref('ESP32_Current').once('value').then((snapshot) => {
+                if (!snapshot.exists()) {
+                    alert(`⚠️ ไม่พบข้อมูลจาก ESP32 บน Firebase กรุณาตรวจสอบการเชื่อมต่อของ ESP32`);
+                    return;
+                }
 
-            const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
+                const data = snapshot.val();
+                let rssiValue = null;
+                if (currentFreq === '2.4GHz') {
+                    rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : null;
+                } else {
+                    rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : null;
+                }
 
-            const safeFreq = currentFreq.replace('.', '_');
-            const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
+                if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
+                    alert(`⚠️ ค่าสัญญาณ ${currentFreq} จาก ESP32 ยังไม่สมบูรณ์ (ได้ค่า N/A หรือต่ำกว่า -100 dBm)`);
+                    return;
+                }
 
-            // Push to Firebase and get unique key
-            const newRef = db.ref(dbPath).push();
-            const key = newRef.key;
+                const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
+                const safeFreq = currentFreq.replace('.', '_');
+                const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
 
-            processIncomingData(newPointData, key);
-            newRef.set(newPointData).then(() => {
-                db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
-            }).catch(err => console.log("Upload Failed:", err));
+                // Push to Firebase and get unique key
+                const newRef = db.ref(dbPath).push();
+                const key = newRef.key;
+
+                processIncomingData(newPointData, key);
+                newRef.set(newPointData).then(() => {
+                    db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
+                }).catch(err => console.log("Upload Failed:", err));
+            }).catch((err) => {
+                console.error("Error reading ESP32_Current:", err);
+                alert("เกิดข้อผิดพลาดในการดึงค่าจาก ESP32");
+            });
         }
 
         function processIncomingData(data, key) {
