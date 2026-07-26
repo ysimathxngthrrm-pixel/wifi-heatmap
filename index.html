@@ -1682,16 +1682,19 @@
                 }).catch(err => console.log("Upload Failed:", err));
             }
 
-            scanRef.on('value', onScanResult);
+            // 1. ลบค่าค้างเก่าใน Firebase ออกก่อนทุกครั้ง เพื่อป้องกันไม่ให้ดึงค่าเก่ามาใช้
+            db.ref('WiFi_Scan/current').remove().then(() => {
+                scanRef.on('value', onScanResult);
 
-            // สั่ง ESP32 ให้สแกนตอนนี้เลย (ยิงหลังตั้ง listener แล้ว กันพลาด event)
-            db.ref('ESP32_Command/action').set('TRIGGER_SCAN').catch(err => {
+                // 2. สั่ง ESP32 ให้สแกนสดทันที
+                return db.ref('ESP32_Command/action').set('TRIGGER_SCAN');
+            }).catch(err => {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timeoutId);
                 scanRef.off('value', onScanResult);
                 console.error("Trigger Scan Failed:", err);
-                alert("เกิดข้อผิดพลาดในการดึงค่าจาก ESP32");
+                alert("เกิดข้อผิดพลาดในการส่งคำสั่งสแกนไปยัง ESP32");
             });
         }
 
