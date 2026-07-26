@@ -1612,7 +1612,6 @@
         }
 
         function addPoint(event) {
-            // Avoid adding point when clicking map during "Clear Selected Point" mode
             if (isClearSelectedModeActive) return;
 
             const container = document.getElementById('map-container');
@@ -1620,41 +1619,55 @@
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
 
-            // อ่านค่าสดๆ จาก Firebase (node ESP32_Current) ณ วินาทีที่กดมาร์กจุด
-            db.ref('ESP32_Current').once('value').then((snapshot) => {
-                if (!snapshot.exists()) {
-                    alert(`⚠️ ไม่พบข้อมูลจาก ESP32 บน Firebase กรุณาตรวจสอบการเชื่อมต่อของ ESP32`);
-                    return;
-                }
+            // แสดงสถานะบนหน้าเว็บว่ากำลังสั่ง ESP32 สแกนสด
+            const valLabel = (currentFreq === '2.4GHz') ? 'val-24g' : 'val-5g';
+            const originalText = document.getElementById(valLabel).innerText;
+            document.getElementById(valLabel).innerText = "กำลังสแกนสด...";
 
-                const data = snapshot.val();
-                let rssiValue = null;
-                if (currentFreq === '2.4GHz') {
-                    rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : null;
-                } else {
-                    rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : null;
-                }
+            // 1. ส่งคำสั่งให้ ESP32 เริ่มสแกนสดทันที ณ จุดนั้น
+            db.ref('ESP32_Command/action').set('TRIGGER_SCAN').then(() => {
+                console.log("Sent TRIGGER_SCAN to ESP32...");
+                
+                // 2. รอ 2.5 วินาทีให้ ESP32 สแกนและอัปเดตค่ากลับขึ้นมา
+                setTimeout(() => {
+                    db.ref('ESP32_Current').once('value').then((snapshot) => {
+                        if (!snapshot.exists()) {
+                            alert(`⚠️ ไม่พบข้อมูลจาก ESP32 กรุณาตรวจสอบการเชื่อมต่อของบอร์ด`);
+                            document.getElementById(valLabel).innerText = originalText;
+                            return;
+                        }
 
-                if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
-                    alert(`⚠️ ค่าสัญญาณ ${currentFreq} จาก ESP32 ยังไม่สมบูรณ์ (ได้ค่า N/A หรือต่ำกว่า -100 dBm)`);
-                    return;
-                }
+                        const data = snapshot.val();
+                        let rssiValue = null;
+                        if (currentFreq === '2.4GHz') {
+                            rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : null;
+                        } else {
+                            rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : null;
+                        }
 
-                const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
-                const safeFreq = currentFreq.replace('.', '_');
-                const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
+                        if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
+                            alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} (ได้ค่า N/A หรือต่ำกว่า -100 dBm)`);
+                            document.getElementById(valLabel).innerText = "N/A";
+                            return;
+                        }
 
-                // Push to Firebase and get unique key
-                const newRef = db.ref(dbPath).push();
-                const key = newRef.key;
+                        const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
+                        const safeFreq = currentFreq.replace('.', '_');
+                        const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
 
-                processIncomingData(newPointData, key);
-                newRef.set(newPointData).then(() => {
-                    db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
-                }).catch(err => console.log("Upload Failed:", err));
-            }).catch((err) => {
-                console.error("Error reading ESP32_Current:", err);
-                alert("เกิดข้อผิดพลาดในการดึงค่าจาก ESP32");
+                        const newRef = db.ref(dbPath).push();
+                        const key = newRef.key;
+
+                        processIncomingData(newPointData, key);
+                        newRef.set(newPointData).then(() => {
+                            db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
+                        }).catch(err => console.log("Upload Failed:", err));
+                    });
+                }, 2500);
+            }).catch(err => {
+                console.error("Trigger Failed:", err);
+                alert("ไม่สามารถส่งคำสั่งสแกนไปยัง ESP32 ได้");
+                document.getElementById(valLabel).innerText = originalText;
             });
         }
 
