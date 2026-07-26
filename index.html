@@ -1631,11 +1631,11 @@
             }).then(() => {
                 console.log("Sent TRIGGER_SCAN to ESP32...");
                 
-                // 2. รอ 2.5 วินาทีให้ ESP32 สแกนและอัปเดตค่ากลับขึ้นมา
+                // 2. รอ 5 วินาที เพื่อให้ ESP32 ทำการสแกน Wi-Fi และยิงข้อมูลขึ้น Firebase เสร็จสมบูรณ์
                 setTimeout(() => {
                     db.ref('ESP32_Current').once('value').then((snapshot) => {
                         if (!snapshot.exists()) {
-                            alert(`⚠️ ไม่พบข้อมูลจาก ESP32 กรุณาตรวจสอบการเชื่อมต่อของบอร์ด`);
+                            alert(`⚠️ ESP32 ใช้เวลาสแกนนานกว่าปกติ หรือยังไม่ได้รับการอัปเดตข้อมูล กรุณาลองมาร์กใหม่อีกครั้ง`);
                             document.getElementById(valLabel).innerText = originalText;
                             return;
                         }
@@ -1666,7 +1666,7 @@
                             db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
                         }).catch(err => console.log("Upload Failed:", err));
                     });
-                }, 2500);
+                }, 5000);
             }).catch(err => {
                 console.error("Trigger Failed:", err);
                 alert("ไม่สามารถส่งคำสั่งสแกนไปยัง ESP32 ได้");
