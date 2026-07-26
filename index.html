@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,47 +14,128 @@
             margin: 0;
             padding: 20px;
         }
-        .container { max-width: 950px; margin: auto; }
-        
-        /* ---------------- แถบอธิบายสี ---------------- */
-        .legend-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .legend-box {
-            background: white; padding: 10px 20px; border-radius: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px;
+
+        .container {
+            max-width: 950px;
+            margin: auto;
         }
-        .color-dot { width: 16px; height: 16px; border-radius: 50%; }
-        .dot-green { background-color: #2ECC71; }
-        .dot-yellow { background-color: #F1C40F; }
-        .dot-red { background-color: #E74C3C; }
-        .legend-text { font-size: 14px; text-align: left; }
-        .legend-text strong { display: block; font-size: 16px; }
+
+        /* ---------------- แถบอธิบายสี ---------------- */
+        .legend-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-box {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .dot-green {
+            background-color: #2ECC71;
+        }
+
+        .dot-yellow {
+            background-color: #F1C40F;
+        }
+
+        .dot-red {
+            background-color: #E74C3C;
+        }
+
+        .legend-text {
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .legend-text strong {
+            display: block;
+            font-size: 16px;
+        }
 
         /* ---------------- ปุ่มควบคุม ---------------- */
-        .btn-group { margin: 15px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; align-items: center; }
-        .btn {
-            padding: 10px 20px; border: none; border-radius: 20px;
-            background-color: #E0E5EC; color: #555; cursor: pointer;
-            font-size: 16px; font-weight: bold; transition: 0.3s;
+        .btn-group {
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
         }
-        .btn.active { background-color: #6C757D; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-install { background-color: #E9ECEF; color: #495057; }
-        .btn-install.active { background-color: #495057; color: white; }
-        .btn-loc { background-color: #D3D3D3; color: #333; }
-        .btn-loc.active { background-color: #2B7A78; color: white; }
-        .btn-csv { background-color: #4CAF50; color: white; margin-top: 15px; }
-        .btn-csv:hover { background-color: #45a049; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: #E0E5EC;
+            color: #555;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .btn.active {
+            background-color: #6C757D;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-install {
+            background-color: #E9ECEF;
+            color: #495057;
+        }
+
+        .btn-install.active {
+            background-color: #495057;
+            color: white;
+        }
+
+        .btn-loc {
+            background-color: #D3D3D3;
+            color: #333;
+        }
+
+        .btn-loc.active {
+            background-color: #2B7A78;
+            color: white;
+        }
+
+        .btn-csv {
+            background-color: #4CAF50;
+            color: white;
+            margin-top: 15px;
+        }
+
+        .btn-csv:hover {
+            background-color: #45a049;
+        }
 
         /* ---------------- พื้นที่แผนที่หลัก ---------------- */
         #map-container {
-            position: relative; 
-            background-color: #ffffff; 
-            background-image: none; 
+            position: relative;
+            background-color: #ffffff;
+            background-image: none;
             background-size: 100px 100px;
             background-position: left top;
-            border: 4px solid #212529; 
-            border-radius: 6px; 
-            margin: 20px auto; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 4px solid #212529;
+            border-radius: 6px;
+            margin: 20px auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             cursor: crosshair;
             overflow: hidden;
             transition: width 0.3s, height 0.3s;
@@ -61,195 +143,674 @@
 
         /* องค์ประกอบทั่วไป */
         .pillar {
-            position: absolute; background-color: #CED4DA; border: 2px solid #6C757D; 
-            z-index: 4; display: flex; align-items: center; justify-content: center;
-            font-size: 9px; color: #495057; font-weight: bold;
+            position: absolute;
+            background-color: #CED4DA;
+            border: 2px solid #6C757D;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #495057;
+            font-weight: bold;
             box-sizing: border-box;
         }
+
         .door {
-            position: absolute; background-color: #FFF3CD; border: 2px dashed #F59F00; z-index: 10;
+            position: absolute;
+            background-color: #FFF3CD;
+            border: 2px dashed #F59F00;
+            z-index: 10;
         }
+
         .door-label {
-            position: absolute; background-color: #F59F00; color: white; padding: 2px 6px; 
-            border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 11; white-space: nowrap;
+            position: absolute;
+            background-color: #F59F00;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 11;
+            white-space: nowrap;
         }
 
         /* ========================================= */
         /* ✨ 1. โครงสร้างห้องเรียน (Room1) อิงจากห้อง 14 ✨ */
         /* ========================================= */
-        #classroom-plan { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-        
+        #classroom-plan {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+        }
+
         /* กระดาน/ตู้หลังห้อง 8.4m (ลึก 0.45m) */
         .cr-top-cabinet {
-            position: absolute; top: 0; left: 0; width: 840px; height: 45px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 840px;
+            height: 45px;
             background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
-            border-bottom: 3px solid #ADB5BD; z-index: 3;
-            display: flex; align-items: center; justify-content: center; color: #495057; font-size: 13px; font-weight: bold; box-sizing: border-box;
-        }
-        
-        /* เสาฝั่งซ้าย 3 ต้น */
-        .cr-pl1 { position: absolute; top: 312px; left: 0; width: 33px; height: 39px; } 
-        .cr-pl2 { position: absolute; top: 663px; left: 0; width: 33px; height: 39px; } 
-        .cr-pl3 { position: absolute; bottom: 0px; left: 0; width: 33px; height: 39px; } 
-        
-        /* โต๊ะมุมซ้ายล่าง 0.60m x 1.20m */
-        .cr-desk-left { 
-            position: absolute; bottom: 52px; left: 33px; width: 60px; height: 120px; 
-            background-color: #E7F5FF; border: 2px solid #74C0FC; border-radius: 4px; z-index: 2; box-sizing: border-box;
-        }
-        
-        /* ตู้ Rack 3 อันแรกขวาบน ขนาดเท่ากัน (0.75m) */
-        .cr-r-box1 { position: absolute; top: 45px; right: 0; width: 75px; height: 75px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-right: none; box-sizing: border-box; }
-        .cr-r-box2 { position: absolute; top: 135px; right: 0; width: 75px; height: 75px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-right: none; box-sizing: border-box; }
-        .cr-r-box3 { position: absolute; top: 225px; right: 0; width: 75px; height: 75px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-right: none; box-sizing: border-box; }
-        
-        /* เสาฝั่งขวาต้นที่ 1 */
-        .cr-pr1 { position: absolute; top: 339px; right: 0; width: 33px; height: 39px; } 
-        
-        /* ตู้ติดประตูบน (0.75m x 0.99m) */
-        .cr-r-box4 { position: absolute; top: 390px; right: 0; width: 75px; height: 99px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-right: none; box-sizing: border-box; }
-        
-        /* ประตู 1.60m */
-        .cr-door { position: absolute; top: 518px; right: 0px; width: 12px; height: 160px; } 
-        .cr-door-label { position: absolute; top: 588px; right: 20px; }
-        
-        /* ตู้ติดประตูล่าง (0.71m x 0.53m) */
-        .cr-r-box5 { position: absolute; top: 708px; right: 0; width: 71px; height: 53px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-right: none; box-sizing: border-box; }
-        
-        /* เสาฝั่งขวาต้นที่ 2 และ 3 */
-        .cr-pr2 { position: absolute; top: 790px; right: 0; width: 33px; height: 39px; } 
-        .cr-pr3 { position: absolute; bottom: 0px; right: 0; width: 33px; height: 39px; } 
-        
-        /* โต๊ะอาจารย์รูปตัว L มุมขวาล่าง (0.90x0.60 และ 0.60x0.60) ตามแปลน */
-        .cr-desk-teacher-main { 
-            position: absolute; bottom: 39px; right: 33px; width: 90px; height: 60px; 
-            background-color: #E7F5FF; border: 2px solid #74C0FC; border-radius: 4px; z-index: 2; 
+            border-bottom: 3px solid #ADB5BD;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #495057;
+            font-size: 13px;
+            font-weight: bold;
             box-sizing: border-box;
         }
-        .cr-desk-teacher-sub { 
-            position: absolute; bottom: 39px; right: 123px; width: 60px; height: 60px; 
-            background-color: #E7F5FF; border: 2px solid #74C0FC; border-radius: 4px; z-index: 2; 
-            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #333;
+
+        /* เสาฝั่งซ้าย 3 ต้น */
+        .cr-pl1 {
+            position: absolute;
+            top: 312px;
+            left: 0;
+            width: 33px;
+            height: 39px;
+        }
+
+        .cr-pl2 {
+            position: absolute;
+            top: 663px;
+            left: 0;
+            width: 33px;
+            height: 39px;
+        }
+
+        .cr-pl3 {
+            position: absolute;
+            bottom: 0px;
+            left: 0;
+            width: 33px;
+            height: 39px;
+        }
+
+        /* โต๊ะมุมซ้ายล่าง 0.60m x 1.20m */
+        .cr-desk-left {
+            position: absolute;
+            bottom: 52px;
+            left: 33px;
+            width: 60px;
+            height: 120px;
+            background-color: #E7F5FF;
+            border: 2px solid #74C0FC;
+            border-radius: 4px;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+
+        /* ตู้ Rack 3 อันแรกขวาบน ขนาดเท่ากัน (0.75m) */
+        .cr-r-box1 {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            box-sizing: border-box;
+        }
+
+        .cr-r-box2 {
+            position: absolute;
+            top: 135px;
+            right: 0;
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            box-sizing: border-box;
+        }
+
+        .cr-r-box3 {
+            position: absolute;
+            top: 225px;
+            right: 0;
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            box-sizing: border-box;
+        }
+
+        /* เสาฝั่งขวาต้นที่ 1 */
+        .cr-pr1 {
+            position: absolute;
+            top: 339px;
+            right: 0;
+            width: 33px;
+            height: 39px;
+        }
+
+        /* ตู้ติดประตูบน (0.75m x 0.99m) */
+        .cr-r-box4 {
+            position: absolute;
+            top: 390px;
+            right: 0;
+            width: 75px;
+            height: 99px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            box-sizing: border-box;
+        }
+
+        /* ประตู 1.60m */
+        .cr-door {
+            position: absolute;
+            top: 518px;
+            right: 0px;
+            width: 12px;
+            height: 160px;
+        }
+
+        .cr-door-label {
+            position: absolute;
+            top: 588px;
+            right: 20px;
+        }
+
+        /* ตู้ติดประตูล่าง (0.71m x 0.53m) */
+        .cr-r-box5 {
+            position: absolute;
+            top: 708px;
+            right: 0;
+            width: 71px;
+            height: 53px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            box-sizing: border-box;
+        }
+
+        /* เสาฝั่งขวาต้นที่ 2 และ 3 */
+        .cr-pr2 {
+            position: absolute;
+            top: 790px;
+            right: 0;
+            width: 33px;
+            height: 39px;
+        }
+
+        .cr-pr3 {
+            position: absolute;
+            bottom: 0px;
+            right: 0;
+            width: 33px;
+            height: 39px;
+        }
+
+        /* โต๊ะอาจารย์รูปตัว L มุมขวาล่าง (0.90x0.60 และ 0.60x0.60) ตามแปลน */
+        .cr-desk-teacher-main {
+            position: absolute;
+            bottom: 39px;
+            right: 33px;
+            width: 90px;
+            height: 60px;
+            background-color: #E7F5FF;
+            border: 2px solid #74C0FC;
+            border-radius: 4px;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+
+        .cr-desk-teacher-sub {
+            position: absolute;
+            bottom: 39px;
+            right: 123px;
+            width: 60px;
+            height: 60px;
+            background-color: #E7F5FF;
+            border: 2px solid #74C0FC;
+            border-radius: 4px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
             box-sizing: border-box;
         }
 
         /* โต๊ะเรียนตรงกลาง 5 แถว ความกว้าง 6.25m */
-        .cr-row { 
-            position: absolute; left: 107px; width: 625px; height: 60px; 
-            background-color: #E7F5FF; border: 2px solid #339AF0; border-radius: 4px; z-index: 2; 
+        .cr-row {
+            position: absolute;
+            left: 107px;
+            width: 625px;
+            height: 60px;
+            background-color: #E7F5FF;
+            border: 2px solid #339AF0;
+            border-radius: 4px;
+            z-index: 2;
             box-sizing: border-box;
             background-image: repeating-linear-gradient(to right, transparent, transparent 154px, #339AF0 154px, #339AF0 156px);
         }
-        .cr-row1 { top: 220px; }
-        .cr-row2 { top: 355px; } 
-        .cr-row3 { top: 490px; }
-        .cr-row4 { top: 625px; }
-        .cr-row5 { top: 760px; }
+
+        .cr-row1 {
+            top: 220px;
+        }
+
+        .cr-row2 {
+            top: 355px;
+        }
+
+        .cr-row3 {
+            top: 490px;
+        }
+
+        .cr-row4 {
+            top: 625px;
+        }
+
+        .cr-row5 {
+            top: 760px;
+        }
 
         /* ========================================= */
         /* 2. โครงสร้างห้องแล็บ (Lab1) - คำนวณแบบ Top-Down */
         /* ========================================= */
-        #lab-plan { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-        
+        #lab-plan {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+        }
+
         /* ตู้หลังห้อง */
         .lab-back-cabinet {
-            position: absolute; top: 0; left: 63px; width: 543px; height: 85px;
+            position: absolute;
+            top: 0;
+            left: 63px;
+            width: 543px;
+            height: 85px;
             background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
-            border-bottom: 3px solid #ADB5BD; border-left: 3px solid #ADB5BD; 
-            z-index: 3; display: flex; align-items: center; justify-content: center; color: #495057; font-size: 12px; font-weight: bold; box-sizing: border-box;
+            border-bottom: 3px solid #ADB5BD;
+            border-left: 3px solid #ADB5BD;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #495057;
+            font-size: 12px;
+            font-weight: bold;
+            box-sizing: border-box;
         }
-        
-        .lab-door-top { position: absolute; top: 0px; right: 32px; width: 170px; height: 12px; border-top: none; }
-        .lab-door-label-top { position: absolute; top: 15px; right: 90px; }
-        .lab-top-right-wall { position: absolute; top: 0; right: 0; width: 32px; height: 113px; background-color: #E0E0E0; border-left: 2px solid #6C757D; z-index: 3; }
+
+        .lab-door-top {
+            position: absolute;
+            top: 0px;
+            right: 32px;
+            width: 170px;
+            height: 12px;
+            border-top: none;
+        }
+
+        .lab-door-label-top {
+            position: absolute;
+            top: 15px;
+            right: 90px;
+        }
+
+        .lab-top-right-wall {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 32px;
+            height: 113px;
+            background-color: #E0E0E0;
+            border-left: 2px solid #6C757D;
+            z-index: 3;
+        }
 
         /* ฝั่งซ้าย */
-        .lab-pl1 { position: absolute; top: 0px; left: 0px; width: 40px; height: 40px; }    
-        .lab-left-top-cab { 
-            position: absolute; top: 40px; left: 0; width: 63px; height: 147px; 
-            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); 
-            border: 2px solid #ADB5BD; border-left: none; border-top: none; z-index: 2; box-sizing: border-box;
+        .lab-pl1 {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 40px;
+            height: 40px;
         }
-        .lab-pl2 { position: absolute; top: 304px; left: 0px; width: 40px; height: 42px; } 
-        .lab-l-box1 { position: absolute; top: 346px; left: 0px; width: 40px; height: 320px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-left: none; box-sizing: border-box; z-index: 2; }
-        .lab-pl3 { position: absolute; top: 666px; left: 0px; width: 40px; height: 39px; } 
-        .lab-l-box2 { position: absolute; top: 705px; left: 0px; width: 40px; height: 214px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-left: none; box-sizing: border-box; z-index: 2; }
-        .lab-pl4 { position: absolute; top: 952px; left: 0px; width: 40px; height: 39px; } 
-        .lab-l-box3 { position: absolute; top: 991px; left: 0px; width: 40px; height: 66px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-left: none; box-sizing: border-box; z-index: 2; }
-        .lab-pl5 { position: absolute; top: 1205px; left: 0px; width: 40px; height: 39px; } 
-        .lab-l-box4 { position: absolute; top: 1244px; left: 0px; width: 40px; height: 182px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-left: none; box-sizing: border-box; z-index: 2; }
+
+        .lab-left-top-cab {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            width: 63px;
+            height: 147px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-left: none;
+            border-top: none;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+
+        .lab-pl2 {
+            position: absolute;
+            top: 304px;
+            left: 0px;
+            width: 40px;
+            height: 42px;
+        }
+
+        .lab-l-box1 {
+            position: absolute;
+            top: 346px;
+            left: 0px;
+            width: 40px;
+            height: 320px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-left: none;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+
+        .lab-pl3 {
+            position: absolute;
+            top: 666px;
+            left: 0px;
+            width: 40px;
+            height: 39px;
+        }
+
+        .lab-l-box2 {
+            position: absolute;
+            top: 705px;
+            left: 0px;
+            width: 40px;
+            height: 214px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-left: none;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+
+        .lab-pl4 {
+            position: absolute;
+            top: 952px;
+            left: 0px;
+            width: 40px;
+            height: 39px;
+        }
+
+        .lab-l-box3 {
+            position: absolute;
+            top: 991px;
+            left: 0px;
+            width: 40px;
+            height: 66px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-left: none;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+
+        .lab-pl5 {
+            position: absolute;
+            top: 1205px;
+            left: 0px;
+            width: 40px;
+            height: 39px;
+        }
+
+        .lab-l-box4 {
+            position: absolute;
+            top: 1244px;
+            left: 0px;
+            width: 40px;
+            height: 182px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-left: none;
+            box-sizing: border-box;
+            z-index: 2;
+        }
 
         /* โต๊ะแล็บ */
-        .lab-table { 
-            position: absolute; background-color: #E7F5FF; border: 2px solid #339AF0; 
-            border-radius: 4px; z-index: 2; box-sizing: border-box; 
+        .lab-table {
+            position: absolute;
+            background-color: #E7F5FF;
+            border: 2px solid #339AF0;
+            border-radius: 4px;
+            z-index: 2;
+            box-sizing: border-box;
         }
-        .lab-tb-right { 
-            position: absolute; top: 187px; right: 167px; width: 160px; height: 1080px; 
-            background-image: 
+
+        .lab-tb-right {
+            position: absolute;
+            top: 187px;
+            right: 167px;
+            width: 160px;
+            height: 1080px;
+            background-image:
                 linear-gradient(to right, transparent 79px, #339AF0 79px, #339AF0 81px, transparent 81px),
                 linear-gradient(to bottom, transparent 178px, #339AF0 178px, #339AF0 180px, transparent 180px);
-            background-size: 160px 100%, 100% 180px; 
+            background-size: 160px 100%, 100% 180px;
         }
-        
+
         /* ✨ แก้ไข left ให้เป็น 156px ตรงกันกับโต๊ะด้านล่าง ✨ */
-        .lab-tb-left-top { 
-            position: absolute; top: 187px; left: 156px; width: 160px; height: 722px; 
-            background-image: 
+        .lab-tb-left-top {
+            position: absolute;
+            top: 187px;
+            left: 156px;
+            width: 160px;
+            height: 722px;
+            background-image:
                 linear-gradient(to right, transparent 79px, #339AF0 79px, #339AF0 81px, transparent 81px),
                 linear-gradient(to bottom, transparent 178px, #339AF0 178px, #339AF0 180px, transparent 180px);
-            background-size: 160px 100%, 100% 180.5px; 
+            background-size: 160px 100%, 100% 180.5px;
         }
-        
-        .lab-tb-left-bot { 
-            position: absolute; top: 956px; left: 156px; width: 160px; height: 328px; 
-            background-image: 
+
+        .lab-tb-left-bot {
+            position: absolute;
+            top: 956px;
+            left: 156px;
+            width: 160px;
+            height: 328px;
+            background-image:
                 linear-gradient(to right, transparent 79px, #339AF0 79px, #339AF0 81px, transparent 81px),
                 linear-gradient(to bottom, transparent 178px, #339AF0 178px, #339AF0 180px, transparent 180px);
-            background-size: 160px 100%, 100% 180.3px; 
+            background-size: 160px 100%, 100% 180.3px;
         }
 
         /* ตู้และฐานด้านล่าง */
         .lab-teacher-desk {
-            position: absolute; top: 1284px; left: 156px; width: 150px; height: 60px; 
-            background-color: #000000; border: 2px solid #000000; border-radius: 4px; z-index: 3; 
-            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #FFFFFF; box-sizing: border-box; 
+            position: absolute;
+            top: 1284px;
+            left: 156px;
+            width: 150px;
+            height: 60px;
+            background-color: #000000;
+            border: 2px solid #000000;
+            border-radius: 4px;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFFFFF;
+            box-sizing: border-box;
         }
 
         .lab-bot-cabinet-base {
-            position: absolute; top: 1500px; left: 141px; right: 0px; height: 60px;
-            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); 
-            border-top: 2px solid #ADB5BD; z-index: 3; display: flex; align-items: center; justify-content: center; color: #495057; font-size: 12px; font-weight: bold;
+            position: absolute;
+            top: 1500px;
+            left: 141px;
+            right: 0px;
+            height: 60px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border-top: 2px solid #ADB5BD;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #495057;
+            font-size: 12px;
+            font-weight: bold;
         }
+
         .lab-bot-cabinet-l-part {
-            position: absolute; top: 1045px; bottom: 60px; right: 0px; width: 60px; 
-            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); 
-            border: 2px solid #ADB5BD; border-right: none; border-bottom: none; z-index: 3; box-sizing: border-box;
+            position: absolute;
+            top: 1045px;
+            bottom: 60px;
+            right: 0px;
+            width: 60px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            border-bottom: none;
+            z-index: 3;
+            box-sizing: border-box;
         }
 
         /* เสาและประตูฝั่งขวา */
-        .lab-pr1 { position: absolute; top: 200px; right: 0px; width: 40px; height: 39px; } 
-        .lab-pr2 { position: absolute; top: 558px; right: 0px; width: 40px; height: 39px; } 
-        .lab-door-right { position: absolute; top: 707px; right: 0px; width: 12px; height: 200px; } 
-        .lab-door-label-right { position: absolute; top: 787px; right: 20px; }
-        .lab-pr3 { position: absolute; top: 946px; right: 0px; width: 40px; height: 39px; } 
-        .lab-r-box1 { position: absolute; top: 239px; right: 0px; width: 40px; height: 319px; background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); border: 2px solid #ADB5BD; border-right: none; box-sizing: border-box; z-index: 2; }
-        .lab-rack-bot-right { 
-            position: absolute; top: 985px; right: 0; width: 66px; height: 60px; 
-            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%); 
-            border: 2px solid #ADB5BD; border-right: none; z-index: 2; box-sizing: border-box;
+        .lab-pr1 {
+            position: absolute;
+            top: 200px;
+            right: 0px;
+            width: 40px;
+            height: 39px;
+        }
+
+        .lab-pr2 {
+            position: absolute;
+            top: 558px;
+            right: 0px;
+            width: 40px;
+            height: 39px;
+        }
+
+        .lab-door-right {
+            position: absolute;
+            top: 707px;
+            right: 0px;
+            width: 12px;
+            height: 200px;
+        }
+
+        .lab-door-label-right {
+            position: absolute;
+            top: 787px;
+            right: 20px;
+        }
+
+        .lab-pr3 {
+            position: absolute;
+            top: 946px;
+            right: 0px;
+            width: 40px;
+            height: 39px;
+        }
+
+        .lab-r-box1 {
+            position: absolute;
+            top: 239px;
+            right: 0px;
+            width: 40px;
+            height: 319px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+
+        .lab-rack-bot-right {
+            position: absolute;
+            top: 985px;
+            right: 0;
+            width: 66px;
+            height: 60px;
+            background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
+            border: 2px solid #ADB5BD;
+            border-right: none;
+            z-index: 2;
+            box-sizing: border-box;
         }
 
         /* ---------------- เลเยอร์ Heatmap ---------------- */
-        #heatmap-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        .heatmap-blur { position: absolute; width: 80px; height: 80px; border-radius: 50%; transform: translate(-50%, -50%); mix-blend-mode: multiply; filter: blur(8px); }
-        .heatmap-dot { position: absolute; width: 6px; height: 6px; background-color: #212529; border: 1.5px solid #ffffff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        #heatmap-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .heatmap-blur {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: multiply;
+            filter: blur(8px);
+        }
+
+        .heatmap-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #212529;
+            border: 1.5px solid #ffffff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
 
         /* ---------------- การ์ดและตาราง ---------------- */
-        .data-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 15px; display: inline-block; width: 100%; max-width: 600px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: center; }
-        th { background-color: #f4f4f4; color: #333; }
+        .data-card {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            margin-top: 15px;
+            display: inline-block;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            color: #333;
+        }
 
         /* ---------------- ระบบจัดการโปรไฟล์ ---------------- */
         .profile-container {
@@ -263,13 +824,15 @@
             background: white;
             padding: 8px 15px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         .profile-label {
             font-weight: bold;
             font-size: 14px;
             color: #555;
         }
+
         .profile-select {
             padding: 6px 12px;
             border-radius: 8px;
@@ -295,6 +858,7 @@
             align-items: center;
             max-width: 600px;
         }
+
         .btn-mgmt {
             padding: 10px 20px;
             border: none;
@@ -304,29 +868,36 @@
             font-weight: bold;
             transition: 0.3s;
         }
+
         .btn-undo {
             background-color: #E67E22;
             color: white;
         }
+
         .btn-undo:hover {
             background-color: #D35400;
         }
+
         .btn-clear-selected {
             background-color: #E74C3C;
             color: white;
         }
+
         .btn-clear-selected:hover {
             background-color: #C0392B;
         }
+
         .btn-clear-selected.active {
             background-color: #962D22;
-            box-shadow: 0 0 12px rgba(231,76,60,0.6);
+            box-shadow: 0 0 12px rgba(231, 76, 60, 0.6);
             animation: pulse 1.5s infinite;
         }
+
         .btn-clear-all {
             background-color: #c0392b;
             color: white;
         }
+
         .btn-clear-all:hover {
             background-color: #962d22;
         }
@@ -335,6 +906,7 @@
         #heatmap-layer.clear-mode-active {
             pointer-events: auto !important;
         }
+
         #heatmap-layer.clear-mode-active .heatmap-dot {
             pointer-events: auto !important;
             cursor: pointer;
@@ -345,26 +917,37 @@
             transition: transform 0.2s, background-color 0.2s;
             z-index: 1000;
         }
+
         #heatmap-layer.clear-mode-active .heatmap-dot:hover {
             transform: translate(-50%, -50%) scale(1.4) !important;
             background-color: #C0392B !important;
-            box-shadow: 0 0 8px rgba(231,76,60,0.8);
+            box-shadow: 0 0 8px rgba(231, 76, 60, 0.8);
         }
+
         #heatmap-layer.clear-mode-active .heatmap-dot.selected {
             background-color: #F1C40F !important;
             border: 2px solid #2C3E50 !important;
             box-shadow: 0 0 10px #F1C40F !important;
             transform: translate(-50%, -50%) scale(1.4) !important;
         }
+
         #heatmap-layer.clear-mode-active .heatmap-dot.selected:hover {
             background-color: #F39C12 !important;
             transform: translate(-50%, -50%) scale(1.6) !important;
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         /* ---------------- แผงควบคุมควบคุมแบบยื่นออก (Dashboard Control Drawer/Dropdown) ---------------- */
@@ -381,17 +964,18 @@
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
             transition: 0.3s;
             display: flex;
             align-items: center;
             gap: 8px;
         }
+
         .controls-toggle-btn:hover {
             background-color: #175d5b;
             transform: scale(1.03);
         }
-        
+
         .controls-dropdown {
             position: fixed;
             top: 70px;
@@ -405,19 +989,33 @@
             width: 320px;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            display: none; /* Toggle display */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: none;
+            /* Toggle display */
             text-align: left;
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
+
         .controls-dropdown.show {
             display: block;
         }
 
         /* ---------------- โหมดเปรียบเทียบและการซ้อนทับ (Map Overlay & Inspector) ---------------- */
-        .btn-compare { background-color: #7048E8; color: white; }
-        .btn-compare:hover { background-color: #5F3DC4; color: white; }
-        .btn-compare.active { background-color: #5F3DC4; color: white; box-shadow: 0 4px 10px rgba(112,72,232,0.3); }
+        .btn-compare {
+            background-color: #7048E8;
+            color: white;
+        }
+
+        .btn-compare:hover {
+            background-color: #5F3DC4;
+            color: white;
+        }
+
+        .btn-compare.active {
+            background-color: #5F3DC4;
+            color: white;
+            box-shadow: 0 4px 10px rgba(112, 72, 232, 0.3);
+        }
 
         .overlay-slider-container {
             margin: 16px auto;
@@ -441,6 +1039,7 @@
             border-radius: 14px;
             gap: 4px;
         }
+
         .segmented-btn {
             border: none;
             background: transparent;
@@ -453,9 +1052,11 @@
             transition: all 0.25s ease;
             outline: none;
         }
+
         .segmented-btn:hover {
             color: #1E293B;
         }
+
         .segmented-btn.active {
             background: #FFFFFF;
             color: #7048E8;
@@ -470,18 +1071,20 @@
             background: #ffffff !important;
             border-radius: 14px;
             padding: 14px 18px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
             border: 2px solid #7048E8 !important;
             font-size: 13px;
             transform: translate(-50%, -120%);
             min-width: 230px;
-            display: none; 
+            display: none;
             text-align: left;
             color: #333 !important;
         }
-        .inspect-popup.show { 
-            display: block !important; 
+
+        .inspect-popup.show {
+            display: block !important;
         }
+
         .inspect-popup-close {
             position: absolute;
             top: 6px;
@@ -490,11 +1093,21 @@
             font-weight: bold;
             color: #999;
         }
-        .inspect-popup-close:hover { color: #333; }
+
+        .inspect-popup-close:hover {
+            color: #333;
+        }
 
         @keyframes popupFade {
-            from { opacity: 0; transform: translate(-50%, -110%); }
-            to { opacity: 1; transform: translate(-50%, -120%); }
+            from {
+                opacity: 0;
+                transform: translate(-50%, -110%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -120%);
+            }
         }
 
         /* Mix Blend Mode for Overlay Heatmap Layers to Eliminate Muddy Colors */
@@ -517,12 +1130,13 @@
             width: 75px !important;
             height: 75px !important;
         }
+
         .blur-after {
             background: radial-gradient(circle, rgba(0, 229, 255, 0.4) 0%, rgba(0, 229, 255, 0) 70%) !important;
             width: 75px !important;
             height: 75px !important;
         }
-        
+
         /* BEFORE = Hollow Red Circle */
         .dot-before-marker {
             background-color: transparent !important;
@@ -553,6 +1167,7 @@
             flex-wrap: wrap;
             margin: 24px auto;
         }
+
         .split-map-box {
             position: relative;
             background-color: #ffffff;
@@ -562,9 +1177,11 @@
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+
         .split-map-box:hover {
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
         }
+
         .split-title-tag {
             position: absolute;
             top: 12px;
@@ -579,48 +1196,82 @@
             backdrop-filter: blur(8px);
             letter-spacing: 0.3px;
         }
-        .split-tag-before { background: rgba(255, 46, 99, 0.92); }
-        .split-tag-after { background: rgba(0, 180, 216, 0.92); }
 
-        .gain-positive { background-color: #D3F9D8; color: #2B8A3E; }
-        .gain-negative { background-color: #FFE3E3; color: #C92A2A; }
+        .split-tag-before {
+            background: rgba(255, 46, 99, 0.92);
+        }
+
+        .split-tag-after {
+            background: rgba(0, 180, 216, 0.92);
+        }
+
+        .gain-positive {
+            background-color: #D3F9D8;
+            color: #2B8A3E;
+        }
+
+        .gain-negative {
+            background-color: #FFE3E3;
+            color: #C92A2A;
+        }
     </style>
 </head>
+
 <body>
     <!-- Floating Controls Dashboard -->
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1001; display: flex; gap: 10px;">
-        <button class="controls-toggle-btn" style="position: static;" onclick="toggleControlsMenu()">⚙️ ตั้งค่า & แผงควบคุม</button>
-        <button class="controls-toggle-btn" id="btn-floating-compare" style="position: static; background-color: #7048E8;" onclick="toggleCompareMode()">📊 เปรียบเทียบสัญญาณ</button>
+        <button class="controls-toggle-btn" style="position: static;" onclick="toggleControlsMenu()">⚙️ ตั้งค่า &
+            แผงควบคุม</button>
+        <button class="controls-toggle-btn" id="btn-floating-compare"
+            style="position: static; background-color: #7048E8;" onclick="toggleCompareMode()">📊
+            เปรียบเทียบสัญญาณ</button>
     </div>
 
     <div id="controls-dropdown" class="controls-dropdown">
-        <h3 style="margin-top: 0; color: #2B7A78; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 16px;">✨ Wi-Fi Heatmap Dashboard ✨</h3>
-        
+        <h3
+            style="margin-top: 0; color: #2B7A78; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 16px;">
+            ✨ Wi-Fi Heatmap Dashboard ✨</h3>
+
         <h4 style="margin: 10px 0 5px 0; font-size: 13px;">ระดับสัญญาณ (RSSI):</h4>
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-            <div style="display: flex; align-items: center; gap: 8px;"><div class="color-dot dot-green"></div><span style="font-size: 13px;">ดีมาก (0 ถึง -50 dBm)</span></div>
-            <div style="display: flex; align-items: center; gap: 8px;"><div class="color-dot dot-yellow"></div><span style="font-size: 13px;">ปานกลาง (-51 ถึง -70 dBm)</span></div>
-            <div style="display: flex; align-items: center; gap: 8px;"><div class="color-dot dot-red"></div><span style="font-size: 13px;">อ่อน (ต่ำกว่า -70 dBm)</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="color-dot dot-green"></div><span style="font-size: 13px;">ดีมาก (0 ถึง -50 dBm)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="color-dot dot-yellow"></div><span style="font-size: 13px;">ปานกลาง (-51 ถึง -70 dBm)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="color-dot dot-red"></div><span style="font-size: 13px;">อ่อน (ต่ำกว่า -70 dBm)</span>
+            </div>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
-            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">สถานะทดสอบ / เปรียบเทียบ:</span>
+            <span
+                style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">สถานะทดสอบ
+                / เปรียบเทียบ:</span>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button class="btn btn-install active" id="btn-before" onclick="setInstallMode('Before')" style="font-size: 11px; padding: 6px 8px; flex: 1;">ก่อนติดตั้ง AP</button>
-                <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')" style="font-size: 11px; padding: 6px 8px; flex: 1;">หลังติดตั้ง AP</button>
-                <button class="btn btn-install btn-compare" id="btn-compare" onclick="toggleCompareMode()" style="font-size: 11px; padding: 6px 8px; flex: 1.2;">📊 เปรียบเทียบ</button>
+                <button class="btn btn-install active" id="btn-before" onclick="setInstallMode('Before')"
+                    style="font-size: 11px; padding: 6px 8px; flex: 1;">ก่อนติดตั้ง AP</button>
+                <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')"
+                    style="font-size: 11px; padding: 6px 8px; flex: 1;">หลังติดตั้ง AP</button>
+                <button class="btn btn-install btn-compare" id="btn-compare" onclick="toggleCompareMode()"
+                    style="font-size: 11px; padding: 6px 8px; flex: 1.2;">📊 เปรียบเทียบ</button>
             </div>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
-            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">เลือกห้อง:</span>
+            <span
+                style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">เลือกห้อง:</span>
             <div style="display: flex; gap: 8px;">
-                <button class="btn btn-loc active" id="loc-room1" onclick="setLocation('Room1')" style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องเรียน 1</button>
-                <button class="btn btn-loc" id="loc-lab1" onclick="setLocation('Lab1')" style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องแล็บ 1</button>
+                <button class="btn btn-loc active" id="loc-room1" onclick="setLocation('Room1')"
+                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องเรียน 1</button>
+                <button class="btn btn-loc" id="loc-lab1" onclick="setLocation('Lab1')"
+                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องแล็บ 1</button>
             </div>
         </div>
 
-        <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 8px; border-radius: 8px;">
+        <div
+            style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 8px; border-radius: 8px;">
             <h4 style="margin: 0 0 5px 0; font-size: 12px; color: #555;">📡 ค่าจาก ESP32 ปัจจุบัน:</h4>
             <div style="font-size: 13px; display: flex; justify-content: space-between;">
                 <span>2.4GHz: <strong id="val-24g" style="color: #D9534F;">-80 dBm</strong></span>
@@ -629,13 +1280,28 @@
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px;">
-            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">โหมดคลื่น & Grid:</span>
+            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">โหมดคลื่น
+                & Grid:</span>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn active" id="freq-24" onclick="setFreqMode('2.4GHz')" style="font-size: 11px; padding: 6px 12px; flex: 1;">คลื่น 2.4 GHz</button>
-                    <button class="btn" id="freq-5" onclick="setFreqMode('5GHz')" style="font-size: 11px; padding: 6px 12px; flex: 1;">คลื่น 5 GHz</button>
+                    <button class="btn active" id="freq-24" onclick="setFreqMode('2.4GHz')"
+                        style="font-size: 11px; padding: 6px 12px; flex: 1;">คลื่น 2.4 GHz</button>
+                    <button class="btn" id="freq-5" onclick="setFreqMode('5GHz')"
+                        style="font-size: 11px; padding: 6px 12px; flex: 1;">คลื่น 5 GHz</button>
                 </div>
-                <button class="btn" id="btn-grid" onclick="toggleGrid()" style="border: 1px solid #ccc; font-size: 11px; padding: 6px 12px; width: 100%;">เปิดตาราง Grid 🔳</button>
+                <button class="btn" id="btn-grid" onclick="toggleGrid()"
+                    style="border: 1px solid #ccc; font-size: 11px; padding: 6px 12px; width: 100%;">เปิดตาราง Grid
+                    🔳</button>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
+            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Device Control (สั่งงาน ESP32):</span>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn" onclick="sendCommandToESP32('START_SCAN')"
+                    style="font-size: 11px; padding: 6px 12px; flex: 1; background-color: #E3F2FD; color: #1976D2;">Start Scan</button>
+                <button class="btn" onclick="sendCommandToESP32('STOP_SCAN')"
+                    style="font-size: 11px; padding: 6px 12px; flex: 1; background-color: #FFEBEE; color: #C62828;">Stop Scan</button>
             </div>
         </div>
     </div>
@@ -646,35 +1312,39 @@
         <select id="profile-select" class="profile-select" onchange="handleProfileChange(this.value)">
             <!-- Options dynamically loaded from Firebase -->
         </select>
-        <a href="profiles.html" style="font-size: 13px; text-decoration: none; color: #2B7A78; font-weight: bold; padding: 5px 10px; background: #E6FCF5; border-radius: 8px; border: 1px solid #96F2D7; transition: 0.2s;" title="จัดการโปรไฟล์ทั้งหมด">📁 จัดการโปรไฟล์</a>
+        <a href="profiles.html"
+            style="font-size: 13px; text-decoration: none; color: #2B7A78; font-weight: bold; padding: 5px 10px; background: #E6FCF5; border-radius: 8px; border: 1px solid #96F2D7; transition: 0.2s;"
+            title="จัดการโปรไฟล์ทั้งหมด">📁 จัดการโปรไฟล์</a>
     </div>
 
     <div class="container" style="margin-top: 60px;">
         <!-- Compare View Switcher Controls (Compare Mode) -->
         <div id="overlay-slider-box" class="overlay-slider-container" style="display: none;">
             <div class="segmented-control">
-                <button class="segmented-btn active" id="btn-view-overlay" onclick="setCompareViewType('overlay')">🔀 โหมดทับกัน (Overlay)</button>
-                <button class="segmented-btn" id="btn-view-split" onclick="setCompareViewType('split')">↔️ โหมดแยก 2 ฝั่ง (Side-by-Side)</button>
+                <button class="segmented-btn active" id="btn-view-overlay" onclick="setCompareViewType('overlay')">🔀
+                    โหมดทับกัน (Overlay)</button>
+                <button class="segmented-btn" id="btn-view-split" onclick="setCompareViewType('split')">↔️ โหมดแยก 2
+                    ฝั่ง (Side-by-Side)</button>
             </div>
         </div>
 
         <div id="map-container" onclick="handleMapClick(event)">
-            
+
             <div id="classroom-plan">
                 <div class="cr-top-cabinet">ตู้บิลท์อิน (8.4m)</div>
-                
+
                 <div class="pillar cr-pl1">เสา</div>
                 <div class="pillar cr-pl2">เสา</div>
                 <div class="pillar cr-pl3">เสา</div>
-                
+
                 <div class="cr-desk-left"></div>
-                
+
                 <div class="cr-r-box1"></div>
                 <div class="cr-r-box2"></div>
                 <div class="cr-r-box3"></div>
                 <div class="cr-r-box4"></div>
                 <div class="cr-r-box5"></div>
-                
+
                 <div class="pillar cr-pr1">เสา</div>
                 <div class="door cr-door"></div>
                 <div class="door-label cr-door-label">🚪 ประตู</div>
@@ -698,8 +1368,8 @@
 
                 <div class="lab-bot-cabinet-base">ฐานตู้หน้าห้อง (0.60m)</div>
                 <div class="lab-bot-cabinet-l-part"></div>
-                <div class="lab-teacher-desk">โต๊ะ</div> 
-                
+                <div class="lab-teacher-desk">โต๊ะ</div>
+
                 <div class="lab-l-box1"></div>
                 <div class="lab-l-box2"></div>
                 <div class="lab-l-box3"></div>
@@ -727,9 +1397,12 @@
                 <div class="lab-table lab-tb-right"></div>
             </div>
 
-            <div id="heatmap-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;">
-                <div id="heatmap-layer-before" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
-                <div id="heatmap-layer-after" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+            <div id="heatmap-layer"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;">
+                <div id="heatmap-layer-before" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                </div>
+                <div id="heatmap-layer-after" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                </div>
             </div>
 
         </div>
@@ -737,10 +1410,14 @@
         <!-- Inspect Popup Card (Compare Mode) - Placed at root level so it renders in both Overlay and Side-by-Side split modes -->
         <div id="inspect-popup" class="inspect-popup">
             <span class="inspect-popup-close" onclick="closeInspectPopup()">✕</span>
-            <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; color: #7048E8;" id="popup-coord">พิกัด (X, Y)</div>
-            <div style="margin-bottom: 4px; font-size: 12px;">🔴 ก่อนติดตั้ง: <strong id="popup-before-rssi">- dBm</strong></div>
-            <div style="margin-bottom: 6px; font-size: 12px;">🟢 หลังติดตั้ง: <strong id="popup-after-rssi">- dBm</strong></div>
-            <div style="border-top: 1px solid #eee; padding-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; color: #7048E8;" id="popup-coord">พิกัด
+                (X, Y)</div>
+            <div style="margin-bottom: 4px; font-size: 12px;">🔴 ก่อนติดตั้ง: <strong id="popup-before-rssi">-
+                    dBm</strong></div>
+            <div style="margin-bottom: 6px; font-size: 12px;">🟢 หลังติดตั้ง: <strong id="popup-after-rssi">-
+                    dBm</strong></div>
+            <div
+                style="border-top: 1px solid #eee; padding-top: 6px; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; color: #555;">การเปลี่ยนแปลง:</span>
                 <span id="popup-gain-badge" class="gain-badge gain-positive">+0 dBm</span>
             </div>
@@ -762,7 +1439,8 @@
         <div class="point-mgmt-container">
             <span style="font-weight: bold; color: #E74C3C;">⚠️ จัดการจุด (Danger Zone):</span>
             <button class="btn-mgmt btn-undo" onclick="undoLastPoint()">ย้อนกลับ (ลบจุดล่าสุด) ↩️</button>
-            <button class="btn-mgmt btn-clear-selected" id="btn-clear-selected" onclick="toggleClearSelectedMode()">ลบจุดที่เลือก 🎯</button>
+            <button class="btn-mgmt btn-clear-selected" id="btn-clear-selected"
+                onclick="toggleClearSelectedMode()">ลบจุดที่เลือก 🎯</button>
             <button class="btn-mgmt btn-clear-all" onclick="clearAllPoints()">ลบจุดทั้งหมดในมุมมองนี้ 🗑️</button>
         </div>
 
@@ -805,11 +1483,11 @@
 
         let currentProfile = 'Default';
         let currentInstallMode = 'Before';
-        let currentLocation = 'Room1'; 
+        let currentLocation = 'Room1';
         let currentFreq = '2.4GHz';
-        let currentRssi24 = -80; 
-        let currentRssi5 = -65;  
-        let currentTableData = []; 
+        let currentRssi24 = -80;
+        let currentRssi5 = -65;
+        let currentTableData = [];
         let activePoints = []; // Track points with DOM elements, table data and keys
         let selectedPointKeys = new Set(); // Track selected keys for deletion
         let currentDbListener = null;
@@ -845,7 +1523,7 @@
 
             if (mode === 'Before') document.getElementById('btn-before').classList.add('active');
             if (mode === 'After') document.getElementById('btn-after').classList.add('active');
-            
+
             if (mode === 'Compare') {
                 if (btnComp) btnComp.classList.add('active');
                 if (btnFloatComp) btnFloatComp.classList.add('active');
@@ -860,7 +1538,7 @@
                     mapContainer.style.display = 'block';
                     mapContainer.classList.remove('compare-mode-active');
                 }
-                loadHeatmapData(); 
+                loadHeatmapData();
             }
         }
 
@@ -868,27 +1546,27 @@
             disableClearSelectedMode();
             currentLocation = loc;
             const mapContainer = document.getElementById('map-container');
-            
+
             document.getElementById('loc-room1').classList.remove('active');
             document.getElementById('loc-lab1').classList.remove('active');
-            
-            if(loc === 'Room1') {
+
+            if (loc === 'Room1') {
                 document.getElementById('loc-room1').classList.add('active');
                 document.getElementById('lab-plan').style.display = 'none';
                 document.getElementById('classroom-plan').style.display = 'block';
-                mapContainer.style.width = '840px'; 
-                mapContainer.style.height = '1035px'; 
+                mapContainer.style.width = '840px';
+                mapContainer.style.height = '1035px';
                 if (isGridVisible) mapContainer.style.backgroundSize = '60px 60px';
             }
-            if(loc === 'Lab1') {
+            if (loc === 'Lab1') {
                 document.getElementById('loc-lab1').classList.add('active');
                 document.getElementById('classroom-plan').style.display = 'none';
                 document.getElementById('lab-plan').style.display = 'block';
                 mapContainer.style.width = '810px';
-                mapContainer.style.height = '1560px'; 
+                mapContainer.style.height = '1560px';
                 if (isGridVisible) mapContainer.style.backgroundSize = '100px 100px';
             }
-            
+
             loadHeatmapData();
         }
 
@@ -897,8 +1575,8 @@
             currentFreq = freq;
             document.getElementById('freq-24').classList.remove('active');
             document.getElementById('freq-5').classList.remove('active');
-            if(freq === '2.4GHz') document.getElementById('freq-24').classList.add('active');
-            if(freq === '5GHz') document.getElementById('freq-5').classList.add('active');
+            if (freq === '2.4GHz') document.getElementById('freq-24').classList.add('active');
+            if (freq === '5GHz') document.getElementById('freq-5').classList.add('active');
             loadHeatmapData();
         }
 
@@ -944,14 +1622,14 @@
             const rssiValue = (currentFreq === '2.4GHz') ? currentRssi24 : currentRssi5;
 
             const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
-            
-            const safeFreq = currentFreq.replace('.', '_'); 
+
+            const safeFreq = currentFreq.replace('.', '_');
             const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
-            
+
             // Push to Firebase and get unique key
             const newRef = db.ref(dbPath).push();
             const key = newRef.key;
-            
+
             processIncomingData(newPointData, key);
             newRef.set(newPointData).then(() => {
                 db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
@@ -973,7 +1651,7 @@
                 <td style="color:${data.rssi >= -50 ? '#2ECC71' : data.rssi >= -70 ? '#F1C40F' : '#E74C3C'}; font-weight:bold;">${data.rssi} dBm (${signalStatus})</td>
             </tr>`;
             tableBody.insertAdjacentHTML('afterbegin', row);
-            
+
             // Keep track locally for manipulation
             activePoints.push({
                 key: key,
@@ -1002,7 +1680,7 @@
 
             const parent = document.getElementById('heatmap-layer');
             if (parent) {
-                const directChildren = Array.from(parent.children).filter(child => 
+                const directChildren = Array.from(parent.children).filter(child =>
                     child.id !== 'heatmap-layer-before' && child.id !== 'heatmap-layer-after'
                 );
                 directChildren.forEach(el => el.remove());
@@ -1018,12 +1696,12 @@
             resetHeatmapLayers();
             document.getElementById('table-body').innerHTML = '';
             activePoints = [];
-            currentTableData = []; 
+            currentTableData = [];
             clearSelection();
 
             const safeFreq = currentFreq.replace('.', '_');
             const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
-            
+
             if (currentDbListener) { currentDbListener.off(); }
             currentDbListener = db.ref(dbPath);
             currentDbListener.once('value', (snapshot) => {
@@ -1062,7 +1740,7 @@
             const splitAfter = document.getElementById('split-map-after-content');
             const activePlanId = (currentLocation === 'Room1') ? 'classroom-plan' : 'lab-plan';
             const activePlanEl = document.getElementById(activePlanId);
-            
+
             if (!splitBefore || !splitAfter || !activePlanEl) return;
 
             const planWidth = (currentLocation === 'Room1') ? 840 : 810;
@@ -1115,7 +1793,7 @@
             const box = document.getElementById(clickedSide === 'Before' ? 'split-box-before' : 'split-box-after');
             if (!box) return;
             const rect = box.getBoundingClientRect();
-            
+
             const scale = 0.52;
             const rawClickX = event.clientX - rect.left;
             const rawClickY = event.clientY - rect.top;
@@ -1210,7 +1888,7 @@
 
             const popup = document.getElementById('inspect-popup');
             popup.style.position = 'fixed';
-            
+
             const clickX = event.clientX || window.innerWidth / 2;
             const clickY = event.clientY || window.innerHeight / 2;
 
@@ -1221,7 +1899,7 @@
             popup.style.top = `${posY}px`;
 
             document.getElementById('popup-coord').innerText = `📍 พิกัด (${x}, ${y})`;
-            
+
             document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
             document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
 
@@ -1256,11 +1934,11 @@
             const basePath = `HeatmapData/${currentProfile}`;
             const beforeLayer = document.getElementById('heatmap-layer-before');
             const afterLayer = document.getElementById('heatmap-layer-after');
-            
+
             // Read both Before and After in parallel
             db.ref(`${basePath}/Before/${currentLocation}/${safeFreq}`).once('value', (beforeSnap) => {
                 db.ref(`${basePath}/After/${currentLocation}/${safeFreq}`).once('value', (afterSnap) => {
-                    
+
                     if (beforeSnap.exists()) {
                         beforeSnap.forEach(child => {
                             const p = child.val();
@@ -1385,7 +2063,7 @@
 
             const popup = document.getElementById('inspect-popup');
             popup.style.position = 'fixed';
-            
+
             let clickX = event.clientX;
             let clickY = event.clientY;
 
@@ -1426,7 +2104,7 @@
             popup.style.top = `${Math.round(posY)}px`;
 
             document.getElementById('popup-coord').innerText = `📍 พิกัด (${x}, ${y})`;
-            
+
             document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
             document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
 
@@ -1497,7 +2175,7 @@
             db.ref('Profiles').on('value', (snapshot) => {
                 const select = document.getElementById('profile-select');
                 if (!select) return;
-                
+
                 select.innerHTML = '';
                 let profiles = [];
                 if (snapshot.exists()) {
@@ -1505,16 +2183,16 @@
                         return p && p.trim() !== '' && p !== '__CREATE_NEW__' && !p.includes('สร้างโปรไฟล์ใหม่');
                     });
                 }
-                
+
                 if (!profiles.includes('Default')) {
                     profiles.unshift('Default');
                     db.ref('Profiles/Default').set(true);
                 }
-                
+
                 if (!profiles.includes(currentProfile)) {
                     currentProfile = profiles[0];
                 }
-                
+
                 profiles.forEach(p => {
                     const opt = document.createElement('option');
                     opt.value = p;
@@ -1522,7 +2200,7 @@
                     if (p === currentProfile) opt.selected = true;
                     select.appendChild(opt);
                 });
-                
+
                 const createOpt = document.createElement('option');
                 createOpt.value = '__CREATE_NEW__';
                 createOpt.innerText = '➕ สร้างโปรไฟล์ใหม่...';
@@ -1580,7 +2258,7 @@
                 if (p.domDot && p.domDot.parentNode) p.domDot.parentNode.removeChild(p.domDot);
                 const rowEl = document.getElementById(p.rowId);
                 if (rowEl && rowEl.parentNode) rowEl.parentNode.removeChild(rowEl);
-                
+
                 activePoints.splice(index, 1);
                 updateTableDataArray();
             }
@@ -1595,7 +2273,7 @@
             const lastPoint = activePoints[activePoints.length - 1];
             const safeFreq = currentFreq.replace('.', '_');
             const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}/${lastPoint.key}`;
-            
+
             db.ref(dbPath).remove().then(() => {
                 removePointLocally(lastPoint.key);
             }).catch(err => {
@@ -1610,7 +2288,7 @@
                 deleteSelectedPoints();
                 return;
             }
-            
+
             isClearSelectedModeActive = !isClearSelectedModeActive;
             const btn = document.getElementById('btn-clear-selected');
             const layer = document.getElementById('heatmap-layer');
@@ -1672,7 +2350,7 @@
             if (confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบจุดวัดสัญญาณที่เลือกทั้ง ${count} จุดนี้?`)) {
                 const safeFreq = currentFreq.replace('.', '_');
                 const deletePromises = [];
-                
+
                 selectedPointKeys.forEach(key => {
                     const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}/${key}`;
                     const promise = db.ref(dbPath).remove().then(() => {
@@ -1680,7 +2358,7 @@
                     });
                     deletePromises.push(promise);
                 });
-                
+
                 Promise.all(deletePromises).then(() => {
                     disableClearSelectedMode();
                 }).catch(err => {
@@ -1703,7 +2381,7 @@
             if (confirm("⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบจุดวัดสัญญาณทั้งหมด ในมุมมองปัจจุบันนี้? (การดำเนินการนี้จะไม่สามารถกู้คืนได้)")) {
                 const safeFreq = currentFreq.replace('.', '_');
                 const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
-                
+
                 db.ref(dbPath).remove().then(() => {
                     document.getElementById('heatmap-layer').innerHTML = '';
                     document.getElementById('table-body').innerHTML = '';
@@ -1718,7 +2396,7 @@
 
         // ESP32 database listener continues running independently of profile switches
         db.ref('ESP32_Current/').on('value', (snapshot) => {
-            if(snapshot.exists()) {
+            if (snapshot.exists()) {
                 currentRssi24 = snapshot.val().rssi_24g || -80;
                 currentRssi5 = snapshot.val().rssi_5g || -65;
                 document.getElementById('val-24g').innerText = currentRssi24 + " dBm";
@@ -1731,6 +2409,19 @@
         // Initialize App
         loadProfilesList();
         setLocation('Room1');
+
+        function sendCommandToESP32(command) {
+            db.ref('ESP32_Command/action').set(command)
+                .then(() => {
+                    console.log(`Command sent to ESP32: ${command}`);
+                    alert(`ส่งคำสั่ง "${command}" ไปยัง ESP32 เรียบร้อยแล้ว`);
+                })
+                .catch((error) => {
+                    console.error('Error sending command to ESP32:', error);
+                    alert(`เกิดข้อผิดพลาดในการส่งคำสั่ง: ${error.message}`);
+                });
+        }
     </script>
 </body>
+
 </html>
