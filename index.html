@@ -1610,7 +1610,7 @@
             return { blur: blurCircle, dot: dot };
         }
 
-        const SCAN_TIMEOUT_MS = 5000; // กันเว็บค้างถ้า ESP32 ไม่ตอบสนอง
+        const SCAN_TIMEOUT_MS = 8000; // 8 วินาที สอดคล้องกับระยะเวลาสแกนจริงของ ESP32
 
         function setDeviceStatus(text, color) {
             const badge = document.getElementById('device-status-badge');
