@@ -1620,7 +1620,7 @@
             const y = Math.round(event.clientY - rect.top);
 
             // อ่านค่าจริงล่าสุดจาก ESP32 ทันที
-            db.ref('ESP32_Current').once('value').then((snapshot) => {
+            db.ref('WiFi_Scan/current').once('value').then((snapshot) => {
                 let data = snapshot.exists() ? snapshot.val() : {};
                 let rssiValue = null;
 
@@ -2411,7 +2411,7 @@
         }
 
         // ESP32 database listener continues running independently of profile switches
-        db.ref('ESP32_Current/').on('value', (snapshot) => {
+        db.ref('WiFi_Scan/current').on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 currentRssi24 = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? data.rssi_24g : null;
