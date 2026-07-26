@@ -1296,12 +1296,11 @@
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
-            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Device Control (สั่งงาน ESP32):</span>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn" onclick="sendCommandToESP32('START_SCAN')"
-                    style="font-size: 11px; padding: 6px 12px; flex: 1; background-color: #E3F2FD; color: #1976D2;">Start Scan</button>
-                <button class="btn" onclick="sendCommandToESP32('STOP_SCAN')"
-                    style="font-size: 11px; padding: 6px 12px; flex: 1; background-color: #FFEBEE; color: #C62828;">Stop Scan</button>
+            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Device
+                Status:</span>
+            <div id="device-status-badge"
+                style="font-size: 11px; padding: 6px 12px; background-color: #F5F5F5; color: #666; border-radius: 6px; text-align: center;">
+                คลิกจุดบนแผนที่เพื่อสแกน
             </div>
         </div>
     </div>
@@ -1611,6 +1610,16 @@
             return { blur: blurCircle, dot: dot };
         }
 
+        const SCAN_TIMEOUT_MS = 5000; // กันเว็บค้างถ้า ESP32 ไม่ตอบสนอง
+
+        function setDeviceStatus(text, color) {
+            const badge = document.getElementById('device-status-badge');
+            if (badge) {
+                badge.textContent = text;
+                badge.style.color = color || '#666';
+            }
+        }
+
         function addPoint(event) {
             if (isClearSelectedModeActive) return;
 
@@ -1619,21 +1628,45 @@
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
 
-            // อ่านค่าจริงล่าสุดจาก ESP32 ทันที
-            db.ref('WiFi_Scan/current').once('value').then((snapshot) => {
-                let data = snapshot.exists() ? snapshot.val() : {};
-                let rssiValue = null;
+            // จด timestamp ตอนกดคลิก เพื่อเทียบว่าผลสแกนที่ได้กลับมาเป็น "ใหม่กว่า" จริงไหม
+            const clickTimestamp = Date.now();
+            setDeviceStatus('⏳ กำลังสแกน...', '#1976D2');
 
-                if (currentFreq === '2.4GHz') {
-                    rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : currentRssi24;
-                } else {
-                    rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : currentRssi5;
-                }
+            const scanRef = db.ref('WiFi_Scan/current');
+            let settled = false; // กันไม่ให้ callback/timeout ทำงานซ้ำสองรอบ
+
+            const timeoutId = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                scanRef.off('value', onScanResult);
+                setDeviceStatus('⚠️ ESP32 ไม่ตอบสนอง', '#C62828');
+                alert(`⚠️ ESP32 ไม่ตอบสนองภายใน ${SCAN_TIMEOUT_MS / 1000} วินาที กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและเชื่อมต่อ Wi-Fi อยู่หรือไม่`);
+            }, SCAN_TIMEOUT_MS);
+
+            // Push-based listener: Firebase จะแจ้งทันทีที่ ESP32 เขียนค่าใหม่ลงมา ไม่ใช่การ poll
+            function onScanResult(snapshot) {
+                if (settled) return;
+                const data = snapshot.exists() ? snapshot.val() : {};
+                const resultTimestamp = Number(data.timestamp || 0);
+
+                // ค่านี้ใหม่กว่าตอนที่เรากดคลิกไหม (ผลสแกนจริงหลังคำสั่ง ไม่ใช่ค่าค้างเก่า)
+                if (resultTimestamp <= clickTimestamp) return;
+
+                settled = true;
+                clearTimeout(timeoutId);
+                scanRef.off('value', onScanResult);
+
+                let rssiValue = (currentFreq === '2.4GHz')
+                    ? (data.rssi_24g !== undefined && data.rssi_24g !== null ? Number(data.rssi_24g) : null)
+                    : (data.rssi_5g !== undefined && data.rssi_5g !== null ? Number(data.rssi_5g) : null);
 
                 if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
+                    setDeviceStatus('⚠️ ไม่พบสัญญาณ', '#C62828');
                     alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (${currentFreq === '2.4GHz' ? 'katin' : 'katin_5G'}) กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและอัปโหลดโค้ดตัวล่าสุดอยู่หรือไม่`);
                     return;
                 }
+
+                setDeviceStatus('คลิกจุดบนแผนที่เพื่อสแกน', '#666');
 
                 const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
                 const safeFreq = currentFreq.replace('.', '_');
@@ -1646,8 +1679,17 @@
                 newRef.set(newPointData).then(() => {
                     db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
                 }).catch(err => console.log("Upload Failed:", err));
-            }).catch(err => {
-                console.error("Instant Read Failed:", err);
+            }
+
+            scanRef.on('value', onScanResult);
+
+            // สั่ง ESP32 ให้สแกนตอนนี้เลย (ยิงหลังตั้ง listener แล้ว กันพลาด event)
+            db.ref('ESP32_Command/action').set('TRIGGER_SCAN').catch(err => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
+                scanRef.off('value', onScanResult);
+                console.error("Trigger Scan Failed:", err);
                 alert("เกิดข้อผิดพลาดในการดึงค่าจาก ESP32");
             });
         }
@@ -2416,7 +2458,7 @@
                 const data = snapshot.val();
                 currentRssi24 = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? data.rssi_24g : null;
                 currentRssi5 = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? data.rssi_5g : null;
-                
+
                 if (currentRssi24 !== null && currentRssi24 > -100) {
                     document.getElementById('val-24g').innerText = currentRssi24 + " dBm";
                     document.getElementById('val-24g').style.color = (currentRssi24 >= -50) ? '#2ECC71' : (currentRssi24 >= -70) ? '#F1C40F' : '#E74C3C';
@@ -2439,17 +2481,6 @@
         loadProfilesList();
         setLocation('Room1');
 
-        function sendCommandToESP32(command) {
-            db.ref('ESP32_Command/action').set(command)
-                .then(() => {
-                    console.log(`Command sent to ESP32: ${command}`);
-                    alert(`ส่งคำสั่ง "${command}" ไปยัง ESP32 เรียบร้อยแล้ว`);
-                })
-                .catch((error) => {
-                    console.error('Error sending command to ESP32:', error);
-                    alert(`เกิดข้อผิดพลาดในการส่งคำสั่ง: ${error.message}`);
-                });
-        }
     </script>
 </body>
 
