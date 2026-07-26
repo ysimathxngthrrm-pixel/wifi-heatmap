@@ -1619,69 +1619,40 @@
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
 
-            const valLabel24 = document.getElementById('val-24g');
-            const valLabel5 = document.getElementById('val-5g');
-            const orig24 = valLabel24.innerText;
-            const orig5 = valLabel5.innerText;
+            // อ่านค่าจริงล่าสุดจาก ESP32 ทันที (Instant 0.01 sec)
+            db.ref('ESP32_Current').once('value').then((snapshot) => {
+                if (!snapshot.exists()) {
+                    alert("⚠️ ยังไม่ได้รับค่าจาก ESP32 กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและต่อ Wi-Fi อยู่หรือไม่");
+                    return;
+                }
 
-            valLabel24.innerText = "⏳ กำลังสแกน...";
-            valLabel5.innerText = "⏳ กำลังสแกน...";
+                const data = snapshot.val();
+                let rssiValue = null;
+                if (currentFreq === '2.4GHz') {
+                    rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : null;
+                } else {
+                    rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : null;
+                }
 
-            // 1. ส่งคำสั่งสั่ง ESP32 สแกนสด
-            db.ref('ESP32_Command/action').set('TRIGGER_SCAN').then(() => {
-                console.log("Sent TRIGGER_SCAN to ESP32...");
+                if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
+                    alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (${currentFreq === '2.4GHz' ? 'katin' : 'katin_5G'})`);
+                    return;
+                }
 
-                // 2. ฟังการเปลี่ยนแปลงข้อมูลเมื่อ ESP32 อัปเดตกลับมา
-                const ref = db.ref('ESP32_Current');
-                
-                const timeoutId = setTimeout(() => {
-                    ref.off();
-                    alert("⚠️ ESP32 ตอบสนองช้าหรือไม่ได้เชื่อมต่อเน็ต กรุณาตรวจสอบบอร์ด");
-                    valLabel24.innerText = orig24;
-                    valLabel5.innerText = orig5;
-                }, 15000);
+                const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
+                const safeFreq = currentFreq.replace('.', '_');
+                const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
 
-                ref.on('value', function onData(snapshot) {
-                    if (snapshot.exists()) {
-                        const data = snapshot.val();
-                        // ถ้ามี timestamp แสดงว่าเป็นข้อมูลสแกนรอบใหม่ล่าสุดจากบอร์ด
-                        if (data && data.timestamp) {
-                            ref.off('value', onData);
-                            clearTimeout(timeoutId);
+                const newRef = db.ref(dbPath).push();
+                const key = newRef.key;
 
-                            let rssiValue = null;
-                            if (currentFreq === '2.4GHz') {
-                                rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : null;
-                            } else {
-                                rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : null;
-                            }
-
-                            if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
-                                alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (ได้ค่า N/A)`);
-                                valLabel24.innerText = "N/A";
-                                valLabel5.innerText = "N/A";
-                                return;
-                            }
-
-                            const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
-                            const safeFreq = currentFreq.replace('.', '_');
-                            const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
-
-                            const newRef = db.ref(dbPath).push();
-                            const key = newRef.key;
-
-                            processIncomingData(newPointData, key);
-                            newRef.set(newPointData).then(() => {
-                                db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
-                            }).catch(err => console.log("Upload Failed:", err));
-                        }
-                    }
-                });
+                processIncomingData(newPointData, key);
+                newRef.set(newPointData).then(() => {
+                    db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
+                }).catch(err => console.log("Upload Failed:", err));
             }).catch(err => {
-                console.error("Trigger Failed:", err);
-                alert("ไม่สามารถส่งคำสั่งสแกนไปยัง ESP32 ได้");
-                valLabel24.innerText = orig24;
-                valLabel5.innerText = orig5;
+                console.error("Instant Read Failed:", err);
+                alert("เกิดข้อผิดพลาดในการดึงค่าจาก ESP32");
             });
         }
 
