@@ -1624,8 +1624,11 @@
             const originalText = document.getElementById(valLabel).innerText;
             document.getElementById(valLabel).innerText = "กำลังสแกนสด...";
 
-            // 1. ส่งคำสั่งให้ ESP32 เริ่มสแกนสดทันที ณ จุดนั้น
-            db.ref('ESP32_Command/action').set('TRIGGER_SCAN').then(() => {
+            // 1. เคลียร์ค่าเก่าออกจาก Firebase ก่อนสแกนใหม่ทุกครั้ง (เพื่อไม่ให้หยิบค่าเก่ามาใช้)
+            db.ref('ESP32_Current').remove().then(() => {
+                // 2. ส่งคำสั่งสั่ง ESP32 สแกนสด
+                return db.ref('ESP32_Command/action').set('TRIGGER_SCAN');
+            }).then(() => {
                 console.log("Sent TRIGGER_SCAN to ESP32...");
                 
                 // 2. รอ 2.5 วินาทีให้ ESP32 สแกนและอัปเดตค่ากลับขึ้นมา
