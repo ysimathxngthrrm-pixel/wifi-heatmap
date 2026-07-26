@@ -1628,46 +1628,22 @@
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
 
-            // จด timestamp ตอนกดคลิก เพื่อเทียบว่าผลสแกนที่ได้กลับมาเป็น "ใหม่กว่า" จริงไหม
-            const clickTimestamp = Date.now();
-            setDeviceStatus('⏳ กำลังสแกน...', '#1976D2');
-
-            const scanRef = db.ref('WiFi_Scan/current');
-            let settled = false; // กันไม่ให้ callback/timeout ทำงานซ้ำสองรอบ
-
-            const timeoutId = setTimeout(() => {
-                if (settled) return;
-                settled = true;
-                scanRef.off('value', onScanResult);
-                setDeviceStatus('⚠️ ESP32 ไม่ตอบสนอง', '#C62828');
-                alert(`⚠️ ESP32 ไม่ตอบสนองภายใน ${SCAN_TIMEOUT_MS / 1000} วินาที กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและเชื่อมต่อ Wi-Fi อยู่หรือไม่`);
-            }, SCAN_TIMEOUT_MS);
-
-            // Push-based listener: Firebase จะแจ้งทันทีที่ ESP32 เขียนค่าใหม่ลงมา
-            function onScanResult(snapshot) {
-                if (settled) return;
-                if (!snapshot.exists()) return;
+            // อ่านค่าจริงจาก ESP32 ที่กำลังสตรีมอัปเดตอยู่ ณ วินาทีนั้นทันที 100%
+            db.ref('WiFi_Scan/current').once('value').then((snapshot) => {
+                if (!snapshot.exists()) {
+                    alert(`⚠️ ไม่พบข้อมูลจาก ESP32 กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและอัปโหลดโค้ดใหม่เรียบร้อยหรือไม่`);
+                    return;
+                }
 
                 const data = snapshot.val();
-                
-                // ตรวจสอบว่ามีค่าส่งเข้ามาจริง
-                if (data.rssi_24g === undefined && data.rssi_5g === undefined) return;
-
-                settled = true;
-                clearTimeout(timeoutId);
-                scanRef.off('value', onScanResult);
-
                 let rssiValue = (currentFreq === '2.4GHz')
                     ? (data.rssi_24g !== undefined && data.rssi_24g !== null ? Number(data.rssi_24g) : null)
                     : (data.rssi_5g !== undefined && data.rssi_5g !== null ? Number(data.rssi_5g) : null);
 
                 if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
-                    setDeviceStatus('⚠️ ไม่พบสัญญาณ', '#C62828');
-                    alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (${currentFreq === '2.4GHz' ? 'katin' : 'katin_5G'}) กรุณาตรวจสอบว่า ESP32 เสียบปลั๊กและอัปโหลดโค้ดตัวล่าสุดอยู่หรือไม่`);
+                    alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (${currentFreq === '2.4GHz' ? 'katin' : 'katin_5G'})`);
                     return;
                 }
-
-                setDeviceStatus('คลิกจุดบนแผนที่เพื่อสแกน', '#666');
 
                 const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
                 const safeFreq = currentFreq.replace('.', '_');
@@ -1680,21 +1656,9 @@
                 newRef.set(newPointData).then(() => {
                     db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
                 }).catch(err => console.log("Upload Failed:", err));
-            }
-
-            // 1. ลบค่าค้างเก่าใน Firebase ออกก่อนทุกครั้ง เพื่อป้องกันไม่ให้ดึงค่าเก่ามาใช้
-            db.ref('WiFi_Scan/current').remove().then(() => {
-                scanRef.on('value', onScanResult);
-
-                // 2. สั่ง ESP32 ให้สแกนสดทันที
-                return db.ref('ESP32_Command/action').set('TRIGGER_SCAN');
             }).catch(err => {
-                if (settled) return;
-                settled = true;
-                clearTimeout(timeoutId);
-                scanRef.off('value', onScanResult);
-                console.error("Trigger Scan Failed:", err);
-                alert("เกิดข้อผิดพลาดในการส่งคำสั่งสแกนไปยัง ESP32");
+                console.error("Instant Read Failed:", err);
+                alert("เกิดข้อผิดพลาดในการอ่านค่าจาก ESP32");
             });
         }
 
