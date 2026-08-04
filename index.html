@@ -57,6 +57,10 @@
             background-color: #E74C3C;
         }
 
+        .dot-gray {
+            background-color: #7F8C8D;
+        }
+
         .legend-text {
             font-size: 14px;
             text-align: left;
@@ -93,6 +97,33 @@
             background-color: #6C757D;
             color: white;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ---------------- Toast Notification ---------------- */
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
         }
 
         .btn-install {
@@ -1243,6 +1274,9 @@
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="color-dot dot-red"></div><span style="font-size: 13px;">อ่อน (ต่ำกว่า -70 dBm)</span>
             </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="color-dot dot-gray"></div><span style="font-size: 13px;">ไม่พบสัญญาณ (อับสัญญาณ)</span>
+            </div>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
@@ -1563,7 +1597,7 @@
                 document.getElementById('lab-plan').style.display = 'block';
                 mapContainer.style.width = '810px';
                 mapContainer.style.height = '1560px';
-                if (isGridVisible) mapContainer.style.backgroundSize = '100px 100px';
+                if (isGridVisible) mapContainer.style.backgroundSize = '150px 150px';
             }
 
             loadHeatmapData();
@@ -1580,6 +1614,7 @@
         }
 
         function getColorByRssi(rssi) {
+            if (rssi <= -100) return 'radial-gradient(circle, rgba(127,140,141,0.8) 0%, rgba(127,140,141,0) 70%)';
             if (rssi >= -50) return 'radial-gradient(circle, rgba(46,204,113,0.8) 0%, rgba(46,204,113,0) 70%)';
             if (rssi >= -70) return 'radial-gradient(circle, rgba(241,196,15,0.8) 0%, rgba(241,196,15,0) 70%)';
             return 'radial-gradient(circle, rgba(231,76,60,0.8) 0%, rgba(231,76,60,0) 70%)';
@@ -1620,41 +1655,102 @@
             }
         }
 
+        let lastDataReceivedTime = 0;
+        let lastServerTimestamp = 0;
+        const STALE_DATA_THRESHOLD_SEC = 4; // เกิน 4 วินาทีถือว่าข้อมูลเก่า (รอ ESP32 สแกนรอบใหม่)
+
+        function showToast(message, type = 'warning', duration = 3500) {
+            let toast = document.getElementById('toast-notification');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-notification';
+                toast.className = 'toast-notification';
+                document.body.appendChild(toast);
+            }
+            const icon = type === 'error' ? '❌' : (type === 'warning' ? '⏳' : '✅');
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            toast.style.backgroundColor = type === 'error' ? '#E74C3C' : (type === 'warning' ? '#F39C12' : '#2ECC71');
+            toast.classList.add('show');
+
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        function getDataAgeInSeconds() {
+            if (lastDataReceivedTime === 0) return 999;
+            return Math.floor((Date.now() - lastDataReceivedTime) / 1000);
+        }
+
+        function updateFreshnessStatus() {
+            const age = getDataAgeInSeconds();
+            const badge = document.getElementById('device-status-badge');
+            if (!badge) return;
+
+            if (lastDataReceivedTime === 0) {
+                badge.innerText = "🔴 กำลังรอการเชื่อมต่อกับ ESP32...";
+                badge.style.backgroundColor = "#FFF0F0";
+                badge.style.color = "#E03131";
+            } else if (age <= 3) {
+                badge.innerText = `🟢 สดใหม่ พร้อมบันทึก (${age} วิที่แล้ว)`;
+                badge.style.backgroundColor = "#E6FCF5";
+                badge.style.color = "#0CA678";
+            } else if (age <= 6) {
+                badge.innerText = `🟡 กำลังสแกนรอบใหม่... (${age} วิที่แล้ว)`;
+                badge.style.backgroundColor = "#FFF9DB";
+                badge.style.color = "#F59F00";
+            } else {
+                badge.innerText = `🔴 ข้อมูลไม่อัปเดต / ESP32 ค้าง (${age} วิที่แล้ว)`;
+                badge.style.backgroundColor = "#FFE3E3";
+                badge.style.color = "#E03131";
+            }
+        }
+
+        setInterval(updateFreshnessStatus, 1000);
+
         function addPoint(event) {
             if (isClearSelectedModeActive) return;
+
+            // ตรวจสอบความสดใหม่ของข้อมูล (Data Freshness Check)
+            const age = getDataAgeInSeconds();
+            if (age > STALE_DATA_THRESHOLD_SEC) {
+                showToast(`⏳ ข้อมูลจาก ESP32 เก่าเกินไป (${age} วินาทีที่แล้ว) กรุณารอสักครู่ให้ ESP32 สแกนรอบใหม่ก่อนวางจุด!`, 'warning', 3500);
+                return;
+            }
 
             const container = document.getElementById('map-container');
             const rect = container.getBoundingClientRect();
             const x = Math.round(event.clientX - rect.left);
             const y = Math.round(event.clientY - rect.top);
 
-            // อ่านค่าจริงจาก ESP32 ที่กำลังสตรีมอัปเดตอยู่ ณ วินาทีนั้นทันที 100%
+            // อ่านค่าจริงจาก ESP32 (ทั้ง 2.4G และ 5G) แล้วบันทึกพร้อมกันในการกดเพียงครั้งเดียว
             db.ref('WiFi_Scan/current').once('value').then((snapshot) => {
                 const data = snapshot.exists() ? snapshot.val() : {};
-                
-                let rssiValue = null;
-                if (currentFreq === '2.4GHz') {
-                    rssiValue = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? Number(data.rssi_24g) : currentRssi24;
-                } else {
-                    rssiValue = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? Number(data.rssi_5g) : currentRssi5;
-                }
 
-                if (rssiValue === null || isNaN(rssiValue) || rssiValue <= -100) {
-                    alert(`⚠️ สแกนไม่พบสัญญาณ ${currentFreq} สำหรับ Wi-Fi เป้าหมาย (${currentFreq === '2.4GHz' ? 'katin' : 'katin_5G'}) กรุณาตรวจสอบว่า ESP32 แฟลชโค้ดใหม่และต่อ Wi-Fi อยู่หรือไม่`);
-                    return;
-                }
+                const r24 = (data.rssi_24g !== undefined && data.rssi_24g !== null && !isNaN(Number(data.rssi_24g))) ? Number(data.rssi_24g) : (currentRssi24 !== null ? currentRssi24 : -100);
+                const r5 = (data.rssi_5g !== undefined && data.rssi_5g !== null && !isNaN(Number(data.rssi_5g))) ? Number(data.rssi_5g) : (currentRssi5 !== null ? currentRssi5 : -100);
 
-                const newPointData = { x: x, y: y, rssi: rssiValue, timestamp: Date.now() };
-                const safeFreq = currentFreq.replace('.', '_');
-                const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
+                const timestamp = Date.now();
+                const point24Data = { x: x, y: y, rssi: r24, timestamp: timestamp };
+                const point5Data = { x: x, y: y, rssi: r5, timestamp: timestamp };
 
-                const newRef = db.ref(dbPath).push();
-                const key = newRef.key;
+                const path24 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/2_4GHz`;
+                const path5 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/5GHz`;
 
-                processIncomingData(newPointData, key);
-                newRef.set(newPointData).then(() => {
-                    db.ref(`Profiles/${currentProfile}/updated_at`).set(Date.now());
-                }).catch(err => console.log("Upload Failed:", err));
+                const newRef24 = db.ref(path24).push();
+                const key = newRef24.key;
+                const newRef5 = db.ref(`${path5}/${key}`);
+
+                // อัปเดตการแสดงผลบนหน้าจอทันทีตามโหมดคลื่นความถี่ที่เลือกดูอยู่ขณะนั้น
+                const activeData = (currentFreq === '2.4GHz') ? point24Data : point5Data;
+                processIncomingData(activeData, key);
+
+                Promise.all([
+                    newRef24.set(point24Data),
+                    newRef5.set(point5Data),
+                    db.ref(`Profiles/${currentProfile}/updated_at`).set(timestamp)
+                ]).catch(err => console.log("Dual Band Upload Failed:", err));
             }).catch(err => {
                 console.error("Instant Read Failed:", err);
                 alert("เกิดข้อผิดพลาดในการอ่านค่าจาก ESP32");
@@ -1662,7 +1758,22 @@
         }
 
         function processIncomingData(data, key) {
-            let signalStatus = data.rssi >= -50 ? 'ดีมาก' : (data.rssi >= -70 ? 'ปานกลาง' : 'อ่อน');
+            let signalStatus = 'ไม่พบสัญญาณ';
+            let colorStyle = '#7F8C8D';
+            if (data.rssi <= -100) {
+                signalStatus = 'ไม่พบสัญญาณ';
+                colorStyle = '#7F8C8D';
+            } else if (data.rssi >= -50) {
+                signalStatus = 'ดีมาก';
+                colorStyle = '#2ECC71';
+            } else if (data.rssi >= -70) {
+                signalStatus = 'ปานกลาง';
+                colorStyle = '#F1C40F';
+            } else {
+                signalStatus = 'อ่อน';
+                colorStyle = '#E74C3C';
+            }
+
             const domRefs = drawPoint(data.x, data.y, data.rssi, key);
             const dateStr = new Date(data.timestamp).toLocaleTimeString('th-TH');
             const tableBody = document.getElementById('table-body');
@@ -1673,7 +1784,7 @@
                 <td>${currentLocation}</td>
                 <td>${currentFreq}</td>
                 <td>(${data.x}, ${data.y})</td>
-                <td style="color:${data.rssi >= -50 ? '#2ECC71' : data.rssi >= -70 ? '#F1C40F' : '#E74C3C'}; font-weight:bold;">${data.rssi} dBm (${signalStatus})</td>
+                <td style="color:${colorStyle}; font-weight:bold;">${data.rssi <= -100 ? '-100 dBm (ไม่พบสัญญาณ)' : `${data.rssi} dBm (${signalStatus})`}</td>
             </tr>`;
             tableBody.insertAdjacentHTML('afterbegin', row);
 
@@ -2175,7 +2286,7 @@
             const btnGrid = document.getElementById('btn-grid');
             isGridVisible = !isGridVisible;
             if (isGridVisible) {
-                const gridSize = (currentLocation === 'Room1') ? '60px' : '100px';
+                const gridSize = (currentLocation === 'Room1') ? '60px' : '150px';
                 mapContainer.style.backgroundImage = 'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
                 mapContainer.style.backgroundSize = `${gridSize} ${gridSize}`;
                 btnGrid.innerText = 'ปิดตาราง Grid 🔲';
@@ -2296,11 +2407,16 @@
                 return;
             }
             const lastPoint = activePoints[activePoints.length - 1];
-            const safeFreq = currentFreq.replace('.', '_');
-            const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}/${lastPoint.key}`;
+            const key = lastPoint.key;
 
-            db.ref(dbPath).remove().then(() => {
-                removePointLocally(lastPoint.key);
+            const path24 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/2_4GHz/${key}`;
+            const path5 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/5GHz/${key}`;
+
+            Promise.all([
+                db.ref(path24).remove(),
+                db.ref(path5).remove()
+            ]).then(() => {
+                removePointLocally(key);
             }).catch(err => {
                 console.log("Undo Failed:", err);
                 alert('เกิดข้อผิดพลาดในการย้อนกลับ');
@@ -2373,15 +2489,15 @@
         function deleteSelectedPoints() {
             const count = selectedPointKeys.size;
             if (confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบจุดวัดสัญญาณที่เลือกทั้ง ${count} จุดนี้?`)) {
-                const safeFreq = currentFreq.replace('.', '_');
                 const deletePromises = [];
 
                 selectedPointKeys.forEach(key => {
-                    const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}/${key}`;
-                    const promise = db.ref(dbPath).remove().then(() => {
-                        removePointLocally(key);
-                    });
-                    deletePromises.push(promise);
+                    const path24 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/2_4GHz/${key}`;
+                    const path5 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/5GHz/${key}`;
+
+                    deletePromises.push(db.ref(path24).remove());
+                    deletePromises.push(db.ref(path5).remove());
+                    removePointLocally(key);
                 });
 
                 Promise.all(deletePromises).then(() => {
@@ -2403,11 +2519,14 @@
                 alert('ไม่มีจุดสัญญาณในมุมมองนี้ให้ลบ');
                 return;
             }
-            if (confirm("⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบจุดวัดสัญญาณทั้งหมด ในมุมมองปัจจุบันนี้? (การดำเนินการนี้จะไม่สามารถกู้คืนได้)")) {
-                const safeFreq = currentFreq.replace('.', '_');
-                const dbPath = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/${safeFreq}`;
+            if (confirm("⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบจุดวัดสัญญาณทั้งหมด (ทั้ง 2.4GHz และ 5GHz) ในมุมมองนี้? (การดำเนินการนี้จะไม่สามารถกู้คืนได้)")) {
+                const path24 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/2_4GHz`;
+                const path5 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/5GHz`;
 
-                db.ref(dbPath).remove().then(() => {
+                Promise.all([
+                    db.ref(path24).remove(),
+                    db.ref(path5).remove()
+                ]).then(() => {
                     document.getElementById('heatmap-layer').innerHTML = '';
                     document.getElementById('table-body').innerHTML = '';
                     activePoints = [];
@@ -2423,8 +2542,13 @@
         db.ref('WiFi_Scan/current').on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
+                lastDataReceivedTime = Date.now();
+                if (data.timestamp) lastServerTimestamp = Number(data.timestamp);
+
                 currentRssi24 = (data.rssi_24g !== undefined && data.rssi_24g !== null) ? data.rssi_24g : null;
                 currentRssi5 = (data.rssi_5g !== undefined && data.rssi_5g !== null) ? data.rssi_5g : null;
+
+                updateFreshnessStatus();
 
                 if (currentRssi24 !== null && currentRssi24 > -100) {
                     document.getElementById('val-24g').innerText = currentRssi24 + " dBm";
