@@ -2583,28 +2583,36 @@
            - Old points that were stored in pixels are still displayed correctly
            ========================================================== */
         const PX_PER_METER = 100;
-        const GRID_METERS = 1.5;
         const SNAP_TOLERANCE = 0.25; // meters: snap only within ±25 cm
-        const GRID_PX = PX_PER_METER * GRID_METERS; // 150 px = 1.5 m
         const ROOM_CONFIG = {
             Room1: {
                 name: 'ห้องเรียน T-301',
                 widthMeters: 8.40,
                 heightMeters: 10.35,
                 widthPx: 840,
-                heightPx: 1035
+                heightPx: 1035,
+                gridMeters: 2.40 // 2.4 m grid for Classroom
             },
             Lab1: {
                 name: 'ห้องแล็บ Huawei',
                 widthMeters: 8.10,
                 heightMeters: 15.60,
                 widthPx: 810,
-                heightPx: 1560
+                heightPx: 1560,
+                gridMeters: 1.50 // 1.5 m grid for Lab
             }
         };
 
         function getRoomConfig(loc = currentLocation) {
             return ROOM_CONFIG[loc] || ROOM_CONFIG.Room1;
+        }
+
+        function getGridMeters(loc = currentLocation) {
+            return getRoomConfig(loc).gridMeters;
+        }
+
+        function getGridPx(loc = currentLocation) {
+            return PX_PER_METER * getGridMeters(loc);
         }
 
         function meterToPixelX(xMeters) {
@@ -2623,11 +2631,12 @@
             return Number((Number(yPx) / PX_PER_METER).toFixed(2));
         }
 
-        // Snap one coordinate only when it is sufficiently close to a 1.5 m grid line.
+        // Snap one coordinate only when it is sufficiently close to a grid line (2.4m for Room1, 1.5m for Lab1).
         // Returns both the final coordinate and whether snapping was applied.
-        function snapCoordinateWithTolerance(valueMeters) {
+        function snapCoordinateWithTolerance(valueMeters, loc = currentLocation) {
             const raw = Number(valueMeters);
-            const nearestGrid = Math.round(raw / GRID_METERS) * GRID_METERS;
+            const gridMeters = getGridMeters(loc);
+            const nearestGrid = Math.round(raw / gridMeters) * gridMeters;
             const delta = Math.abs(raw - nearestGrid);
 
             if (delta <= SNAP_TOLERANCE + 1e-9) {
@@ -2702,8 +2711,12 @@
             mapContainer.style.width = `${cfg.widthPx}px`;
             mapContainer.style.height = `${cfg.heightPx}px`;
 
+            const btnGrid = document.getElementById('btn-grid');
             if (isGridVisible) {
-                mapContainer.style.backgroundSize = `${GRID_PX}px ${GRID_PX}px`;
+                const gridPx = getGridPx(loc);
+                const gridMeters = getGridMeters(loc);
+                mapContainer.style.backgroundSize = `${gridPx}px ${gridPx}px`;
+                if (btnGrid) btnGrid.innerText = `ปิดตาราง Grid 🔲 (1 ช่อง = ${gridMeters} m)`;
             }
 
             if (currentInstallMode === 'Compare') {
@@ -2719,11 +2732,13 @@
             isGridVisible = !isGridVisible;
 
             if (isGridVisible) {
+                const gridPx = getGridPx(currentLocation);
+                const gridMeters = getGridMeters(currentLocation);
                 mapContainer.style.backgroundImage =
                     'linear-gradient(to right, #e0e0e0 1px, transparent 1px), ' +
                     'linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
-                mapContainer.style.backgroundSize = `${GRID_PX}px ${GRID_PX}px`;
-                btnGrid.innerText = 'ปิดตาราง Grid 🔲 (1 ช่อง = 1.5 m)';
+                mapContainer.style.backgroundSize = `${gridPx}px ${gridPx}px`;
+                btnGrid.innerText = `ปิดตาราง Grid 🔲 (1 ช่อง = ${gridMeters} m)`;
                 btnGrid.classList.add('active');
             } else {
                 mapContainer.style.backgroundImage = 'none';
@@ -2820,7 +2835,7 @@
                     snapX: snapX.snapped,
                     snapY: snapY.snapped,
                     snapTolerance: SNAP_TOLERANCE,
-                    gridMeters: GRID_METERS,
+                    gridMeters: getGridMeters(currentLocation),
                     unit: 'm'
                 };
                 const point24Data = { ...commonPositionData, rssi: r24, timestamp };
