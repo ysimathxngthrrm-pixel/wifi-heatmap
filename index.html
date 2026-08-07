@@ -1487,7 +1487,9 @@
                     <th>สถานะ</th>
                     <th>สถานที่</th>
                     <th>คลื่นความถี่</th>
-                    <th>พิกัด (X, Y)</th>
+                    <th>Used Position (m)</th>
+                    <th>Raw Position (m)</th>
+                    <th>Snap Status</th>
                     <th>ความแรงสัญญาณ (RSSI)</th>
                 </tr>
             </thead>
@@ -2568,9 +2570,607 @@
             }
         });
 
+
+        /* ==========================================================
+           ROOM DIMENSION + METER COORDINATE PATCH
+           - Room1 keeps the measured horizontal layout: 8.40 x 10.35 m
+           - Lab1 keeps the real deep orientation already used by this page: 8.10 x 15.60 m
+           - 100 px = 1 m for both rooms
+           - New Firebase points are stored in meters
+           - Grid spacing is 1.5 m
+           - Snap is applied only when the clicked position is within ±0.25 m of the nearest grid line on each axis
+           - Raw clicked position is preserved in Firebase as rawX/rawY
+           - Old points that were stored in pixels are still displayed correctly
+           ========================================================== */
+        const PX_PER_METER = 100;
+        const GRID_METERS = 1.5;
+        const SNAP_TOLERANCE = 0.25; // meters: snap only within ±25 cm
+        const GRID_PX = PX_PER_METER * GRID_METERS; // 150 px = 1.5 m
+        const ROOM_CONFIG = {
+            Room1: {
+                name: 'ห้องเรียน T-301',
+                widthMeters: 8.40,
+                heightMeters: 10.35,
+                widthPx: 840,
+                heightPx: 1035
+            },
+            Lab1: {
+                name: 'ห้องแล็บ Huawei',
+                widthMeters: 8.10,
+                heightMeters: 15.60,
+                widthPx: 810,
+                heightPx: 1560
+            }
+        };
+
+        function getRoomConfig(loc = currentLocation) {
+            return ROOM_CONFIG[loc] || ROOM_CONFIG.Room1;
+        }
+
+        function meterToPixelX(xMeters) {
+            return Number(xMeters) * PX_PER_METER;
+        }
+
+        function meterToPixelY(yMeters) {
+            return Number(yMeters) * PX_PER_METER;
+        }
+
+        function pixelToMeterX(xPx) {
+            return Number((Number(xPx) / PX_PER_METER).toFixed(2));
+        }
+
+        function pixelToMeterY(yPx) {
+            return Number((Number(yPx) / PX_PER_METER).toFixed(2));
+        }
+
+        // Snap one coordinate only when it is sufficiently close to a 1.5 m grid line.
+        // Returns both the final coordinate and whether snapping was applied.
+        function snapCoordinateWithTolerance(valueMeters) {
+            const raw = Number(valueMeters);
+            const nearestGrid = Math.round(raw / GRID_METERS) * GRID_METERS;
+            const delta = Math.abs(raw - nearestGrid);
+
+            if (delta <= SNAP_TOLERANCE + 1e-9) {
+                return {
+                    value: Number(nearestGrid.toFixed(2)),
+                    snapped: true,
+                    delta: Number(delta.toFixed(2))
+                };
+            }
+
+            return {
+                value: Number(raw.toFixed(2)),
+                snapped: false,
+                delta: Number(delta.toFixed(2))
+            };
+        }
+
+        // รองรับข้อมูลเก่าที่เคยเก็บ x,y เป็น pixel ใน Firebase
+        function normalizeStoredPoint(point, loc = currentLocation) {
+            if (!point) return point;
+            const cfg = getRoomConfig(loc);
+            let x = Number(point.x);
+            let y = Number(point.y);
+
+            if (!Number.isFinite(x)) x = 0;
+            if (!Number.isFinite(y)) y = 0;
+
+            // ค่าเก่าแบบ pixel จะมีค่ามากกว่าขนาดห้องหน่วยเมตรอย่างชัดเจน
+            const looksLikePixels = x > cfg.widthMeters + 1 || y > cfg.heightMeters + 1;
+            if (looksLikePixels) {
+                x = pixelToMeterX(x);
+                y = pixelToMeterY(y);
+            }
+
+            let rawX = Number(point.rawX);
+            let rawY = Number(point.rawY);
+            if (!Number.isFinite(rawX)) rawX = x;
+            if (!Number.isFinite(rawY)) rawY = y;
+
+            // If rawX/rawY came from an older pixel-based record, normalize those too.
+            if (rawX > cfg.widthMeters + 1) rawX = pixelToMeterX(rawX);
+            if (rawY > cfg.heightMeters + 1) rawY = pixelToMeterY(rawY);
+
+            return Object.assign({}, point, {
+                x: Number(x.toFixed(2)),
+                y: Number(y.toFixed(2)),
+                rawX: Number(rawX.toFixed(2)),
+                rawY: Number(rawY.toFixed(2)),
+                snapApplied: point.snapApplied === true
+            });
+        }
+
+        setLocation = function (loc) {
+            disableClearSelectedMode();
+            currentLocation = loc;
+            const mapContainer = document.getElementById('map-container');
+            const cfg = getRoomConfig(loc);
+
+            document.getElementById('loc-room1').classList.remove('active');
+            document.getElementById('loc-lab1').classList.remove('active');
+
+            if (loc === 'Room1') {
+                document.getElementById('loc-room1').classList.add('active');
+                document.getElementById('lab-plan').style.display = 'none';
+                document.getElementById('classroom-plan').style.display = 'block';
+            } else {
+                document.getElementById('loc-lab1').classList.add('active');
+                document.getElementById('classroom-plan').style.display = 'none';
+                document.getElementById('lab-plan').style.display = 'block';
+            }
+
+            mapContainer.style.width = `${cfg.widthPx}px`;
+            mapContainer.style.height = `${cfg.heightPx}px`;
+
+            if (isGridVisible) {
+                mapContainer.style.backgroundSize = `${GRID_PX}px ${GRID_PX}px`;
+            }
+
+            if (currentInstallMode === 'Compare') {
+                loadCompareHeatmapData();
+            } else {
+                loadHeatmapData();
+            }
+        };
+
+        toggleGrid = function () {
+            const mapContainer = document.getElementById('map-container');
+            const btnGrid = document.getElementById('btn-grid');
+            isGridVisible = !isGridVisible;
+
+            if (isGridVisible) {
+                mapContainer.style.backgroundImage =
+                    'linear-gradient(to right, #e0e0e0 1px, transparent 1px), ' +
+                    'linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
+                mapContainer.style.backgroundSize = `${GRID_PX}px ${GRID_PX}px`;
+                btnGrid.innerText = 'ปิดตาราง Grid 🔲 (1 ช่อง = 1.5 m)';
+                btnGrid.classList.add('active');
+            } else {
+                mapContainer.style.backgroundImage = 'none';
+                btnGrid.innerText = 'เปิดตาราง Grid 🔳';
+                btnGrid.classList.remove('active');
+            }
+        };
+
+        drawPoint = function (x, y, rssi, key) {
+            const p = normalizeStoredPoint({ x, y, rssi }, currentLocation);
+            const container = document.getElementById('heatmap-layer');
+            const pixelX = meterToPixelX(p.x);
+            const pixelY = meterToPixelY(p.y);
+
+            const blurCircle = document.createElement('div');
+            blurCircle.className = 'heatmap-blur';
+            blurCircle.style.left = `${pixelX}px`;
+            blurCircle.style.top = `${pixelY}px`;
+            blurCircle.style.background = getColorByRssi(rssi);
+            container.appendChild(blurCircle);
+
+            const dot = document.createElement('div');
+            dot.className = 'heatmap-dot';
+            dot.style.left = `${pixelX}px`;
+            dot.style.top = `${pixelY}px`;
+            dot.dataset.key = key;
+
+            dot.onclick = (e) => {
+                if (isClearSelectedModeActive) {
+                    e.stopPropagation();
+                    togglePointSelection(key, dot);
+                }
+            };
+            container.appendChild(dot);
+
+            return { blur: blurCircle, dot: dot };
+        };
+
+        addPoint = function (event) {
+            if (isClearSelectedModeActive) return;
+
+            const age = getDataAgeInSeconds();
+            if (age > STALE_DATA_THRESHOLD_SEC) {
+                showToast(`⏳ ข้อมูลจาก ESP32 เก่าเกินไป (${age} วินาทีที่แล้ว) กรุณารอสักครู่ให้ ESP32 สแกนรอบใหม่ก่อนวางจุด!`, 'warning', 3500);
+                return;
+            }
+
+            const container = document.getElementById('map-container');
+            const rect = container.getBoundingClientRect();
+            const cfg = getRoomConfig();
+
+            // Raw position = ตำแหน่งที่ผู้ใช้คลิกจริงบนแปลน (หน่วยเมตร)
+            let rawX = pixelToMeterX(event.clientX - rect.left);
+            let rawY = pixelToMeterY(event.clientY - rect.top);
+
+            // กัน Raw position ไม่ให้เกินขอบเขตจริงของห้อง
+            rawX = Math.max(0, Math.min(cfg.widthMeters, rawX));
+            rawY = Math.max(0, Math.min(cfg.heightMeters, rawY));
+            rawX = Number(rawX.toFixed(2));
+            rawY = Number(rawY.toFixed(2));
+
+            // TOLERANCE SNAP: ดูดเฉพาะแกนที่อยู่ใกล้เส้น Grid 1.5 m ไม่เกิน ±0.25 m
+            // ถ้าอยู่ไกลกว่า 0.25 m จะเก็บตำแหน่งจริงของแกนนั้นไว้ ไม่บังคับ Snap
+            const snapX = snapCoordinateWithTolerance(rawX);
+            const snapY = snapCoordinateWithTolerance(rawY);
+
+            let x = snapX.value;
+            let y = snapY.value;
+
+            // กันพิกัดหลัง Snap ไม่ให้เกินขอบห้อง
+            x = Math.max(0, Math.min(cfg.widthMeters, x));
+            y = Math.max(0, Math.min(cfg.heightMeters, y));
+            x = Number(x.toFixed(2));
+            y = Number(y.toFixed(2));
+
+            const snapApplied = snapX.snapped || snapY.snapped;
+
+            db.ref('WiFi_Scan/current').once('value').then((snapshot) => {
+                const data = snapshot.exists() ? snapshot.val() : {};
+
+                const r24 = (data.rssi_24g !== undefined && data.rssi_24g !== null && !isNaN(Number(data.rssi_24g)))
+                    ? Number(data.rssi_24g)
+                    : (currentRssi24 !== null ? currentRssi24 : -100);
+
+                const r5 = (data.rssi_5g !== undefined && data.rssi_5g !== null && !isNaN(Number(data.rssi_5g)))
+                    ? Number(data.rssi_5g)
+                    : (currentRssi5 !== null ? currentRssi5 : -100);
+
+                const timestamp = Date.now();
+                const commonPositionData = {
+                    x, y,                 // พิกัดที่ใช้วาด/เปรียบเทียบ หลังใช้ tolerance snap
+                    rawX, rawY,           // พิกัดที่คลิกจริงก่อน snap
+                    snapApplied,
+                    snapX: snapX.snapped,
+                    snapY: snapY.snapped,
+                    snapTolerance: SNAP_TOLERANCE,
+                    gridMeters: GRID_METERS,
+                    unit: 'm'
+                };
+                const point24Data = { ...commonPositionData, rssi: r24, timestamp };
+                const point5Data = { ...commonPositionData, rssi: r5, timestamp };
+
+                const path24 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/2_4GHz`;
+                const path5 = `HeatmapData/${currentProfile}/${currentInstallMode}/${currentLocation}/5GHz`;
+
+                const newRef24 = db.ref(path24).push();
+                const key = newRef24.key;
+                const newRef5 = db.ref(`${path5}/${key}`);
+
+                const activeData = (currentFreq === '2.4GHz') ? point24Data : point5Data;
+                processIncomingData(activeData, key);
+
+                Promise.all([
+                    newRef24.set(point24Data),
+                    newRef5.set(point5Data),
+                    db.ref(`Profiles/${currentProfile}/updated_at`).set(timestamp)
+                ]).catch(err => console.log('Dual Band Upload Failed:', err));
+            }).catch(err => {
+                console.error('Instant Read Failed:', err);
+                alert('เกิดข้อผิดพลาดในการอ่านค่าจาก ESP32');
+            });
+        };
+
+        processIncomingData = function (rawData, key) {
+            const data = normalizeStoredPoint(rawData, currentLocation);
+            let signalStatus = 'ไม่พบสัญญาณ';
+            let colorStyle = '#7F8C8D';
+
+            if (data.rssi <= -100) {
+                signalStatus = 'ไม่พบสัญญาณ';
+                colorStyle = '#7F8C8D';
+            } else if (data.rssi >= -50) {
+                signalStatus = 'ดีมาก';
+                colorStyle = '#2ECC71';
+            } else if (data.rssi >= -70) {
+                signalStatus = 'ปานกลาง';
+                colorStyle = '#F1C40F';
+            } else {
+                signalStatus = 'อ่อน';
+                colorStyle = '#E74C3C';
+            }
+
+            const domRefs = drawPoint(data.x, data.y, data.rssi, key);
+            const dateStr = new Date(data.timestamp).toLocaleTimeString('th-TH');
+            const tableBody = document.getElementById('table-body');
+            const rowId = `row-${key}`;
+            const xText = Number(data.x).toFixed(2);
+            const yText = Number(data.y).toFixed(2);
+            // Backward-compatible fallback: older records may not have rawX/rawY.
+            const rawXValue = (data.rawX !== undefined && data.rawX !== null) ? data.rawX : data.x;
+            const rawYValue = (data.rawY !== undefined && data.rawY !== null) ? data.rawY : data.y;
+            const rawXText = Number(rawXValue).toFixed(2);
+            const rawYText = Number(rawYValue).toFixed(2);
+            const snapApplied = data.snapApplied === true;
+            const snapText = snapApplied ? 'SNAP ±0.25 m' : 'RAW / ไม่ Snap';
+            const snapColor = snapApplied ? '#2B7A78' : '#E67E22';
+
+            const row = `<tr id="${rowId}">
+                <td>${dateStr}</td>
+                <td>${currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง'}</td>
+                <td>${currentLocation}</td>
+                <td>${currentFreq}</td>
+                <td style="font-weight:bold; color:#2B7A78; white-space:nowrap;">(${xText}, ${yText})</td>
+                <td style="color:#666; white-space:nowrap;">(${rawXText}, ${rawYText})</td>
+                <td style="font-weight:bold; color:${snapColor}; white-space:nowrap;">${snapText}</td>
+                <td style="color:${colorStyle}; font-weight:bold;">${data.rssi <= -100 ? '-100 dBm (ไม่พบสัญญาณ)' : `${data.rssi} dBm (${signalStatus})`}</td>
+            </tr>`;
+            tableBody.insertAdjacentHTML('afterbegin', row);
+
+            activePoints.push({
+                key,
+                x: data.x,
+                y: data.y,
+                rssi: data.rssi,
+                timestamp: data.timestamp,
+                domBlur: domRefs.blur,
+                domDot: domRefs.dot,
+                rowId,
+                tableRowData: [
+                    dateStr,
+                    currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง',
+                    currentLocation,
+                    currentFreq,
+                    xText,
+                    yText,
+                    rawXText,
+                    rawYText,
+                    data.snapApplied === true ? 'SNAP ±0.25 m' : 'RAW / ไม่ Snap',
+                    data.rssi,
+                    signalStatus
+                ]
+            });
+            updateTableDataArray();
+        };
+
+        drawComparePoint = function (x, y, rssi, targetContainer, isBefore, pointObj) {
+            if (!targetContainer) return;
+            const p = normalizeStoredPoint(pointObj || { x, y, rssi }, currentLocation);
+            const pixelX = meterToPixelX(p.x);
+            const pixelY = meterToPixelY(p.y);
+
+            const blurCircle = document.createElement('div');
+            blurCircle.className = `heatmap-blur ${isBefore ? 'blur-before' : 'blur-after'}`;
+            blurCircle.style.left = `${pixelX}px`;
+            blurCircle.style.top = `${pixelY}px`;
+            targetContainer.appendChild(blurCircle);
+
+            const dot = document.createElement('div');
+            dot.className = `heatmap-dot ${isBefore ? 'dot-before-marker' : 'dot-after-marker'}`;
+            dot.style.left = `${pixelX}px`;
+            dot.style.top = `${pixelY}px`;
+            dot.style.pointerEvents = 'auto';
+            dot.style.cursor = 'pointer';
+
+            const pData = Object.assign({}, p, { isBefore });
+            dot.onclick = (e) => {
+                e.stopPropagation();
+                triggerInspectForPoint(pData, e);
+            };
+            targetContainer.appendChild(dot);
+        };
+
+        renderSplitViewMaps = function () {
+            const splitBefore = document.getElementById('split-map-before-content');
+            const splitAfter = document.getElementById('split-map-after-content');
+            const activePlanId = (currentLocation === 'Room1') ? 'classroom-plan' : 'lab-plan';
+            const activePlanEl = document.getElementById(activePlanId);
+            if (!splitBefore || !splitAfter || !activePlanEl) return;
+
+            const cfg = getRoomConfig();
+            const planWidth = cfg.widthPx;
+            const planHeight = cfg.heightPx;
+
+            const maxPreviewWidth = 440;
+            const maxPreviewHeight = 620;
+            const scale = Math.min(maxPreviewWidth / planWidth, maxPreviewHeight / planHeight, 0.60);
+            const scaledW = Math.round(planWidth * scale);
+            const scaledH = Math.round(planHeight * scale);
+
+            const boxBefore = document.getElementById('split-box-before');
+            const boxAfter = document.getElementById('split-box-after');
+
+            [boxBefore, boxAfter].forEach((box, idx) => {
+                if (!box) return;
+                box.style.width = `${scaledW}px`;
+                box.style.height = `${scaledH}px`;
+                box.style.cursor = 'pointer';
+                box.dataset.compareScale = String(scale);
+                box.onclick = (e) => handleSplitMapClick(e, idx === 0 ? 'Before' : 'After');
+            });
+
+            const planHtml = `
+                <div style="width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; position:relative; background-color:#fff;">
+                    ${activePlanEl.outerHTML}
+                </div>`;
+
+            splitBefore.innerHTML = planHtml;
+            const planInBefore = splitBefore.querySelector('#' + activePlanId);
+            if (planInBefore) planInBefore.style.display = 'block';
+
+            const beforeLayer = document.createElement('div');
+            beforeLayer.style.cssText = `position:absolute; top:0; left:0; width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; pointer-events:none;`;
+            compareBeforeData.forEach(raw => {
+                const p = normalizeStoredPoint(raw, currentLocation);
+                drawComparePoint(p.x, p.y, p.rssi, beforeLayer, true, p);
+            });
+            splitBefore.appendChild(beforeLayer);
+
+            splitAfter.innerHTML = planHtml;
+            const planInAfter = splitAfter.querySelector('#' + activePlanId);
+            if (planInAfter) planInAfter.style.display = 'block';
+
+            const afterLayer = document.createElement('div');
+            afterLayer.style.cssText = `position:absolute; top:0; left:0; width:${planWidth}px; height:${planHeight}px; transform:scale(${scale}); transform-origin:top left; pointer-events:none;`;
+            compareAfterData.forEach(raw => {
+                const p = normalizeStoredPoint(raw, currentLocation);
+                drawComparePoint(p.x, p.y, p.rssi, afterLayer, false, p);
+            });
+            splitAfter.appendChild(afterLayer);
+        };
+
+        handleSplitMapClick = function (event, clickedSide) {
+            const box = document.getElementById(clickedSide === 'Before' ? 'split-box-before' : 'split-box-after');
+            if (!box) return;
+            const rect = box.getBoundingClientRect();
+            const scale = Number(box.dataset.compareScale || 0.52);
+
+            const rawClickX = event.clientX - rect.left;
+            const rawClickY = event.clientY - rect.top;
+            const x = pixelToMeterX(rawClickX / scale);
+            const y = pixelToMeterY(rawClickY / scale);
+
+            const searchArr = (clickedSide === 'Before') ? compareBeforeData : compareAfterData;
+            let closest = null;
+            let minDist = Infinity;
+
+            searchArr.forEach(raw => {
+                const p = normalizeStoredPoint(raw, currentLocation);
+                const dist = Math.hypot(p.x - x, p.y - y);
+                if (dist <= 0.35 && dist < minDist) {
+                    minDist = dist;
+                    closest = p;
+                }
+            });
+
+            if (!closest) {
+                closeInspectPopup();
+                return;
+            }
+
+            closest.isBefore = (clickedSide === 'Before');
+            triggerInspectForPoint(closest, event);
+        };
+
+        inspectPointAt = function (event) {
+            const container = document.getElementById('map-container');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            const x = pixelToMeterX(event.clientX - rect.left);
+            const y = pixelToMeterY(event.clientY - rect.top);
+            const threshold = 0.40;
+
+            const findClosest = (arr) => {
+                let closest = null;
+                let minDist = Infinity;
+                arr.forEach(raw => {
+                    const p = normalizeStoredPoint(raw, currentLocation);
+                    const dist = Math.hypot(p.x - x, p.y - y);
+                    if (dist <= threshold && dist < minDist) {
+                        minDist = dist;
+                        closest = p;
+                    }
+                });
+                return closest;
+            };
+
+            const pointBefore = findClosest(compareBeforeData);
+            const pointAfter = findClosest(compareAfterData);
+            if (!pointBefore && !pointAfter) {
+                closeInspectPopup();
+                return;
+            }
+
+            const activePt = pointBefore || pointAfter;
+            activePt.isBefore = !!pointBefore;
+            triggerInspectForPoint(activePt, event);
+        };
+
+        triggerInspectForPoint = function (rawPoint, event) {
+            if (!rawPoint) return;
+            const p = normalizeStoredPoint(rawPoint, currentLocation);
+            const x = p.x;
+            const y = p.y;
+
+            const findClosePoint = (arr, targetX, targetY) => {
+                let closest = null;
+                let minDist = Infinity;
+                arr.forEach(raw => {
+                    const pt = normalizeStoredPoint(raw, currentLocation);
+                    const dist = Math.hypot(pt.x - targetX, pt.y - targetY);
+                    if (dist <= 0.25 && dist < minDist) {
+                        minDist = dist;
+                        closest = pt;
+                    }
+                });
+                return closest;
+            };
+
+            const matchBefore = findClosePoint(compareBeforeData, x, y);
+            const matchAfter = findClosePoint(compareAfterData, x, y);
+            const beforeRssi = matchBefore ? matchBefore.rssi : (rawPoint.isBefore === true ? rawPoint.rssi : null);
+            const afterRssi = matchAfter ? matchAfter.rssi : (rawPoint.isBefore === false ? rawPoint.rssi : null);
+
+            if (beforeRssi === null && afterRssi === null) {
+                closeInspectPopup();
+                return;
+            }
+
+            const popup = document.getElementById('inspect-popup');
+            popup.style.position = 'fixed';
+
+            let clickX = event && event.clientX;
+            let clickY = event && event.clientY;
+            if (!clickX || !clickY) {
+                const mapComp = document.getElementById('map-container');
+                if (mapComp) {
+                    const r = mapComp.getBoundingClientRect();
+                    clickX = r.left + meterToPixelX(x);
+                    clickY = r.top + meterToPixelY(y);
+                } else {
+                    clickX = window.innerWidth / 2;
+                    clickY = window.innerHeight / 2;
+                }
+            }
+
+            const popupWidth = 240;
+            const popupHeight = 150;
+            const padding = 15;
+            let posX = clickX;
+            let posY = clickY - 20;
+
+            if (posX + popupWidth / 2 > window.innerWidth - padding) posX = window.innerWidth - popupWidth / 2 - padding;
+            if (posX - popupWidth / 2 < padding) posX = popupWidth / 2 + padding;
+            if (posY - popupHeight < padding) posY = clickY + 30;
+            if (posY > window.innerHeight - padding) posY = window.innerHeight - padding;
+
+            popup.style.left = `${Math.round(posX)}px`;
+            popup.style.top = `${Math.round(posY)}px`;
+            document.getElementById('popup-coord').innerText = `📍 พิกัด (${x.toFixed(2)} m, ${y.toFixed(2)} m)`;
+            document.getElementById('popup-before-rssi').innerText = beforeRssi !== null ? `${beforeRssi} dBm` : 'ไม่มีข้อมูล';
+            document.getElementById('popup-after-rssi').innerText = afterRssi !== null ? `${afterRssi} dBm` : 'ไม่มีข้อมูล';
+
+            const badge = document.getElementById('popup-gain-badge');
+            if (beforeRssi !== null && afterRssi !== null) {
+                const diff = afterRssi - beforeRssi;
+                if (diff >= 0) {
+                    badge.className = 'gain-badge gain-positive';
+                    badge.innerText = `+${diff} dBm (สัญญาณดีขึ้น 🚀)`;
+                } else {
+                    badge.className = 'gain-badge gain-negative';
+                    badge.innerText = `${diff} dBm (สัญญาณลดลง)`;
+                }
+            } else {
+                badge.className = 'gain-badge';
+                badge.innerText = 'ข้อมูลไม่ครบ';
+            }
+            popup.classList.add('show');
+        };
+
+        exportCSV = function () {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "เวลา,สถานะ,สถานที่,คลื่น,X ใช้งาน (m),Y ใช้งาน (m),Raw X (m),Raw Y (m),Snap Status,RSSI (dBm),ระดับสัญญาณ\n";
+            currentTableData.forEach(rowArray => { csvContent += rowArray.join(',') + '\n'; });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `Heatmap_${currentProfile}_${currentInstallMode}_${currentLocation}_${currentFreq}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
         // Initialize App
         loadProfilesList();
         setLocation('Room1');
+
 
     </script>
 </body>
