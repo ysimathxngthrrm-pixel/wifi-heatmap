@@ -207,6 +207,13 @@
         }
 
         /* ========================================= */
+        /* FINAL HUAWEI CLASSROOM ALIGNMENT
+           แก้เฉพาะ Room1 จากผังวัดจริง:
+           - 5 โต๊ะ/แถว, 6.25 m, ลึก 0.75 m
+           - เสาขวา/ประตูตาม dimension chain
+           - โต๊ะอาจารย์รูป L ตามขนาดจริง
+           - ห้องแล็บ T-309 ไม่แก้
+        */
         /* ✨ 1. โครงสร้างห้องเรียน (Room1) อิงจากห้อง 14 ✨ */
         /* ========================================= */
         #classroom-plan {
@@ -317,19 +324,23 @@
         /* เสาฝั่งขวาต้นที่ 1 */
         .cr-pr1 {
             position: absolute;
-            top: 339px;
+            top: 312px;
+            /* 3.12 m จากหลังห้อง */
             right: 0;
             width: 33px;
             height: 39px;
+            /* เสา 0.39 m */
         }
 
         /* ตู้ติดประตูบน (0.75m x 0.99m) */
         .cr-r-box4 {
             position: absolute;
-            top: 390px;
+            top: 366px;
             right: 0;
             width: 75px;
-            height: 99px;
+            /* 0.75 m */
+            height: 18px;
+            /* วาดเป็นชั้น/ตู้เตี้ยตามแบบ ไม่กินเต็มช่วง 0.81 m */
             background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
             border: 2px solid #ADB5BD;
             border-right: none;
@@ -339,25 +350,28 @@
         /* ประตู 1.60m */
         .cr-door {
             position: absolute;
-            top: 518px;
+            top: 432px;
+            /* 3.12 + 0.39 + 0.81 = 4.32 m */
             right: 0px;
             width: 12px;
             height: 160px;
+            /* ประตู 1.60 m */
         }
 
         .cr-door-label {
             position: absolute;
-            top: 588px;
+            top: 500px;
             right: 20px;
         }
 
         /* ตู้ติดประตูล่าง (0.71m x 0.53m) */
         .cr-r-box5 {
             position: absolute;
-            top: 708px;
+            top: 606px;
             right: 0;
             width: 71px;
-            height: 53px;
+            /* 0.71 m */
+            height: 18px;
             background: linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%);
             border: 2px solid #ADB5BD;
             border-right: none;
@@ -367,10 +381,12 @@
         /* เสาฝั่งขวาต้นที่ 2 และ 3 */
         .cr-pr2 {
             position: absolute;
-            top: 790px;
+            top: 672px;
+            /* 4.32 + 1.60 + 0.80 = 6.72 m */
             right: 0;
             width: 33px;
             height: 39px;
+            /* เสา 0.39 m */
         }
 
         .cr-pr3 {
@@ -384,10 +400,12 @@
         /* โต๊ะอาจารย์รูปตัว L มุมขวาล่าง (0.90x0.60 และ 0.60x0.60) ตามแปลน */
         .cr-desk-teacher-main {
             position: absolute;
-            bottom: 39px;
+            bottom: 99px;
             right: 33px;
             width: 90px;
+            /* 0.90 m */
             height: 60px;
+            /* 0.60 m */
             background-color: #E7F5FF;
             border: 2px solid #74C0FC;
             border-radius: 4px;
@@ -398,9 +416,11 @@
         .cr-desk-teacher-sub {
             position: absolute;
             bottom: 39px;
-            right: 123px;
+            right: 63px;
             width: 60px;
+            /* 0.60 m */
             height: 60px;
+            /* 0.60 m */
             background-color: #E7F5FF;
             border: 2px solid #74C0FC;
             border-radius: 4px;
@@ -419,33 +439,33 @@
             position: absolute;
             left: 107px;
             width: 625px;
-            height: 60px;
+            height: 75px;
             background-color: #E7F5FF;
             border: 2px solid #339AF0;
             border-radius: 4px;
             z-index: 2;
             box-sizing: border-box;
-            background-image: repeating-linear-gradient(to right, transparent, transparent 154px, #339AF0 154px, #339AF0 156px);
+            background-image: repeating-linear-gradient(to right, transparent 0, transparent 123px, #339AF0 123px, #339AF0 125px);
         }
 
         .cr-row1 {
-            top: 220px;
+            top: 197px;
         }
 
         .cr-row2 {
-            top: 355px;
+            top: 337px;
         }
 
         .cr-row3 {
-            top: 490px;
+            top: 461px;
         }
 
         .cr-row4 {
-            top: 625px;
+            top: 600px;
         }
 
         .cr-row5 {
-            top: 760px;
+            top: 729px;
         }
 
         /* ========================================= */
@@ -614,7 +634,13 @@
             z-index: 2;
         }
 
-        /* โต๊ะแล็บ */
+        /* โต๊ะแล็บ — อิงผังวัดหน้างาน
+           ซ้ายบน: 1.60 x 7.22 m, เริ่มที่ y=1.87 m
+           ช่องว่าง: 0.47 m
+           ซ้ายล่าง: 1.60 x 5.41 m, เริ่มที่ y=9.56 m
+           ขวา: 1.60 x 10.80 m
+           ความลึกรวมห้องยังยึดแปลน EN09 = 15.60 m
+        */
         .lab-table {
             position: absolute;
             background-color: #E7F5FF;
@@ -654,7 +680,7 @@
             top: 956px;
             left: 156px;
             width: 160px;
-            height: 328px;
+            height: 541px;
             background-image:
                 linear-gradient(to right, transparent 79px, #339AF0 79px, #339AF0 81px, transparent 81px),
                 linear-gradient(to bottom, transparent 178px, #339AF0 178px, #339AF0 180px, transparent 180px);
@@ -664,7 +690,7 @@
         /* ตู้และฐานด้านล่าง */
         .lab-teacher-desk {
             position: absolute;
-            top: 1284px;
+            top: 1497px;
             left: 156px;
             width: 150px;
             height: 60px;
@@ -1007,28 +1033,159 @@
             transform: scale(1.03);
         }
 
+        /* Side panel — slides in from left, does NOT cover the map */
         .controls-dropdown {
             position: fixed;
-            top: 70px;
-            left: 20px;
+            top: 0;
+            left: -340px;
+            /* hidden off-screen */
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 16px;
-            padding: 20px;
-            width: 320px;
-            max-height: 80vh;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 0 16px 16px 0;
+            padding: 70px 20px 30px;
+            width: 300px;
+            height: 100vh;
             overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            display: none;
-            /* Toggle display */
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
             text-align: left;
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .controls-dropdown.show {
-            display: block;
+            left: 0;
+        }
+
+        /* Push page content right when panel open */
+        body.panel-open .container,
+        body.panel-open .profile-container {
+            margin-left: 320px;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body:not(.panel-open) .container,
+        body:not(.panel-open) .profile-container {
+            margin-left: auto;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Room-size modal */
+        #room-size-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #room-size-modal-overlay.active {
+            display: flex;
+        }
+
+        #room-size-modal {
+            background: #fff;
+            border-radius: 18px;
+            padding: 32px 36px;
+            width: 340px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.85);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #room-size-modal h3 {
+            margin: 0 0 20px;
+            font-size: 18px;
+            color: #2B7A78;
+            text-align: center;
+        }
+
+        .modal-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .modal-input-group label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #444;
+            width: 60px;
+        }
+
+        .modal-input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .modal-input-group input:focus {
+            border-color: #2B7A78;
+        }
+
+        .modal-input-group span {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .modal-btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn-confirm {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2B7A78, #20A69A);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .modal-btn-confirm:hover {
+            opacity: 0.88;
+        }
+
+        .modal-btn-cancel {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            background: white;
+            color: #888;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .modal-btn-cancel:hover {
+            border-color: #aaa;
+            color: #555;
         }
 
         /* ---------------- โหมดเปรียบเทียบและการซ้อนทับ (Map Overlay & Inspector) ---------------- */
@@ -1245,6 +1402,552 @@
             background-color: #FFE3E3;
             color: #C92A2A;
         }
+
+        /* ============================================================
+           FINAL FIELD-TEST READY LAYOUT
+           FINAL FIELD ALIGNMENT:
+           IMPORTANT WIDTH CORRECTION FROM MEASURED PLAN:
+           total width = 1.41 m + 6.40 m = 7.81 m.
+           left table = x 1.41..3.01 m
+           center aisle = 1.53 m
+           right table = x 4.54..6.14 m
+           right aisle = 1.67 m.
+           Right aisle calibration from measured plan:
+           room width 6.40 m - right clearance 1.67 m - table width 1.60 m
+           => right table left edge x = 3.13 m.
+           Real walk-test alignment: 12.0 m = row 3, 13.5 m = black-desk edge (row 2), 15.0 m = front-room row (row 1), 15.6 m = room boundary.
+           - Uses the measured T-309 plan as the primary visual reference
+           - Keeps Huawei classroom and T-309 lab naming consistent
+           - Intended for real signal-walk testing and report screenshots
+           ============================================================
+
+           /* ============================================================
+           T-309 MEASURED PLAN REBUILD
+           Source of geometry: measured furniture/room plan.
+           Coordinate convention: back wall = y 0, front wall = y 15.60 m.
+           100 px = 1 m.
+           ============================================================ */
+
+        /* --- Main measured outline --- */
+        #lab-plan {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Back storage tables: aligned along the rear wall and stopped before the top door opening
+           so the rear doorway remains usable in the rendered plan. */
+        #lab-plan .lab-back-cabinet {
+            top: 0px !important;
+            left: 63px !important;
+            width: 516px !important;
+            /* ends at x=5.79 m, before 1.70 m door */
+            height: 82px !important;
+        }
+
+        /* Top double door: 1.70 m, leaving the measured 0.32 m right end */
+        #lab-plan .lab-door-top {
+            top: 0px !important;
+            left: auto !important;
+            right: 32px !important;
+            /* 0.32 m from right edge */
+            width: 170px !important;
+            /* measured 1.70 m */
+            height: 12px !important;
+        }
+
+        #lab-plan .lab-door-label-top {
+            top: 16px !important;
+            left: auto !important;
+            right: 82px !important;
+        }
+
+        #lab-plan .lab-top-right-wall {
+            top: 0px !important;
+            right: 0px !important;
+            width: 32px !important;
+            /* 0.32 m */
+            height: 113px !important;
+            /* 1.13 m */
+        }
+
+        /* --- LEFT WALL: keep measured widths, place in the same top-to-bottom order as field plan --- */
+        #lab-plan .lab-pl1 {
+            top: 0px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 40px !important;
+        }
+
+        #lab-plan .lab-left-top-cab {
+            top: 40px !important;
+            left: 0px !important;
+            width: 63px !important;
+            /* 0.63 m */
+            height: 147px !important;
+            /* 1.47 m */
+        }
+
+        #lab-plan .lab-pl2 {
+            top: 304px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 42px !important;
+        }
+
+        #lab-plan .lab-l-box1 {
+            top: 346px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 320px !important;
+            /* 3.20 m */
+        }
+
+        #lab-plan .lab-pl3 {
+            top: 666px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 39px !important;
+        }
+
+        #lab-plan .lab-l-box2 {
+            top: 705px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 214px !important;
+            /* 2.14 m */
+        }
+
+        #lab-plan .lab-pl4 {
+            top: 952px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 39px !important;
+        }
+
+        #lab-plan .lab-l-box3 {
+            top: 991px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 66px !important;
+        }
+
+        #lab-plan .lab-pl5 {
+            top: 1205px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 39px !important;
+        }
+
+        #lab-plan .lab-l-box4 {
+            top: 1244px !important;
+            left: 0px !important;
+            width: 40px !important;
+            height: 182px !important;
+            /* 1.82 m */
+        }
+
+        /* --- CENTRAL FURNITURE: dimensions taken directly from the measured plan --- */
+
+        /* Left upper bank: 1.60 x 7.22 m; starts 1.87 m from back wall */
+        #lab-plan .lab-tb-left-top {
+            top: 187px !important;
+            left: 141px !important;
+            /* aligns with measured 1.41 m reference */
+            width: 160px !important;
+            height: 722px !important;
+            background-size: 160px 100%, 100% 180.5px !important;
+        }
+
+        /* Left lower bank: 1.60 x 5.41 m; 0.47 m after the upper bank */
+        #lab-plan .lab-tb-left-bot {
+            top: 956px !important;
+            left: 141px !important;
+            width: 160px !important;
+            height: 328px !important;
+            /* field-aligned: ends at 12.84 m */
+            background-size: 160px 100%, 100% 180.3px !important;
+        }
+
+        /* Right bank: 1.60 x 10.80 m; right clearance measured 1.67 m */
+        #lab-plan .lab-tb-right {
+            top: 187px !important;
+            left: 454px !important;
+            /* exact from measured plan: 6.40 - 1.67 - 1.60 = 3.13 m */
+            right: auto !important;
+            width: 160px !important;
+            /* measured 1.60 m */
+            height: 1080px !important;
+            background-size: 160px 100%, 100% 180px !important;
+        }
+
+        /* Teacher desk: measured 1.50 x 0.60 m */
+        #lab-plan .lab-teacher-desk {
+            top: 1284px !important;
+            /* 12.84 m */
+            left: 141px !important;
+            width: 150px !important;
+            height: 60px !important;
+            /* ends at 13.44 m ≈ 13.5 m grid */
+        }
+
+        /* Front cabinet/base: measured depth 0.60 m */
+        #lab-plan .lab-bot-cabinet-base {
+            top: 1500px !important;
+            /* front survey row at 15.0 m */
+            left: 141px !important;
+            right: 0px !important;
+            height: 60px !important;
+            /* measured front base depth 0.60 m */
+        }
+
+        /* --- RIGHT WALL --- */
+
+        /* Upper tall cabinet / rack, corresponding to the measured 3.19 m section */
+        #lab-plan .lab-r-box1 {
+            top: 239px !important;
+            right: 0px !important;
+            width: 40px !important;
+            height: 319px !important;
+        }
+
+        #lab-plan .lab-pr1 {
+            top: 200px !important;
+            right: 0px !important;
+            width: 40px !important;
+            height: 39px !important;
+        }
+
+        #lab-plan .lab-pr2 {
+            top: 558px !important;
+            right: 0px !important;
+            width: 40px !important;
+            height: 39px !important;
+        }
+
+        /* Measured right-side door opening */
+        #lab-plan .lab-door-right {
+            top: 707px !important;
+            right: 0px !important;
+            width: 12px !important;
+            height: 160px !important;
+            /* 1.60 m */
+        }
+
+        #lab-plan .lab-door-label-right {
+            top: 765px !important;
+            right: 20px !important;
+        }
+
+        #lab-plan .lab-pr3 {
+            top: 946px !important;
+            right: 0px !important;
+            width: 40px !important;
+            height: 39px !important;
+        }
+
+        /* Bottom-right measured rack: 0.66 x 0.60 m */
+        #lab-plan .lab-rack-bot-right {
+            top: 1184px !important;
+            right: 0px !important;
+            width: 66px !important;
+            height: 60px !important;
+        }
+
+        /* Bottom-right cabinet: 0.60 x 2.56 m, ending at front inner line */
+        #lab-plan .lab-bot-cabinet-l-part {
+            top: 1244px !important;
+            bottom: 60px !important;
+            right: 0px !important;
+            width: 60px !important;
+        }
+
+
+        #lab-plan .right-aisle-dimension-label {
+            position: absolute;
+            top: 610px;
+            left: 614px;
+            /* right edge of table = 6.14 m */
+            width: 167px;
+            /* measured right aisle = 1.67 m */
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #6C757D;
+            pointer-events: none;
+            z-index: 8;
+            border-top: 1px dashed #ADB5BD;
+            padding-top: 4px;
+            box-sizing: border-box;
+        }
+
+
+        #lab-plan .center-aisle-dimension-label {
+            position: absolute;
+            top: 560px;
+            left: 301px;
+            /* left table right edge = 3.01 m */
+            width: 153px;
+            /* center aisle = 1.53 m */
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #6C757D;
+            pointer-events: none;
+            z-index: 8;
+            border-top: 1px dashed #ADB5BD;
+            padding-top: 4px;
+            box-sizing: border-box;
+        }
+
+        /* ===================== ROOM & FURNITURE EDITOR ===================== */
+        #room-editor-section {
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        #room-editor-section .editor-title {
+            font-weight: bold;
+            font-size: 12px;
+            color: #7048E8;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        #btn-toggle-editor {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #7048E8, #4C6EF5);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 8px;
+        }
+
+        #btn-toggle-editor:hover {
+            opacity: 0.85;
+        }
+
+        #btn-toggle-editor.active {
+            background: linear-gradient(135deg, #E03131, #C2255C);
+        }
+
+        #editor-controls {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            animation: editorSlideIn 0.25s ease;
+        }
+
+        #editor-controls.visible {
+            display: flex;
+        }
+
+        @keyframes editorSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .editor-sub-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #555;
+            margin: 4px 0 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .editor-input-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: #444;
+        }
+
+        .editor-input-row input {
+            width: 52px;
+            padding: 4px 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 12px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .editor-input-row input:focus {
+            border-color: #7048E8;
+        }
+
+        .editor-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .editor-btn-apply {
+            background: #2B7A78;
+            color: white;
+            width: 100%;
+            padding: 6px;
+            border-radius: 8px;
+            margin-top: 2px;
+        }
+
+        .editor-btn-apply:hover {
+            background: #1f5c5a;
+        }
+
+        .editor-btn-add {
+            background: #4C6EF5;
+            color: white;
+        }
+
+        .editor-btn-add:hover {
+            background: #3b5bdb;
+        }
+
+        .editor-btn-del {
+            background: #E03131;
+            color: white;
+            width: 100%;
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .editor-btn-del:hover {
+            background: #c92a2a;
+        }
+
+        .editor-divider {
+            border: none;
+            border-top: 1px dashed #ddd;
+            margin: 2px 0;
+        }
+
+        /* Furniture items on the map */
+        .furniture-item {
+            position: absolute;
+            background: rgba(74, 144, 226, 0.25);
+            border: 2px solid #4A90E2;
+            border-radius: 3px;
+            box-sizing: border-box;
+            z-index: 20;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #2c5f8a;
+            text-align: center;
+            overflow: hidden;
+            user-select: none;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .furniture-item:hover {
+            background: rgba(74, 144, 226, 0.4);
+            border-color: #1a6fc4;
+        }
+
+        .furniture-item.selected {
+            background: rgba(240, 100, 50, 0.35);
+            border: 2px solid #E8590C;
+            color: #7d2a02;
+        }
+
+        .furniture-item.dragging {
+            cursor: grabbing;
+            opacity: 0.8;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            z-index: 100;
+        }
+
+        /* Editor mode cursor on map */
+        #map-container.editor-mode {
+            cursor: default !important;
+        }
+
+        /* Snap indicator lines */
+        .snap-guide {
+            position: absolute;
+            background: rgba(224, 51, 49, 0.6);
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .snap-guide.horizontal {
+            height: 1px;
+            left: 0;
+            right: 0;
+        }
+
+        .snap-guide.vertical {
+            width: 1px;
+            top: 0;
+            bottom: 0;
+        }
+
+        /* ---- Door item style ---- */
+        .furniture-item.door-item {
+            background: rgba(255, 193, 7, 0.15);
+            border: 2px dashed #F59F00;
+            color: #7d5c00;
+            overflow: visible;
+        }
+
+        .furniture-item.door-item .door-arc {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .furniture-item.door-item .door-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 14%;
+            height: 100%;
+            background: #F59F00;
+            border-radius: 2px;
+        }
+
+        .furniture-item.door-item .door-label {
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: bold;
+            white-space: nowrap;
+            color: #7d5c00;
+        }
+
+        .furniture-item.door-item.selected {
+            background: rgba(240, 100, 50, 0.18);
+            border: 2px dashed #E8590C;
+        }
     </style>
 </head>
 
@@ -1298,9 +2001,9 @@
                 style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">เลือกห้อง:</span>
             <div style="display: flex; gap: 8px;">
                 <button class="btn btn-loc active" id="loc-room1" onclick="setLocation('Room1')"
-                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องเรียน 1</button>
+                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องเรียน Huawei</button>
                 <button class="btn btn-loc" id="loc-lab1" onclick="setLocation('Lab1')"
-                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องแล็บ 1</button>
+                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องแล็บ T-309</button>
             </div>
         </div>
 
@@ -1329,12 +2032,67 @@
             </div>
         </div>
 
+        <!-- ✏️ Room & Furniture Editor Section -->
+        <div id="room-editor-section">
+            <span class="editor-title">✏️ แก้ไขผังห้อง (Room Editor)</span>
+            <button id="btn-toggle-editor" onclick="toggleEditorMode()">✏️ เปิด Editor Mode</button>
+            <div id="editor-controls">
+                <div class="editor-sub-title">📐 ขนาดห้อง</div>
+                <button class="editor-btn editor-btn-apply" onclick="openRoomSizeModal()">📐 กำหนดขนาดห้อง...</button>
+
+                <hr class="editor-divider">
+                <div class="editor-sub-title">🪑 เพิ่มเฟอร์นิเจอร์</div>
+                <div class="editor-input-row">
+                    <span>ชื่อ:</span>
+                    <input type="text" id="furn-name-input" placeholder="โต๊ะ" style="width:70px;">
+                </div>
+                <div class="editor-input-row">
+                    <span>กว้าง:</span>
+                    <input type="number" id="furn-w-input" min="0.1" max="20" step="0.05" value="1.00">
+                    <span>ม.</span>
+                </div>
+                <div class="editor-input-row">
+                    <span>ยาว:</span>
+                    <input type="number" id="furn-h-input" min="0.1" max="20" step="0.05" value="0.50">
+                    <span>ม.</span>
+                </div>
+                <div style="display:flex; gap:4px;">
+                    <button class="editor-btn editor-btn-add" onclick="addFurniture()" style="flex:1;">➕ เพิ่ม</button>
+                    <button class="editor-btn editor-btn-del" onclick="deleteSelectedFurniture()" style="flex:1;">🗑️
+                        ลบที่เลือก</button>
+                </div>
+                <div id="selected-furn-info" style="font-size:10px; color:#888; text-align:center; min-height:16px;">
+                </div>
+            </div>
+        </div>
+
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
             <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Device
                 Status:</span>
             <div id="device-status-badge"
                 style="font-size: 11px; padding: 6px 12px; background-color: #F5F5F5; color: #666; border-radius: 6px; text-align: center;">
                 คลิกจุดบนแผนที่เพื่อสแกน
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Size Modal -->
+    <div id="room-size-modal-overlay" onclick="handleModalOverlayClick(event)">
+        <div id="room-size-modal">
+            <h3>📐 กำหนดขนาดห้อง</h3>
+            <div class="modal-input-group">
+                <label for="modal-room-w">กว้าง</label>
+                <input type="number" id="modal-room-w" min="1" max="50" step="0.01" placeholder="8.40">
+                <span>เมตร</span>
+            </div>
+            <div class="modal-input-group">
+                <label for="modal-room-h">ยาว</label>
+                <input type="number" id="modal-room-h" min="1" max="100" step="0.01" placeholder="10.35">
+                <span>เมตร</span>
+            </div>
+            <div class="modal-btn-row">
+                <button class="modal-btn-cancel" onclick="closeRoomSizeModal()">❌ ยกเลิก</button>
+                <button class="modal-btn-confirm" onclick="applyRoomSizeFromModal()">✅ ปรับขนาดห้อง</button>
             </div>
         </div>
     </div>
@@ -1364,70 +2122,11 @@
         <div id="map-container" onclick="handleMapClick(event)">
 
             <div id="classroom-plan">
-                <div class="cr-top-cabinet">ตู้บิลท์อิน (8.4m)</div>
-
-                <div class="pillar cr-pl1">เสา</div>
-                <div class="pillar cr-pl2">เสา</div>
-                <div class="pillar cr-pl3">เสา</div>
-
-                <div class="cr-desk-left"></div>
-
-                <div class="cr-r-box1"></div>
-                <div class="cr-r-box2"></div>
-                <div class="cr-r-box3"></div>
-                <div class="cr-r-box4"></div>
-                <div class="cr-r-box5"></div>
-
-                <div class="pillar cr-pr1">เสา</div>
-                <div class="door cr-door"></div>
-                <div class="door-label cr-door-label">🚪 ประตู</div>
-                <div class="pillar cr-pr2">เสา</div>
-                <div class="pillar cr-pr3">เสา</div>
-                <div class="cr-desk-teacher-main"></div>
-                <div class="cr-desk-teacher-sub">โต๊ะ</div>
-
-                <div class="cr-row cr-row1"></div>
-                <div class="cr-row cr-row2"></div>
-                <div class="cr-row cr-row3"></div>
-                <div class="cr-row cr-row4"></div>
-                <div class="cr-row cr-row5"></div>
+                <!-- เฟอร์นิเจอร์ถูกลบออก ใช้ Room Editor เพิ่มเองได้ -->
             </div>
 
             <div id="lab-plan">
-                <div class="lab-back-cabinet">ตู้หลังห้อง (5.43m)</div>
-                <div class="door lab-door-top"></div>
-                <div class="door-label lab-door-label-top">🚪 ประตู</div>
-                <div class="lab-top-right-wall"></div>
-
-                <div class="lab-bot-cabinet-base">ฐานตู้หน้าห้อง (0.60m)</div>
-                <div class="lab-bot-cabinet-l-part"></div>
-                <div class="lab-teacher-desk">โต๊ะ</div>
-
-                <div class="lab-l-box1"></div>
-                <div class="lab-l-box2"></div>
-                <div class="lab-l-box3"></div>
-                <div class="lab-l-box4"></div>
-
-                <div class="lab-left-top-cab"></div>
-                <div class="pillar lab-pl1">เสา</div>
-                <div class="pillar lab-pl2">เสา</div>
-                <div class="pillar lab-pl3">เสา</div>
-                <div class="pillar lab-pl4">เสา</div>
-                <div class="pillar lab-pl5">เสา</div>
-
-                <div class="lab-r-box1"></div>
-
-                <div class="pillar lab-pr1">เสา</div>
-                <div class="pillar lab-pr2">เสา</div>
-                <div class="door lab-door-right"></div>
-                <div class="door-label lab-door-label-right">🚪 ประตู</div>
-                <div class="pillar lab-pr3">เสา</div>
-
-                <div class="lab-rack-bot-right"></div>
-
-                <div class="lab-table lab-tb-left-bot"></div>
-                <div class="lab-table lab-tb-left-top"></div>
-                <div class="lab-table lab-tb-right"></div>
+                <!-- เฟอร์นิเจอร์ถูกลบออก ใช้ Room Editor เพิ่มเองได้ -->
             </div>
 
             <div id="heatmap-layer"
@@ -1487,6 +2186,7 @@
                     <th>สถานะ</th>
                     <th>สถานที่</th>
                     <th>คลื่นความถี่</th>
+                    <th>Point ID</th>
                     <th>Used Position (m)</th>
                     <th>Raw Position (m)</th>
                     <th>Snap Status</th>
@@ -1523,6 +2223,7 @@
         let currentRssi24 = null;
         let currentRssi5 = null;
         let currentTableData = [];
+        let currentExportData = [];
         let activePoints = []; // Track points with DOM elements, table data and keys
         let selectedPointKeys = new Set(); // Track selected keys for deletion
         let currentDbListener = null;
@@ -1783,7 +2484,7 @@
             const row = `<tr id="${rowId}">
                 <td>${dateStr}</td>
                 <td>${currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง'}</td>
-                <td>${currentLocation}</td>
+                <td>${getLocationDisplayName(currentLocation)}</td>
                 <td>${currentFreq}</td>
                 <td>(${data.x}, ${data.y})</td>
                 <td style="color:${colorStyle}; font-weight:bold;">${data.rssi <= -100 ? '-100 dBm (ไม่พบสัญญาณ)' : `${data.rssi} dBm (${signalStatus})`}</td>
@@ -1800,13 +2501,14 @@
                 domBlur: domRefs.blur,
                 domDot: domRefs.dot,
                 rowId: rowId,
-                tableRowData: [dateStr, currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง', currentLocation, currentFreq, data.x, data.y, data.rssi, signalStatus]
+                tableRowData: [dateStr, currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง', getLocationDisplayName(currentLocation), currentFreq, data.x, data.y, data.rssi, signalStatus]
             });
             updateTableDataArray();
         }
 
         function updateTableDataArray() {
             currentTableData = activePoints.map(p => p.tableRowData);
+            currentExportData = activePoints.map(p => p.exportRowData);
         }
 
         function resetHeatmapLayers() {
@@ -2277,7 +2979,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Heatmap_${currentProfile}_${currentInstallMode}_${currentLocation}_${currentFreq}.csv`);
+            link.setAttribute("download", `Heatmap_${sanitizeFileNamePart(currentProfile)}_${currentInstallMode}_${sanitizeFileNamePart(getLocationDisplayName(currentLocation))}_${currentFreq}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -2304,7 +3006,8 @@
         function toggleControlsMenu() {
             const dropdown = document.getElementById('controls-dropdown');
             if (dropdown) {
-                dropdown.classList.toggle('show');
+                const isOpen = dropdown.classList.toggle('show');
+                document.body.classList.toggle('panel-open', isOpen);
             }
         }
 
@@ -2574,10 +3277,10 @@
         /* ==========================================================
            ROOM DIMENSION + METER COORDINATE PATCH
            - Room1 keeps the measured horizontal layout: 8.40 x 10.35 m
-           - Lab1 keeps the real deep orientation already used by this page: 8.10 x 15.60 m
+           - Lab1 rebuilt from measured room/furniture plan: 6.40 x 15.60 m
            - 100 px = 1 m for both rooms
            - New Firebase points are stored in meters
-           - Grid spacing is 1.5 m
+           - Classroom grid = 2.4 m; T-309 lab grid = 1.5 m
            - Snap is applied only when the clicked position is within ±0.25 m of the nearest grid line on each axis
            - Raw clicked position is preserved in Firebase as rawX/rawY
            - Old points that were stored in pixels are still displayed correctly
@@ -2586,25 +3289,34 @@
         const SNAP_TOLERANCE = 0.25; // meters: snap only within ±25 cm
         const ROOM_CONFIG = {
             Room1: {
-                name: 'ห้องเรียน T-301',
+                name: 'ห้องเรียน Huawei',
                 widthMeters: 8.40,
                 heightMeters: 10.35,
                 widthPx: 840,
                 heightPx: 1035,
-                gridMeters: 2.40 // 2.4 m grid for Classroom
+                gridMeters: 0.50 // ห้องเรียน Huawei: Grid 0.5 m
             },
             Lab1: {
-                name: 'ห้องแล็บ Huawei',
-                widthMeters: 8.10,
+                name: 'ห้องแล็บ T-309',
+                widthMeters: 7.81,
                 heightMeters: 15.60,
-                widthPx: 810,
+                widthPx: 781,
                 heightPx: 1560,
-                gridMeters: 1.50 // 1.5 m grid for Lab
+                gridMeters: 0.50 // จุดทดสอบทุก 0.5 m
             }
         };
 
         function getRoomConfig(loc = currentLocation) {
             return ROOM_CONFIG[loc] || ROOM_CONFIG.Room1;
+        }
+
+        function getLocationDisplayName(loc = currentLocation) {
+            const cfg = getRoomConfig(loc);
+            return cfg ? cfg.name : loc;
+        }
+
+        function sanitizeFileNamePart(value) {
+            return String(value).replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, '_');
         }
 
         function getGridMeters(loc = currentLocation) {
@@ -2631,7 +3343,16 @@
             return Number((Number(yPx) / PX_PER_METER).toFixed(2));
         }
 
-        // Snap one coordinate only when it is sufficiently close to a grid line (2.4m for Room1, 1.5m for Lab1).
+        // สร้าง Point ID จากตำแหน่งกริด — จุดเดียวกันบนผังจะได้ ID เดิมทุกครั้ง
+        // ไม่ว่าจะวัดกี่รอบ (ก่อนติดตั้ง / หลังติดตั้ง / รอบ 2, 3, ...)
+        function getPointId(xMeters, yMeters, loc = currentLocation) {
+            const gridMeters = getGridMeters(loc);
+            const col = Math.round(Number(xMeters) / gridMeters);
+            const row = Math.round(Number(yMeters) / gridMeters);
+            return `R${row}C${col}`;
+        }
+
+        // Snap one coordinate only when it is sufficiently close to a 1.5 m grid line.
         // Returns both the final coordinate and whether snapping was applied.
         function snapCoordinateWithTolerance(valueMeters, loc = currentLocation) {
             const raw = Number(valueMeters);
@@ -2680,11 +3401,17 @@
             if (rawX > cfg.widthMeters + 1) rawX = pixelToMeterX(rawX);
             if (rawY > cfg.heightMeters + 1) rawY = pixelToMeterY(rawY);
 
+            // ข้อมูลเก่าที่บันทึกก่อนมี pointId จะไม่มีฟิลด์นี้ — คำนวณให้สดจาก x, y แทน
+            const pointId = (point.pointId !== undefined && point.pointId !== null && point.pointId !== '')
+                ? point.pointId
+                : getPointId(x, y, loc);
+
             return Object.assign({}, point, {
                 x: Number(x.toFixed(2)),
                 y: Number(y.toFixed(2)),
                 rawX: Number(rawX.toFixed(2)),
                 rawY: Number(rawY.toFixed(2)),
+                pointId,
                 snapApplied: point.snapApplied === true
             });
         }
@@ -2831,6 +3558,7 @@
                 const commonPositionData = {
                     x, y,                 // พิกัดที่ใช้วาด/เปรียบเทียบ หลังใช้ tolerance snap
                     rawX, rawY,           // พิกัดที่คลิกจริงก่อน snap
+                    pointId: getPointId(x, y, currentLocation),  // รหัสจุดสำรวจ ผูกกับตำแหน่งกริด ใช้จับคู่ก่อน-หลัง
                     snapApplied,
                     snapX: snapX.snapped,
                     snapY: snapY.snapped,
@@ -2895,12 +3623,14 @@
             const snapApplied = data.snapApplied === true;
             const snapText = snapApplied ? 'SNAP ±0.25 m' : 'RAW / ไม่ Snap';
             const snapColor = snapApplied ? '#2B7A78' : '#E67E22';
+            const pointIdText = data.pointId || getPointId(data.x, data.y, currentLocation);
 
             const row = `<tr id="${rowId}">
                 <td>${dateStr}</td>
                 <td>${currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง'}</td>
-                <td>${currentLocation}</td>
+                <td>${getLocationDisplayName(currentLocation)}</td>
                 <td>${currentFreq}</td>
+                <td style="font-weight:bold; color:#7048E8; white-space:nowrap;">${pointIdText}</td>
                 <td style="font-weight:bold; color:#2B7A78; white-space:nowrap;">(${xText}, ${yText})</td>
                 <td style="color:#666; white-space:nowrap;">(${rawXText}, ${rawYText})</td>
                 <td style="font-weight:bold; color:${snapColor}; white-space:nowrap;">${snapText}</td>
@@ -2922,11 +3652,23 @@
                     currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง',
                     currentLocation,
                     currentFreq,
+                    pointIdText,
                     xText,
                     yText,
                     rawXText,
                     rawYText,
                     data.snapApplied === true ? 'SNAP ±0.25 m' : 'RAW / ไม่ Snap',
+                    data.rssi,
+                    signalStatus
+                ],
+                exportRowData: [
+                    dateStr,
+                    currentInstallMode === 'Before' ? 'ก่อนติดตั้ง' : 'หลังติดตั้ง',
+                    currentLocation,
+                    currentFreq,
+                    pointIdText,
+                    xText,
+                    yText,
                     data.rssi,
                     signalStatus
                 ]
@@ -3170,13 +3912,13 @@
 
         exportCSV = function () {
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "เวลา,สถานะ,สถานที่,คลื่น,X ใช้งาน (m),Y ใช้งาน (m),Raw X (m),Raw Y (m),Snap Status,RSSI (dBm),ระดับสัญญาณ\n";
-            currentTableData.forEach(rowArray => { csvContent += rowArray.join(',') + '\n'; });
+            csvContent += "เวลา,สถานะ,สถานที่,คลื่น,Point ID,X (m),Y (m),RSSI (dBm),ระดับสัญญาณ\n";
+            currentExportData.forEach(rowArray => { csvContent += rowArray.join(',') + '\n'; });
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement('a');
             link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `Heatmap_${currentProfile}_${currentInstallMode}_${currentLocation}_${currentFreq}.csv`);
+            link.setAttribute('download', `Heatmap_${sanitizeFileNamePart(currentProfile)}_${currentInstallMode}_${sanitizeFileNamePart(getLocationDisplayName(currentLocation))}_${currentFreq}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -3184,7 +3926,406 @@
 
         // Initialize App
         loadProfilesList();
+        // NOTE: setLocation('Room1') is called here before the Editor Module hook below.
+        // The actual room-size/furniture restore is done in the initEditorFromStorage() call
+        // at the bottom, after the hook is set up.
         setLocation('Room1');
+
+        /* =====================================================================
+           ROOM & FURNITURE EDITOR
+           ===================================================================== */
+        let isEditorMode = false;
+        let furnitureItems = [];   // [{ id, name, xM, yM, wM, hM }]
+        let selectedFurnId = null;
+        let dragState = null;      // { id, origXM, origYM, mouseStartX, mouseStartY }
+        const SNAP_PX = 20;        // pixel threshold for snap-to-wall
+
+        /* ----- Toggle Editor Mode ----- */
+        function toggleEditorMode() {
+            isEditorMode = !isEditorMode;
+            const btn = document.getElementById('btn-toggle-editor');
+            const ctrl = document.getElementById('editor-controls');
+            const mapC = document.getElementById('map-container');
+            if (isEditorMode) {
+                btn.textContent = '🔴 ปิด Editor Mode';
+                btn.classList.add('active');
+                ctrl.classList.add('visible');
+                mapC.classList.add('editor-mode');
+                showToast('✏️ Editor Mode เปิดแล้ว — คลิกเฟอร์นิเจอร์เพื่อเลือก/ลาก');
+            } else {
+                btn.textContent = '✏️ เปิด Editor Mode';
+                btn.classList.remove('active');
+                ctrl.classList.remove('visible');
+                mapC.classList.remove('editor-mode');
+                selectFurniture(null);
+                showToast('✅ ออกจาก Editor Mode แล้ว');
+            }
+        }
+
+        /* ----- Apply Room Size ----- */
+        /* ----- Room Size Modal ----- */
+        function openRoomSizeModal() {
+            const cfg = getRoomConfig();
+            document.getElementById('modal-room-w').value = cfg.widthMeters.toFixed(2);
+            document.getElementById('modal-room-h').value = cfg.heightMeters.toFixed(2);
+            document.getElementById('room-size-modal-overlay').classList.add('active');
+            setTimeout(() => document.getElementById('modal-room-w').focus(), 100);
+        }
+        function closeRoomSizeModal() {
+            document.getElementById('room-size-modal-overlay').classList.remove('active');
+        }
+        function handleModalOverlayClick(e) {
+            // close only when clicking the dark backdrop, not the modal box itself
+            if (e.target === document.getElementById('room-size-modal-overlay')) {
+                closeRoomSizeModal();
+            }
+        }
+        function applyRoomSizeFromModal() {
+            const wM = parseFloat(document.getElementById('modal-room-w').value);
+            const hM = parseFloat(document.getElementById('modal-room-h').value);
+            if (isNaN(wM) || isNaN(hM) || wM <= 0 || hM <= 0) {
+                showToast('⚠️ กรุณากรอกขนาดห้องให้ถูกต้อง');
+                return;
+            }
+            applyRoomSize(wM, hM);
+            closeRoomSizeModal();
+        }
+        function applyRoomSize(wM, hM) {
+            if (wM === undefined) {
+                // legacy path: read from old inputs if they exist
+                const wEl = document.getElementById('room-width-input');
+                const hEl = document.getElementById('room-height-input');
+                wM = wEl ? parseFloat(wEl.value) : NaN;
+                hM = hEl ? parseFloat(hEl.value) : NaN;
+            }
+            if (isNaN(wM) || isNaN(hM) || wM <= 0 || hM <= 0) {
+                showToast('⚠️ กรุณากรอกขนาดห้องให้ถูกต้อง');
+                return;
+            }
+            const cfg = getRoomConfig();
+            cfg.widthMeters = wM;
+            cfg.heightMeters = hM;
+            cfg.widthPx = Math.round(wM * PX_PER_METER);
+            cfg.heightPx = Math.round(hM * PX_PER_METER);
+
+            const mapC = document.getElementById('map-container');
+            mapC.style.width = cfg.widthPx + 'px';
+            mapC.style.height = cfg.heightPx + 'px';
+
+            // update grid if visible
+            if (isGridVisible) {
+                const gPx = Math.round(cfg.gridMeters * PX_PER_METER);
+                mapC.style.backgroundSize = `${gPx}px ${gPx}px`;
+            }
+
+            saveRoomSize(currentLocation, wM, hM);
+            furnitureItems.forEach(f => {
+                f.xM = Math.min(f.xM, wM - f.wM);
+                f.yM = Math.min(f.yM, hM - f.hM);
+                f.xM = Math.max(f.xM, 0);
+                f.yM = Math.max(f.yM, 0);
+            });
+            saveFurniture(currentLocation);
+            renderAllFurniture();
+            showToast(`📐 ปรับขนาดห้องเป็น ${wM.toFixed(2)} × ${hM.toFixed(2)} ม.`);
+        }
+
+        function saveRoomSize(loc, w, h) {
+            localStorage.setItem('roomSize_' + loc, JSON.stringify({ w, h }));
+        }
+        function loadRoomSize(loc) {
+            const s = localStorage.getItem('roomSize_' + loc);
+            return s ? JSON.parse(s) : null;
+        }
+
+        /* ----- Add Furniture ----- */
+        function addFurniture() {
+            const name = document.getElementById('furn-name-input').value.trim() || 'เฟอร์นิเจอร์';
+            const wM = parseFloat(document.getElementById('furn-w-input').value);
+            const hM = parseFloat(document.getElementById('furn-h-input').value);
+            if (isNaN(wM) || isNaN(hM) || wM <= 0 || hM <= 0) {
+                showToast('⚠️ กรุณากรอกขนาดเฟอร์นิเจอร์ให้ถูกต้อง');
+                return;
+            }
+            const id = 'furn_' + Date.now();
+            furnitureItems.push({ id, name, xM: 0.5, yM: 0.5, wM, hM });
+            saveFurniture(currentLocation);
+            renderAllFurniture();
+            selectFurniture(id);
+            showToast(`➕ เพิ่ม ${name} (${wM}×${hM} ม.)`);
+        }
+
+        /* ----- Select/Deselect Furniture ----- */
+        function selectFurniture(id) {
+            selectedFurnId = id;
+            // update visual
+            document.querySelectorAll('.furniture-item').forEach(el => {
+                el.classList.toggle('selected', el.dataset.furnId === id);
+            });
+            const info = document.getElementById('selected-furn-info');
+            if (info) {
+                if (id) {
+                    const f = furnitureItems.find(x => x.id === id);
+                    info.textContent = f ? `เลือก: ${f.name} (${f.wM}×${f.hM} ม.)` : '';
+                } else {
+                    info.textContent = '';
+                }
+            }
+        }
+
+        /* ----- Delete Selected ----- */
+        function deleteSelectedFurniture() {
+            if (!selectedFurnId) { showToast('⚠️ ยังไม่ได้เลือกเฟอร์นิเจอร์'); return; }
+            const f = furnitureItems.find(x => x.id === selectedFurnId);
+            furnitureItems = furnitureItems.filter(x => x.id !== selectedFurnId);
+            selectFurniture(null);
+            saveFurniture(currentLocation);
+            renderAllFurniture();
+            showToast(`🗑️ ลบ ${f ? f.name : 'เฟอร์นิเจอร์'} แล้ว`);
+        }
+
+        /* ----- Save / Load Furniture ----- */
+        function saveFurniture(loc) {
+            localStorage.setItem('roomFurniture_' + loc,
+                JSON.stringify(furnitureItems.map(({ id, name, xM, yM, wM, hM }) => ({ id, name, xM, yM, wM, hM })))
+            );
+        }
+        function loadFurniture(loc) {
+            const s = localStorage.getItem('roomFurniture_' + loc);
+            furnitureItems = s ? JSON.parse(s) : [];
+            renderAllFurniture();
+        }
+
+        /* ----- Helpers ----- */
+        function isDoorItem(name) {
+            return name && name.trim().toLowerCase().startsWith('ประตู');
+        }
+
+        /* ----- Render All Furniture ----- */
+        function renderAllFurniture() {
+            document.querySelectorAll('.furniture-item').forEach(el => el.remove());
+            const mapC = document.getElementById('map-container');
+            furnitureItems.forEach(f => {
+                const el = document.createElement('div');
+                el.className = 'furniture-item';
+                el.dataset.furnId = f.id;
+                el.style.left = Math.round(f.xM * PX_PER_METER) + 'px';
+                el.style.top = Math.round(f.yM * PX_PER_METER) + 'px';
+                el.style.width = Math.round(f.wM * PX_PER_METER) + 'px';
+                el.style.height = Math.round(f.hM * PX_PER_METER) + 'px';
+                if (f.id === selectedFurnId) el.classList.add('selected');
+
+                if (isDoorItem(f.name)) {
+                    // --- Door shape ---
+                    el.classList.add('door-item');
+                    el.textContent = '';
+                    const wPx = Math.round(f.wM * PX_PER_METER);
+                    const hPx = Math.round(f.hM * PX_PER_METER);
+                    // Arc SVG (quarter-circle sweep)
+                    el.innerHTML = `
+                        <svg class="door-arc" viewBox="0 0 ${wPx} ${hPx}" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M ${wPx * 0.12} ${hPx} A ${wPx * 0.88} ${hPx} 0 0 1 ${wPx} ${hPx * 0.12}"
+                                  fill="rgba(245,159,0,0.18)" stroke="#F59F00" stroke-width="1.5" stroke-dasharray="4 3"/>
+                            <rect x="0" y="0" width="${wPx * 0.13}" height="${hPx}"
+                                  fill="#F59F00" rx="2"/>
+                        </svg>
+                        <span class="door-label">🚪 ${f.name}</span>
+                    `;
+                } else {
+                    // --- Normal rectangle ---
+                    el.textContent = f.name;
+                }
+
+                // Mouse events — drag only in editor mode
+                el.addEventListener('mousedown', e => {
+                    if (!isEditorMode) return;
+                    e.stopPropagation();
+                    selectFurniture(f.id);
+                    startFurnDrag(e, f.id);
+                });
+                // Touch events
+                el.addEventListener('touchstart', e => {
+                    if (!isEditorMode) return;
+                    e.stopPropagation();
+                    selectFurniture(f.id);
+                    const t = e.touches[0];
+                    startFurnDrag({ clientX: t.clientX, clientY: t.clientY, preventDefault: () => e.preventDefault() }, f.id);
+                }, { passive: false });
+                el.addEventListener('click', e => {
+                    if (!isEditorMode) return;
+                    e.stopPropagation();
+                    selectFurniture(f.id);
+                });
+
+                mapC.appendChild(el);
+            });
+        }
+
+        /* ----- Drag Logic ----- */
+        function startFurnDrag(e, id) {
+            e.preventDefault && e.preventDefault();
+            const f = furnitureItems.find(x => x.id === id);
+            if (!f) return;
+            dragState = {
+                id,
+                origXM: f.xM,
+                origYM: f.yM,
+                mouseStartX: e.clientX,
+                mouseStartY: e.clientY
+            };
+            const el = document.querySelector(`.furniture-item[data-furn-id="${id}"]`);
+            if (el) el.classList.add('dragging');
+        }
+
+        document.addEventListener('mousemove', onFurnDrag);
+        document.addEventListener('mouseup', endFurnDrag);
+        document.addEventListener('touchmove', e => {
+            if (!dragState) return;
+            const t = e.touches[0];
+            onFurnDrag({ clientX: t.clientX, clientY: t.clientY });
+        }, { passive: true });
+        document.addEventListener('touchend', endFurnDrag);
+
+        function onFurnDrag(e) {
+            if (!dragState || !isEditorMode) return;
+            const { id, origXM, origYM, mouseStartX, mouseStartY } = dragState;
+            const f = furnitureItems.find(x => x.id === id);
+            if (!f) return;
+            const cfg = getRoomConfig();
+
+            const dx = (e.clientX - mouseStartX) / PX_PER_METER;
+            const dy = (e.clientY - mouseStartY) / PX_PER_METER;
+
+            let newX = origXM + dx;
+            let newY = origYM + dy;
+
+            const snapM = SNAP_PX / PX_PER_METER;
+            const snapFurnM = SNAP_PX / PX_PER_METER; // same threshold for furniture-to-furniture
+
+            // --- Snap-to-wall ---
+            if (newX < snapM) newX = 0;
+            if (newX + f.wM > cfg.widthMeters - snapM) newX = cfg.widthMeters - f.wM;
+            if (newY < snapM) newY = 0;
+            if (newY + f.hM > cfg.heightMeters - snapM) newY = cfg.heightMeters - f.hM;
+
+            // --- Snap-to-furniture edges ---
+            // For each OTHER furniture item, check if any edge of f snaps to any edge of o
+            for (const o of furnitureItems) {
+                if (o.id === id) continue;
+
+                const oR = o.xM + o.wM;  // other right
+                const oB = o.yM + o.hM;  // other bottom
+                const fR = newX + f.wM;  // our right candidate
+                const fB = newY + f.hM;  // our bottom candidate
+
+                // Horizontal axis snaps (check vertical overlap to decide relevance)
+                const overlapY = newY < oB && fB > o.yM;
+                if (overlapY || Math.abs(newY - o.yM) < snapFurnM * 3) {
+                    // our left edge near other's right edge
+                    if (Math.abs(newX - oR) < snapFurnM) newX = oR;
+                    // our right edge near other's left edge
+                    if (Math.abs(fR - o.xM) < snapFurnM) newX = o.xM - f.wM;
+                    // align left edges
+                    if (Math.abs(newX - o.xM) < snapFurnM) newX = o.xM;
+                    // align right edges
+                    if (Math.abs(fR - oR) < snapFurnM) newX = oR - f.wM;
+                }
+
+                // Vertical axis snaps (check horizontal overlap to decide relevance)
+                const overlapX = newX < oR && (newX + f.wM) > o.xM;
+                if (overlapX || Math.abs(newX - o.xM) < snapFurnM * 3) {
+                    // our top edge near other's bottom edge
+                    if (Math.abs(newY - oB) < snapFurnM) newY = oB;
+                    // our bottom edge near other's top edge
+                    if (Math.abs(fB - o.yM) < snapFurnM) newY = o.yM - f.hM;
+                    // align top edges
+                    if (Math.abs(newY - o.yM) < snapFurnM) newY = o.yM;
+                    // align bottom edges
+                    if (Math.abs(fB - oB) < snapFurnM) newY = oB - f.hM;
+                }
+            }
+
+            // hard clamp inside room
+            newX = Math.max(0, Math.min(newX, cfg.widthMeters - f.wM));
+            newY = Math.max(0, Math.min(newY, cfg.heightMeters - f.hM));
+
+            f.xM = newX;
+            f.yM = newY;
+
+            // update DOM
+            const el = document.querySelector(`.furniture-item[data-furn-id="${id}"]`);
+            if (el) {
+                el.style.left = Math.round(newX * PX_PER_METER) + 'px';
+                el.style.top = Math.round(newY * PX_PER_METER) + 'px';
+            }
+        }
+
+        function endFurnDrag() {
+            if (!dragState) return;
+            const { id } = dragState;
+            const el = document.querySelector(`.furniture-item[data-furn-id="${id}"]`);
+            if (el) el.classList.remove('dragging');
+            saveFurniture(currentLocation);
+            dragState = null;
+        }
+
+        /* ----- Hook into setLocation to load/save furniture per room ----- */
+        const _origSetLocation = setLocation;
+        setLocation = function (loc) {
+            // save current room furniture before switching
+            if (currentLocation) saveFurniture(currentLocation);
+            _origSetLocation(loc);
+            // load saved room size
+            const savedSize = loadRoomSize(loc);
+            if (savedSize) {
+                const cfg = getRoomConfig(loc);
+                cfg.widthMeters = savedSize.w;
+                cfg.heightMeters = savedSize.h;
+                cfg.widthPx = Math.round(savedSize.w * PX_PER_METER);
+                cfg.heightPx = Math.round(savedSize.h * PX_PER_METER);
+                const mapC = document.getElementById('map-container');
+                mapC.style.width = cfg.widthPx + 'px';
+                mapC.style.height = cfg.heightPx + 'px';
+            }
+            // load furniture for new room
+            loadFurniture(loc);
+        };
+
+        /* ----- Block map click in editor mode ----- */
+        const _origHandleMapClick = handleMapClick;
+        handleMapClick = function (event) {
+            if (isEditorMode) return; // block heatmap click in editor mode
+            _origHandleMapClick(event);
+        };
+
+        /* ----- Restore room sizes and furniture on page load (after hooks are set) ----- */
+        // Pre-load room sizes for all rooms so ROOM_CONFIG stays accurate for split-view etc.
+        (function initEditorFromStorage() {
+            ['Room1', 'Lab1'].forEach(function (loc) {
+                const savedSize = loadRoomSize(loc);
+                if (savedSize) {
+                    const cfg = getRoomConfig(loc);
+                    cfg.widthMeters = savedSize.w;
+                    cfg.heightMeters = savedSize.h;
+                    cfg.widthPx = Math.round(savedSize.w * PX_PER_METER);
+                    cfg.heightPx = Math.round(savedSize.h * PX_PER_METER);
+                }
+            });
+            // Apply the current room's size to the map container
+            const savedCurrent = loadRoomSize(currentLocation);
+            if (savedCurrent) {
+                const mapC = document.getElementById('map-container');
+                mapC.style.width = Math.round(savedCurrent.w * PX_PER_METER) + 'px';
+                mapC.style.height = Math.round(savedCurrent.h * PX_PER_METER) + 'px';
+                if (isGridVisible) {
+                    const cfg = getRoomConfig(currentLocation);
+                    const gPx = Math.round(cfg.gridMeters * PX_PER_METER);
+                    mapC.style.backgroundSize = `${gPx}px ${gPx}px`;
+                }
+            }
+            // Load furniture for the current room
+            loadFurniture(currentLocation);
+        })();
 
 
     </script>
