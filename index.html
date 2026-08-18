@@ -3474,7 +3474,7 @@
            - Lab1 rebuilt from measured room/furniture plan: 6.40 x 15.60 m
            - 100 px = 1 m for both rooms
            - New Firebase points are stored in meters
-           - Classroom grid = 2.4 m; T-309 lab grid = 1.5 m
+           - Case 1 survey spacing ≈ 2.0 m; Room Editor reference grid = 0.5 m
            - Snap is applied only when the clicked position is within ±0.25 m of the nearest grid line on each axis
            - Raw clicked position is preserved in Firebase as rawX/rawY
            - Old points that were stored in pixels are still displayed correctly
@@ -3484,12 +3484,12 @@
         const ROOM_CONFIG = {
             Room1: {
                 name: 'ห้องเรียน Huawei',
-                widthMeters: 8.40,
-                heightMeters: 10.35,
-                widthPx: 840,
-                heightPx: 1035,
-                gridMeters: 2.00, // Case 1 survey grid = 2.0 m
-                editorGridMeters: 0.50 // Room Editor grid = 0.5 m
+                widthMeters: 9.00,
+                heightMeters: 10.40,
+                widthPx: 900,
+                heightPx: 1040,
+                gridMeters: 2.00, // Case 1 survey spacing ≈ 2.0 m
+                editorGridMeters: 0.50 // Room Editor visual/reference grid = 0.5 m
             },
         };
 
@@ -3537,22 +3537,60 @@
         let showSurveyPointsOverlay = true;
         let showPointIdLabels = true;
 
-        // Returns planned survey positions (every 2.0m with 0.5m offset, e.g. X: 0.5, 2.5, 4.5, 6.5, Y: 0.5, 2.5, 4.5, 6.5, 8.5, 10.5)
+        // Case 1 planned survey positions for the re-measured Huawei classroom.
+        // Room1 = 9.00 m × 10.40 m
+        // Updated to match the field-arranged furniture layout:
+        // - 24 points total
+        // - 6 rows × 4 columns
+        // - first 2 rows are in the open area before the first table row (measured from the back wall / AP side)
+        // - remaining rows follow the horizontal walking lanes between table rows
+        // - measurement order can still be done in zigzag (snake) style
         function getPlannedSurveyPoints(loc = currentLocation) {
             const cfg = getRoomConfig(loc);
             const points = [];
+
+            if (loc === 'Room1') {
+                // 24 points total = 6 rows × 4 columns.
+                // Start 2.0 m from the side wall, then every ~2.0 m.
+                const xs = [2.00, 4.00, 6.00, 8.00];
+
+                // 6 rows total from the BACK wall / AP side (top of the map).
+                // Exact 2.0 m spacing across the 10.40 m room:
+                // Y = 0.20, 2.20, 4.20, 6.20, 8.20, 10.20 m.
+                // R1 is close to the rear cabinet/wall; R5-R6 are the two front rows.
+                // If a point lands on furniture, the existing nearest-aisle rule moves only that point.
+                const ys = [0.20, 2.20, 4.20, 6.20, 8.20, 10.20];
+
+                ys.forEach((y, rIdx) => {
+                    xs.forEach((x, cIdx) => {
+                        if (x < cfg.widthMeters && y < cfg.heightMeters) {
+                            points.push({
+                                pointId: `R${rIdx + 1}C${cIdx + 1}`,
+                                row: rIdx + 1,
+                                col: cIdx + 1,
+                                x: Number(x.toFixed(2)),
+                                y: Number(y.toFixed(2))
+                            });
+                        }
+                    });
+                });
+
+                return points;
+            }
+
+            // Generic fallback for other rooms
             const startX = 0.5;
             const startY = 0.5;
             const step = SURVEY_SPACING_METERS;
-
             let row = 1;
+
             for (let y = startY; y < cfg.heightMeters; y += step) {
                 let col = 1;
                 for (let x = startX; x < cfg.widthMeters; x += step) {
                     points.push({
                         pointId: `R${row}C${col}`,
-                        row: row,
-                        col: col,
+                        row,
+                        col,
                         x: Number(x.toFixed(2)),
                         y: Number(y.toFixed(2))
                     });
@@ -3563,33 +3601,42 @@
             return points;
         }
 
-        // Automatic field-friendly survey positions for Room1.
-        // Point IDs and planned 2 m grid stay unchanged.
-        // Only the actual measurement position is shifted slightly away from desk surfaces.
-        // The offsets are intentionally small so spacing remains approximately 2 m.
+        // Field measurement positions.
+        // Planned Point IDs stay fixed. If a point falls on furniture in Room1,
+        // it is moved downward only as far as needed to reach the nearest clear aisle.
         function getFieldSurveyPoint(point, loc = currentLocation) {
-            if (loc !== 'Room1') {
-                return {
-                    ...point,
-                    plannedX: point.x,
-                    plannedY: point.y,
-                    actualX: point.x,
-                    actualY: point.y,
-                    adjusted: false
-                };
-            }
-
-            // Huawei classroom desk rows occupy the middle of the room.
-            // Planned rows R2 and R4 cross desk surfaces in the current layout.
-            // Shift those rows vertically into the nearest aisle by 0.45 m.
-            // Keep all columns and Point IDs unchanged.
             let actualX = Number(point.x);
             let actualY = Number(point.y);
 
-            if (point.row === 2) {
-                actualY = Math.max(0.05, actualY - 0.45);
-            } else if (point.row === 4) {
-                actualY = Math.min(getRoomConfig(loc).heightMeters - 0.05, actualY + 0.45);
+            // Case 1 field rule:
+            // If a planned survey point lands on furniture, keep X/Point ID the same
+            // and move the point DOWN to the nearest clear position just below it.
+            // Points that are already in a clear aisle stay exactly where planned.
+            if (loc === 'Room1' && Array.isArray(furnitureItems) && furnitureItems.length) {
+                const cfg = getRoomConfig(loc);
+                const marginM = 0.15; // small standing clearance after the furniture edge
+
+                const collides = (x, y, f) => {
+                    if (!f || f.isAP || f.isDoor) return false;
+                    const left = Number(f.xM);
+                    const top = Number(f.yM);
+                    const right = left + Number(f.wM);
+                    const bottom = top + Number(f.hM);
+                    return x >= left && x <= right && y >= top && y <= bottom;
+                };
+
+                // A point may land on one furniture item, then after moving down
+                // touch another one. Repeat a few times until it is clear.
+                for (let guard = 0; guard < 12; guard++) {
+                    const hit = furnitureItems
+                        .filter(f => collides(actualX, actualY, f))
+                        .sort((a, b) => (Number(a.yM) + Number(a.hM)) - (Number(b.yM) + Number(b.hM)))[0];
+
+                    if (!hit) break;
+
+                    actualY = Number(hit.yM) + Number(hit.hM) + marginM;
+                    actualY = Math.min(actualY, cfg.heightMeters - 0.05);
+                }
             }
 
             return {
