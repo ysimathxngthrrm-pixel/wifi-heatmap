@@ -2177,6 +2177,9 @@
         <!-- ✏️ Room & Furniture Editor Section -->
         <div id="room-editor-section">
             <span class="editor-title">✏️ แก้ไขผังห้อง (Room Editor)</span>
+            <div style="font-size:10px;color:#2B7A78;margin:3px 0 7px;">
+                ☁️ ผังห้องและเฟอร์นิเจอร์ซิงค์ผ่าน Firebase ทุกอุปกรณ์
+            </div>
             <button id="btn-toggle-editor" onclick="toggleEditorMode()">✏️ เปิด Editor Mode</button>
             <div id="editor-controls">
                 <div class="editor-sub-title">📐 ขนาดห้อง</div>
@@ -3282,6 +3285,9 @@
             } else {
                 currentProfile = val;
                 refreshCurrentMapView();
+                if (typeof syncRoomLayoutFromCloud === 'function') {
+                    syncRoomLayoutFromCloud(currentLocation);
+                }
             }
         }
 
@@ -4456,12 +4462,59 @@
             showToast(`📐 ปรับขนาดห้องเป็น ${wM.toFixed(2)} × ${hM.toFixed(2)} ม.`);
         }
 
-        function saveRoomSize(loc, w, h) {
-            localStorage.setItem('roomSize_' + loc, JSON.stringify({ w, h }));
+        const ROOM_LAYOUT_CLOUD_ROOT = 'RoomLayouts';
+        let roomLayoutCloudListeners = {};
+
+        function getRoomLayoutCloudPath(loc) {
+            return `${ROOM_LAYOUT_CLOUD_ROOT}/${loc}`;
         }
+
+        function saveRoomSize(loc, w, h) {
+            const payload = { w: Number(w), h: Number(h), updatedAt: Date.now() };
+            localStorage.setItem('roomSize_' + loc, JSON.stringify(payload));
+
+            // Keep room size shared across computer / iPad / other browsers.
+            if (typeof db !== 'undefined' && db) {
+                db.ref(`${getRoomLayoutCloudPath(loc)}/roomSize`).set(payload)
+                    .catch(err => console.error('Room size cloud save failed:', err));
+            }
+        }
+
         function loadRoomSize(loc) {
             const s = localStorage.getItem('roomSize_' + loc);
-            return s ? JSON.parse(s) : null;
+            if (!s) return null;
+            try {
+                const parsed = JSON.parse(s);
+                return parsed && Number(parsed.w) > 0 && Number(parsed.h) > 0 ? parsed : null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function applyCloudRoomSize(loc, size) {
+            if (!size || !(Number(size.w) > 0) || !(Number(size.h) > 0)) return;
+
+            localStorage.setItem('roomSize_' + loc, JSON.stringify(size));
+
+            const cfg = getRoomConfig(loc);
+            cfg.widthMeters = Number(size.w);
+            cfg.heightMeters = Number(size.h);
+            cfg.widthPx = Math.round(cfg.widthMeters * PX_PER_METER);
+            cfg.heightPx = Math.round(cfg.heightMeters * PX_PER_METER);
+
+            if (loc === currentLocation) {
+                const mapC = document.getElementById('map-container');
+                if (mapC) {
+                    mapC.style.width = cfg.widthPx + 'px';
+                    mapC.style.height = cfg.heightPx + 'px';
+                }
+                if (typeof applyProjectGridVisual === 'function' && isGridVisible) {
+                    applyProjectGridVisual();
+                }
+                if (typeof renderSurveyPointOverlay === 'function') {
+                    renderSurveyPointOverlay();
+                }
+            }
         }
 
         /* ----- Add Furniture ----- */
@@ -4525,24 +4578,26 @@
         }
 
         /* ----- Save / Load Furniture ----- */
-        function saveFurniture(loc) {
-            localStorage.setItem('roomFurniture_' + loc,
-                JSON.stringify(furnitureItems.map(f => ({
-                    id: f.id, name: f.name,
-                    xM: f.xM, yM: f.yM, wM: f.wM, hM: f.hM,
-                    isAP: !!f.isAP,
-                    isDoor: !!f.isDoor,
-                    wallSide: f.wallSide || null,
-                    hingeSide: f.hingeSide || 'start'
-                })))
-            );
+        function serializeFurniture(items = furnitureItems) {
+            return (items || []).map(f => ({
+                id: f.id,
+                name: f.name,
+                xM: Number(f.xM),
+                yM: Number(f.yM),
+                wM: Number(f.wM),
+                hM: Number(f.hM),
+                isAP: !!f.isAP,
+                isDoor: !!f.isDoor,
+                wallSide: f.wallSide || null,
+                hingeSide: f.hingeSide || 'start'
+            }));
         }
-        function loadFurniture(loc) {
-            const s = localStorage.getItem('roomFurniture_' + loc);
-            furnitureItems = s ? JSON.parse(s) : [];
 
-            // Migrate old door items that were stored by name only
-            furnitureItems.forEach(f => {
+        function cleanupLoadedFurniture(items) {
+            items = Array.isArray(items) ? items : [];
+
+            // Migrate legacy doors that were stored only by name.
+            items.forEach(f => {
                 if (!f.isDoor && f.name && f.name.trim().toLowerCase().startsWith('ประตู')) {
                     f.isDoor = true;
                     if (!f.wallSide) f.wallSide = 'right';
@@ -4550,17 +4605,15 @@
                 }
             });
 
-            // Remove accidental overlapping door duplicates left from earlier test versions.
-            // This fixes the "multiple arcs/leaves drawn on top of each other" problem.
-            const nonDoors = furnitureItems.filter(f => !f.isDoor);
-            const doors = furnitureItems.filter(f => f.isDoor);
+            // Remove accidental overlapping duplicate doors from older builds.
+            const nonDoors = items.filter(f => !f.isDoor);
+            const doors = items.filter(f => f.isDoor);
 
             const doorTimestamp = f => {
                 const m = String(f.id || '').match(/(\d{10,})$/);
                 return m ? Number(m[1]) : 0;
             };
 
-            // newest first
             doors.sort((a, b) => doorTimestamp(b) - doorTimestamp(a));
 
             const keptDoors = [];
@@ -4572,24 +4625,152 @@
 
                 const overlapsExisting = keptDoors.some(k => {
                     if ((k.wallSide || 'right') !== wall) return false;
-
                     const b0 = vertical ? Number(k.yM || 0) : Number(k.xM || 0);
                     const b1 = b0 + Number(k.wM || 0);
-
                     const overlap = Math.max(0, Math.min(a1, b1) - Math.max(a0, b0));
                     const smaller = Math.max(0.001, Math.min(Number(d.wM || 0), Number(k.wM || 0)));
-
                     return overlap / smaller >= 0.50;
                 });
 
                 if (!overlapsExisting) keptDoors.push(d);
             }
 
-            furnitureItems = [...nonDoors, ...keptDoors];
+            return [...nonDoors, ...keptDoors];
+        }
 
-            // Persist cleanup once, so the old duplicate does not come back.
-            saveFurniture(loc);
-            renderAllFurniture();
+        function saveFurniture(loc) {
+            const serialized = serializeFurniture();
+            const payload = {
+                items: serialized,
+                updatedAt: Date.now()
+            };
+
+            // Local cache keeps the page fast/offline-friendly.
+            localStorage.setItem('roomFurniture_' + loc, JSON.stringify(serialized));
+            localStorage.setItem('roomFurnitureUpdatedAt_' + loc, String(payload.updatedAt));
+
+            // Firebase is the shared source used by iPad / computer / other browsers.
+            if (typeof db !== 'undefined' && db) {
+                db.ref(`${getRoomLayoutCloudPath(loc)}/furniture`).set(payload)
+                    .catch(err => console.error('Furniture cloud save failed:', err));
+            }
+        }
+
+        function applyFurnitureItems(loc, items, persistLocal = true) {
+            const cleaned = cleanupLoadedFurniture(items);
+            furnitureItems = cleaned;
+
+            if (persistLocal) {
+                localStorage.setItem('roomFurniture_' + loc, JSON.stringify(serializeFurniture(cleaned)));
+            }
+
+            if (loc === currentLocation) {
+                renderAllFurniture();
+            }
+        }
+
+        function syncRoomLayoutFromCloud(loc) {
+            if (typeof db === 'undefined' || !db) return;
+
+            const root = db.ref(getRoomLayoutCloudPath(loc));
+
+            // One initial read handles first-time migration from the computer's old localStorage.
+            root.once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const cloud = snapshot.val() || {};
+
+                    if (cloud.roomSize) {
+                        applyCloudRoomSize(loc, cloud.roomSize);
+                    }
+
+                    if (cloud.furniture && Array.isArray(cloud.furniture.items)) {
+                        localStorage.setItem(
+                            'roomFurnitureUpdatedAt_' + loc,
+                            String(Number(cloud.furniture.updatedAt || Date.now()))
+                        );
+                        applyFurnitureItems(loc, cloud.furniture.items, true);
+                    }
+                } else {
+                    // No cloud layout yet:
+                    // migrate the existing layout from THIS browser only if it has real data.
+                    const localFurnitureRaw = localStorage.getItem('roomFurniture_' + loc);
+                    const localSize = loadRoomSize(loc);
+
+                    let localFurniture = [];
+                    try {
+                        localFurniture = localFurnitureRaw ? JSON.parse(localFurnitureRaw) : [];
+                    } catch (_) {
+                        localFurniture = [];
+                    }
+
+                    const jobs = [];
+                    if (Array.isArray(localFurniture) && localFurniture.length > 0) {
+                        jobs.push(
+                            root.child('furniture').set({
+                                items: cleanupLoadedFurniture(localFurniture),
+                                updatedAt: Date.now()
+                            })
+                        );
+                    }
+                    if (localSize && Number(localSize.w) > 0 && Number(localSize.h) > 0) {
+                        jobs.push(
+                            root.child('roomSize').set({
+                                w: Number(localSize.w),
+                                h: Number(localSize.h),
+                                updatedAt: Date.now()
+                            })
+                        );
+                    }
+
+                    if (jobs.length) {
+                        Promise.all(jobs)
+                            .then(() => console.log(`Migrated local room layout to Firebase: ${loc}`))
+                            .catch(err => console.error('Initial room layout migration failed:', err));
+                    }
+                }
+            }).catch(err => console.error('Room layout cloud load failed:', err));
+
+            // Realtime listener: if layout changes on computer, iPad updates too after Firebase sync.
+            if (roomLayoutCloudListeners[loc]) {
+                roomLayoutCloudListeners[loc].off();
+            }
+
+            roomLayoutCloudListeners[loc] = root;
+            root.on('value', snapshot => {
+                if (!snapshot.exists()) return;
+                const cloud = snapshot.val() || {};
+
+                if (cloud.roomSize) {
+                    applyCloudRoomSize(loc, cloud.roomSize);
+                }
+
+                if (cloud.furniture && Array.isArray(cloud.furniture.items)) {
+                    const cloudUpdated = Number(cloud.furniture.updatedAt || 0);
+                    const localUpdated = Number(localStorage.getItem('roomFurnitureUpdatedAt_' + loc) || 0);
+
+                    // Prevent an older cloud callback from immediately undoing a newer local drag/save.
+                    if (cloudUpdated >= localUpdated) {
+                        localStorage.setItem('roomFurnitureUpdatedAt_' + loc, String(cloudUpdated));
+                        applyFurnitureItems(loc, cloud.furniture.items, true);
+                    }
+                }
+            });
+        }
+
+        function loadFurniture(loc) {
+            // Render local cache immediately.
+            const s = localStorage.getItem('roomFurniture_' + loc);
+            let localItems = [];
+            try {
+                localItems = s ? JSON.parse(s) : [];
+            } catch (_) {
+                localItems = [];
+            }
+
+            applyFurnitureItems(loc, localItems, false);
+
+            // Then sync/replace with shared Firebase layout.
+            syncRoomLayoutFromCloud(loc);
         }
 
         /* ----- Helpers ----- */
