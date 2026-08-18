@@ -1907,26 +1907,6 @@
             cursor: default !important;
         }
 
-        /* Snap indicator lines */
-        .snap-guide {
-            position: absolute;
-            background: rgba(224, 51, 49, 0.6);
-            pointer-events: none;
-            z-index: 200;
-        }
-
-        .snap-guide.horizontal {
-            height: 1px;
-            left: 0;
-            right: 0;
-        }
-
-        .snap-guide.vertical {
-            width: 1px;
-            top: 0;
-            bottom: 0;
-        }
-
         /* ---- Door item style (architectural floor-plan symbol) ---- */
         .furniture-item.door-item {
             background: transparent;
@@ -5118,8 +5098,7 @@
             let newX = origXM + dx;
             let newY = origYM + dy;
 
-            // Doors: slide smoothly along their assigned wall only.
-            // Do this before generic furniture snapping so a door never sticks to a table/AP.
+            // Doors stay constrained to their assigned wall, but slide freely along it.
             if (isArchDoor(f)) {
                 const wall = f.wallSide || 'right';
 
@@ -5148,60 +5127,15 @@
                 return;
             }
 
-            const snapM = SNAP_PX / PX_PER_METER;
-            const snapFurnM = SNAP_PX / PX_PER_METER; // same threshold for furniture-to-furniture
-
-            // --- Snap-to-wall ---
-            if (newX < snapM) newX = 0;
-            if (newX + f.wM > cfg.widthMeters - snapM) newX = cfg.widthMeters - f.wM;
-            if (newY < snapM) newY = 0;
-            if (newY + f.hM > cfg.heightMeters - snapM) newY = cfg.heightMeters - f.hM;
-
-            // --- Snap-to-furniture edges ---
-            // For each OTHER furniture item, check if any edge of f snaps to any edge of o
-            for (const o of furnitureItems) {
-                if (o.id === id) continue;
-
-                const oR = o.xM + o.wM;  // other right
-                const oB = o.yM + o.hM;  // other bottom
-                const fR = newX + f.wM;  // our right candidate
-                const fB = newY + f.hM;  // our bottom candidate
-
-                // Horizontal axis snaps (check vertical overlap to decide relevance)
-                const overlapY = newY < oB && fB > o.yM;
-                if (overlapY || Math.abs(newY - o.yM) < snapFurnM * 3) {
-                    // our left edge near other's right edge
-                    if (Math.abs(newX - oR) < snapFurnM) newX = oR;
-                    // our right edge near other's left edge
-                    if (Math.abs(fR - o.xM) < snapFurnM) newX = o.xM - f.wM;
-                    // align left edges
-                    if (Math.abs(newX - o.xM) < snapFurnM) newX = o.xM;
-                    // align right edges
-                    if (Math.abs(fR - oR) < snapFurnM) newX = oR - f.wM;
-                }
-
-                // Vertical axis snaps (check horizontal overlap to decide relevance)
-                const overlapX = newX < oR && (newX + f.wM) > o.xM;
-                if (overlapX || Math.abs(newX - o.xM) < snapFurnM * 3) {
-                    // our top edge near other's bottom edge
-                    if (Math.abs(newY - oB) < snapFurnM) newY = oB;
-                    // our bottom edge near other's top edge
-                    if (Math.abs(fB - o.yM) < snapFurnM) newY = o.yM - f.hM;
-                    // align top edges
-                    if (Math.abs(newY - o.yM) < snapFurnM) newY = o.yM;
-                    // align bottom edges
-                    if (Math.abs(fB - oB) < snapFurnM) newY = oB - f.hM;
-                }
-            }
-
-            // hard clamp inside room
+            // FREE MOVE:
+            // No grid snap, no wall snap, no furniture-to-furniture snap.
+            // Only keep the whole item inside the room boundary.
             newX = Math.max(0, Math.min(newX, cfg.widthMeters - f.wM));
             newY = Math.max(0, Math.min(newY, cfg.heightMeters - f.hM));
 
             f.xM = newX;
             f.yM = newY;
 
-            // update DOM
             const el = document.querySelector(`.furniture-item[data-furn-id="${id}"]`);
             if (el) {
                 el.style.left = Math.round(newX * PX_PER_METER) + 'px';
