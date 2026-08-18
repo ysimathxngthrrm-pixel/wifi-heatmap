@@ -1037,20 +1037,41 @@
         .controls-dropdown {
             position: fixed;
             top: 0;
+            bottom: 0;
             left: -340px;
-            /* hidden off-screen */
             z-index: 1000;
             background: rgba(255, 255, 255, 0.97);
             backdrop-filter: blur(12px);
             border-right: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 0 16px 16px 0;
-            padding: 70px 20px 30px;
-            width: 300px;
-            height: 100vh;
-            overflow-y: auto;
+
+            box-sizing: border-box;
+            padding: 70px 20px 120px;
+            width: 340px;
+            height: auto;
+            max-height: none;
+            min-height: 0;
+
+            overflow-y: scroll !important;
+            overflow-x: hidden;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+
             box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
             text-align: left;
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .controls-dropdown::after {
+            content: "";
+            display: block;
+            height: 80px;
+            width: 100%;
+        }
+
+        #room-editor-section {
+            padding-bottom: 32px;
         }
 
         .controls-dropdown.show {
@@ -1906,47 +1927,140 @@
             bottom: 0;
         }
 
-        /* ---- Door item style ---- */
+        /* ---- Door item style (architectural floor-plan symbol) ---- */
         .furniture-item.door-item {
-            background: rgba(255, 193, 7, 0.15);
-            border: 2px dashed #F59F00;
-            color: #7d5c00;
+            background: transparent;
+            border: none;
             overflow: visible;
+            z-index: 22;
+            pointer-events: auto;
+            cursor: grab;
+            touch-action: none;
         }
 
-        .furniture-item.door-item .door-arc {
+        #map-container.editor-mode .furniture-item.door-item {
+            pointer-events: auto;
+            cursor: grab;
+        }
+
+        #map-container.editor-mode .furniture-item.door-item.dragging {
+            cursor: grabbing;
+        }
+
+        .furniture-item.door-item .door-svg {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .furniture-item.door-item .door-name-label {
+            position: absolute;
+            font-size: 9px;
+            font-weight: bold;
+            white-space: nowrap;
+            color: #c07800;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.75);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .furniture-item.door-item.selected .door-svg line,
+        .furniture-item.door-item.selected .door-svg path,
+        .furniture-item.door-item.selected .door-svg circle {
+            stroke: #E8590C !important;
+        }
+
+
+        /* ---- Access Point (AP) item style ---- */
+        .furniture-item.ap-item {
+            background: rgba(255, 140, 0, 0.18);
+            border: 2.5px solid #FF8C00;
+            border-radius: 50%;
+            color: #7d4300;
+            overflow: visible;
+            z-index: 25;
+        }
+
+        .furniture-item.ap-item:hover {
+            background: rgba(255, 140, 0, 0.32);
+            border-color: #E65C00;
+        }
+
+        .furniture-item.ap-item.selected {
+            background: rgba(255, 90, 0, 0.35);
+            border: 2.5px solid #E03131;
+        }
+
+        .ap-item .ap-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             height: 100%;
             pointer-events: none;
         }
 
-        .furniture-item.door-item .door-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 14%;
-            height: 100%;
-            background: #F59F00;
-            border-radius: 2px;
+        .ap-item .ap-wifi-icon {
+            width: 60%;
+            height: 60%;
+            flex-shrink: 0;
         }
 
-        .furniture-item.door-item .door-label {
-            position: absolute;
-            top: 2px;
-            left: 50%;
-            transform: translateX(-50%);
+        .ap-item .ap-label {
             font-size: 9px;
-            font-weight: bold;
+            font-weight: 800;
+            color: #7d3a00;
+            letter-spacing: 0.4px;
+            margin-top: 2px;
+            text-align: center;
+            line-height: 1.1;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
             white-space: nowrap;
-            color: #7d5c00;
         }
 
-        .furniture-item.door-item.selected {
-            background: rgba(240, 100, 50, 0.18);
-            border: 2px dashed #E8590C;
+        /* ================= Coverage Visualization Modes ================= */
+        .coverage-viz-controls {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee
+        }
+
+        .coverage-viz-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .coverage-viz-btn {
+            flex: 1;
+            min-width: 88px;
+            font-size: 10px !important;
+            padding: 7px 8px !important
+        }
+
+        #coverage-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            display: none
+        }
+
+        #coverage-viz-note {
+            font-size: 10px;
+            color: #777;
+            margin-top: 6px;
+            line-height: 1.35
         }
     </style>
 </head>
@@ -1983,28 +2097,37 @@
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
-            <span
-                style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">สถานะทดสอบ
-                / เปรียบเทียบ:</span>
+            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">🧪 Case
+                การทดลอง:</span>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button class="btn btn-install active" id="btn-before" onclick="setInstallMode('Before')"
-                    style="font-size: 11px; padding: 6px 8px; flex: 1;">ก่อนติดตั้ง AP</button>
-                <button class="btn btn-install" id="btn-after" onclick="setInstallMode('After')"
-                    style="font-size: 11px; padding: 6px 8px; flex: 1;">หลังติดตั้ง AP</button>
-                <button class="btn btn-install btn-compare" id="btn-compare" onclick="toggleCompareMode()"
-                    style="font-size: 11px; padding: 6px 8px; flex: 1.2;">📊 เปรียบเทียบ</button>
+                <button class="btn btn-install active" id="btn-case1" onclick="setProjectCase('Case1')"
+                    style="font-size: 11px; padding: 6px 8px; flex: 1;">Case 1</button>
+                <button class="btn btn-install" id="btn-case2" onclick="setProjectCase('Case2')"
+                    style="font-size: 11px; padding: 6px 8px; flex: 1;">Case 2</button>
+                <button class="btn btn-install" id="btn-case3" onclick="setProjectCase('Case3')"
+                    style="font-size: 11px; padding: 6px 8px; flex: 1;">Case 3</button>
             </div>
+            <div id="case-condition-controls" style="margin-top:8px;"></div>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
-            <span
-                style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">เลือกห้อง:</span>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-loc active" id="loc-room1" onclick="setLocation('Room1')"
-                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องเรียน Huawei</button>
-                <button class="btn btn-loc" id="loc-lab1" onclick="setLocation('Lab1')"
-                    style="font-size: 11px; padding: 6px 12px; flex: 1;">ห้องแล็บ T-309</button>
+            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">📍
+                สถานที่ / แผนผัง:</span>
+            <select id="location-select" class="profile-select" onchange="setLocation(this.value)"
+                style="width:100%; margin-bottom:6px; font-size:11px;">
+                <option value="Room1">ห้องเรียน Huawei</option>
+            </select>
+            <div id="location-management-row" style="display:flex;gap:5px;flex-wrap:wrap;">
+                <button class="btn btn-loc" onclick="createLocation()" style="font-size:10px;padding:5px 7px;flex:1;">➕
+                    เพิ่มสถานที่</button>
+                <button class="btn btn-loc" onclick="renameCurrentLocation()"
+                    style="font-size:10px;padding:5px 7px;flex:1;">✏️ แก้ชื่อ</button>
+                <button class="btn btn-loc" onclick="deleteCurrentLocation()"
+                    style="font-size:10px;padding:5px 7px;flex:1;">🗑️ ลบ</button>
             </div>
+            <div id="location-info" style="font-size:10px;color:#888;margin-top:6px;"></div>
+            <button id="loc-room1" type="button" style="display:none" aria-hidden="true"></button>
+            <button id="loc-lab1" type="button" style="display:none" aria-hidden="true"></button>
         </div>
 
         <div
@@ -2013,6 +2136,17 @@
             <div style="font-size: 13px; display: flex; justify-content: space-between;">
                 <span>2.4GHz: <strong id="val-24g" style="color: #666;">รอข้อมูล...</strong></span>
                 <span>5GHz: <strong id="val-5g" style="color: #666;">รอข้อมูล...</strong></span>
+            </div>
+        </div>
+
+        <div id="device-status-section"
+            style="margin-bottom:10px; padding:8px; border-radius:8px; border:1px solid #eee; background:#fff;">
+            <span style="font-weight:bold; font-size:11px; color:#666; display:block; margin-bottom:5px;">
+                📲 Device Status — จังหวะกดวัด
+            </span>
+            <div id="device-status-badge"
+                style="font-size:11px; padding:7px 10px; background-color:#F5F5F5; color:#666; border-radius:6px; text-align:center; font-weight:600;">
+                🔴 กำลังรอการเชื่อมต่อกับ ESP32...
             </div>
         </div>
 
@@ -2029,6 +2163,14 @@
                 <button class="btn" id="btn-grid" onclick="toggleGrid()"
                     style="border: 1px solid #ccc; font-size: 11px; padding: 6px 12px; width: 100%;">เปิดตาราง Grid
                     🔳</button>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn" id="btn-toggle-survey-points" onclick="toggleSurveyPointsOverlay()"
+                        style="border: 1px solid #ccc; font-size: 10px; padding: 6px 8px; flex: 1;">แสดงจุดสำรวจ 2m
+                        🎯</button>
+                    <button class="btn" id="btn-toggle-point-labels" onclick="togglePointIdLabels()"
+                        style="border: 1px solid #ccc; font-size: 10px; padding: 6px 8px; flex: 1;">แสดง Point ID
+                        🏷️</button>
+                </div>
             </div>
         </div>
 
@@ -2039,6 +2181,52 @@
             <div id="editor-controls">
                 <div class="editor-sub-title">📐 ขนาดห้อง</div>
                 <button class="editor-btn editor-btn-apply" onclick="openRoomSizeModal()">📐 กำหนดขนาดห้อง...</button>
+
+                <hr class="editor-divider">
+                <div class="editor-sub-title">📡 เพิ่ม Access Point (AP)</div>
+                <div class="editor-input-row">
+                    <span>ชื่อ AP:</span>
+                    <input type="text" id="ap-name-input" placeholder="AP-1" style="width:70px;">
+                </div>
+                <button class="editor-btn" onclick="addAccessPoint()"
+                    style="background: linear-gradient(135deg,#FF8C00,#FFA940); color:#fff; width:100%; padding:6px; border-radius:8px; margin-top:2px; font-weight:bold;">📡
+                    เพิ่ม AP</button>
+
+                <hr class="editor-divider">
+                <div class="editor-sub-title">🚪 เพิ่มประตู</div>
+                <div class="editor-input-row">
+                    <span>ชื่อ:</span>
+                    <input type="text" id="door-name-input" placeholder="ประตู" style="width:70px;">
+                </div>
+                <div class="editor-input-row">
+                    <span>กว้างช่อง:</span>
+                    <input type="number" id="door-width-input" min="0.3" max="5" step="0.05" value="0.90">
+                    <span>ม.</span>
+                </div>
+                <div class="editor-input-row">
+                    <span>สูงจริง:</span>
+                    <input type="number" id="door-height-input" min="0.5" max="5" step="0.05" value="2.00">
+                    <span>ม.</span>
+                </div>
+                <div class="editor-input-row">
+                    <span>ผนัง:</span>
+                    <select id="door-wall-input" style="flex:1; font-size:11px; padding:3px;">
+                        <option value="right">ขวา</option>
+                        <option value="left">ซ้าย</option>
+                        <option value="top">บน</option>
+                        <option value="bottom">ล่าง</option>
+                    </select>
+                </div>
+                <div class="editor-input-row">
+                    <span>บานพับ:</span>
+                    <select id="door-hinge-input" style="flex:1; font-size:11px; padding:3px;">
+                        <option value="start">ด้านต้น</option>
+                        <option value="end">ด้านปลาย</option>
+                    </select>
+                </div>
+                <button class="editor-btn" onclick="addDoor()"
+                    style="background: linear-gradient(135deg,#F59F00,#E67700); color:#fff; width:100%; padding:6px; border-radius:8px; margin-top:2px; font-weight:bold;">🚪
+                    เพิ่มประตู</button>
 
                 <hr class="editor-divider">
                 <div class="editor-sub-title">🪑 เพิ่มเฟอร์นิเจอร์</div>
@@ -2066,14 +2254,6 @@
             </div>
         </div>
 
-        <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
-            <span style="font-weight: bold; font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Device
-                Status:</span>
-            <div id="device-status-badge"
-                style="font-size: 11px; padding: 6px 12px; background-color: #F5F5F5; color: #666; border-radius: 6px; text-align: center;">
-                คลิกจุดบนแผนที่เพื่อสแกน
-            </div>
-        </div>
     </div>
 
     <!-- Room Size Modal -->
@@ -2124,9 +2304,10 @@
             <div id="classroom-plan">
                 <!-- เฟอร์นิเจอร์ถูกลบออก ใช้ Room Editor เพิ่มเองได้ -->
             </div>
+            <div id="lab-plan" style="display:none !important" aria-hidden="true"></div>
 
-            <div id="lab-plan">
-                <!-- เฟอร์นิเจอร์ถูกลบออก ใช้ Room Editor เพิ่มเองได้ -->
+            <div id="survey-point-layer"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6;">
             </div>
 
             <div id="heatmap-layer"
@@ -2335,6 +2516,10 @@
             dot.className = 'heatmap-dot';
             dot.style.left = `${x}px`; dot.style.top = `${y}px`;
             dot.dataset.key = key;
+            dot.style.backgroundColor =
+                (rssi >= -50) ? '#2ECC71' :
+                    (rssi >= -70) ? '#F1C40F' :
+                        (rssi > -100) ? '#E74C3C' : '#7F8C8D';
 
             // Handle clicking individual point to toggle selection in clear mode
             dot.onclick = (e) => {
@@ -3003,6 +3188,16 @@
         }
 
         /* ---------------- โลจิกเปิด/ปิด แผงควบคุม ---------------- */
+        // Force wheel/trackpad scrolling to stay inside the open side drawer.
+        document.addEventListener('wheel', function (e) {
+            const panel = document.getElementById('controls-dropdown');
+            if (!panel || !panel.classList.contains('show')) return;
+            if (!panel.contains(e.target)) return;
+
+            panel.scrollTop += e.deltaY;
+            e.preventDefault();
+        }, { passive: false });
+
         function toggleControlsMenu() {
             const dropdown = document.getElementById('controls-dropdown');
             if (dropdown) {
@@ -3294,16 +3489,9 @@
                 heightMeters: 10.35,
                 widthPx: 840,
                 heightPx: 1035,
-                gridMeters: 0.50 // ห้องเรียน Huawei: Grid 0.5 m
+                gridMeters: 2.00, // Case 1 survey grid = 2.0 m
+                editorGridMeters: 0.50 // Room Editor grid = 0.5 m
             },
-            Lab1: {
-                name: 'ห้องแล็บ T-309',
-                widthMeters: 7.81,
-                heightMeters: 15.60,
-                widthPx: 781,
-                heightPx: 1560,
-                gridMeters: 0.50 // จุดทดสอบทุก 0.5 m
-            }
         };
 
         function getRoomConfig(loc = currentLocation) {
@@ -3343,35 +3531,180 @@
             return Number((Number(yPx) / PX_PER_METER).toFixed(2));
         }
 
-        // สร้าง Point ID จากตำแหน่งกริด — จุดเดียวกันบนผังจะได้ ID เดิมทุกครั้ง
-        // ไม่ว่าจะวัดกี่รอบ (ก่อนติดตั้ง / หลังติดตั้ง / รอบ 2, 3, ...)
-        function getPointId(xMeters, yMeters, loc = currentLocation) {
-            const gridMeters = getGridMeters(loc);
-            const col = Math.round(Number(xMeters) / gridMeters);
-            const row = Math.round(Number(yMeters) / gridMeters);
-            return `R${row}C${col}`;
+        // Visual Grid vs Survey Measurement Spacing
+        const VISUAL_GRID_METERS = 1.0;
+        const SURVEY_SPACING_METERS = 2.0;
+
+        let showSurveyPointsOverlay = true;
+        let showPointIdLabels = true;
+
+        // Returns planned survey positions (every 2.0m with 0.5m offset, e.g. X: 0.5, 2.5, 4.5, 6.5, Y: 0.5, 2.5, 4.5, 6.5, 8.5, 10.5)
+        function getPlannedSurveyPoints(loc = currentLocation) {
+            const cfg = getRoomConfig(loc);
+            const points = [];
+            const startX = 0.5;
+            const startY = 0.5;
+            const step = SURVEY_SPACING_METERS;
+
+            let row = 1;
+            for (let y = startY; y < cfg.heightMeters; y += step) {
+                let col = 1;
+                for (let x = startX; x < cfg.widthMeters; x += step) {
+                    points.push({
+                        pointId: `R${row}C${col}`,
+                        row: row,
+                        col: col,
+                        x: Number(x.toFixed(2)),
+                        y: Number(y.toFixed(2))
+                    });
+                    col++;
+                }
+                row++;
+            }
+            return points;
         }
 
-        // Snap one coordinate only when it is sufficiently close to a 1.5 m grid line.
-        // Returns both the final coordinate and whether snapping was applied.
-        function snapCoordinateWithTolerance(valueMeters, loc = currentLocation) {
-            const raw = Number(valueMeters);
-            const gridMeters = getGridMeters(loc);
-            const nearestGrid = Math.round(raw / gridMeters) * gridMeters;
-            const delta = Math.abs(raw - nearestGrid);
-
-            if (delta <= SNAP_TOLERANCE + 1e-9) {
+        // Automatic field-friendly survey positions for Room1.
+        // Point IDs and planned 2 m grid stay unchanged.
+        // Only the actual measurement position is shifted slightly away from desk surfaces.
+        // The offsets are intentionally small so spacing remains approximately 2 m.
+        function getFieldSurveyPoint(point, loc = currentLocation) {
+            if (loc !== 'Room1') {
                 return {
-                    value: Number(nearestGrid.toFixed(2)),
-                    snapped: true,
-                    delta: Number(delta.toFixed(2))
+                    ...point,
+                    plannedX: point.x,
+                    plannedY: point.y,
+                    actualX: point.x,
+                    actualY: point.y,
+                    adjusted: false
                 };
             }
 
+            // Huawei classroom desk rows occupy the middle of the room.
+            // Planned rows R2 and R4 cross desk surfaces in the current layout.
+            // Shift those rows vertically into the nearest aisle by 0.45 m.
+            // Keep all columns and Point IDs unchanged.
+            let actualX = Number(point.x);
+            let actualY = Number(point.y);
+
+            if (point.row === 2) {
+                actualY = Math.max(0.05, actualY - 0.45);
+            } else if (point.row === 4) {
+                actualY = Math.min(getRoomConfig(loc).heightMeters - 0.05, actualY + 0.45);
+            }
+
             return {
-                value: Number(raw.toFixed(2)),
-                snapped: false,
-                delta: Number(delta.toFixed(2))
+                ...point,
+                plannedX: Number(point.x),
+                plannedY: Number(point.y),
+                actualX: Number(actualX.toFixed(2)),
+                actualY: Number(actualY.toFixed(2)),
+                adjusted: Math.hypot(actualX - Number(point.x), actualY - Number(point.y)) > 0.02
+            };
+        }
+
+        function getFieldSurveyPoints(loc = currentLocation) {
+            return getPlannedSurveyPoints(loc).map(p => getFieldSurveyPoint(p, loc));
+        }
+
+        // Serpentine / Zigzag ordered list of pointIds for next point recommendation
+        function getSerpentineSurveyOrder(loc = currentLocation) {
+            const allPoints = getPlannedSurveyPoints(loc);
+            if (allPoints.length === 0) return [];
+
+            const maxRow = Math.max(...allPoints.map(p => p.row));
+            const maxCol = Math.max(...allPoints.map(p => p.col));
+
+            const pointMap = new Map();
+            allPoints.forEach(p => pointMap.set(`${p.row}_${p.col}`, p));
+
+            const ordered = [];
+            for (let r = 1; r <= maxRow; r++) {
+                if (r % 2 === 1) {
+                    // Left to Right
+                    for (let c = 1; c <= maxCol; c++) {
+                        const p = pointMap.get(`${r}_${c}`);
+                        if (p) ordered.push(p);
+                    }
+                } else {
+                    // Right to Left
+                    for (let c = maxCol; c >= 1; c--) {
+                        const p = pointMap.get(`${r}_${c}`);
+                        if (p) ordered.push(p);
+                    }
+                }
+            }
+            return ordered;
+        }
+
+        // Returns Point ID from coordinate using nearest planned 2m survey point
+        function getPointId(xMeters, yMeters, loc = currentLocation) {
+            const planned = getPlannedSurveyPoints(loc);
+            if (planned.length === 0) return 'R1C1';
+
+            const rawX = Number(xMeters);
+            const rawY = Number(yMeters);
+
+            let closest = planned[0];
+            let minDist = Infinity;
+            planned.forEach(p => {
+                const dist = Math.hypot(p.x - rawX, p.y - rawY);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = p;
+                }
+            });
+            return closest.pointId;
+        }
+
+        // Snap to the nearest field measurement position.
+        // Point ID is still tied to the original planned 2 m grid.
+        function snapToSurveyPoint(xMeters, yMeters, loc = currentLocation) {
+            const points = getFieldSurveyPoints(loc);
+            const rawX = Number(xMeters);
+            const rawY = Number(yMeters);
+
+            if (points.length === 0) {
+                return {
+                    x: rawX, y: rawY,
+                    actualX: rawX, actualY: rawY,
+                    plannedX: rawX, plannedY: rawY,
+                    pointId: 'R1C1', snapped: false, adjusted: false
+                };
+            }
+
+            let closest = points[0];
+            let minDist = Infinity;
+            points.forEach(p => {
+                const dist = Math.hypot(p.actualX - rawX, p.actualY - rawY);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = p;
+                }
+            });
+
+            return {
+                x: closest.actualX,
+                y: closest.actualY,
+                actualX: closest.actualX,
+                actualY: closest.actualY,
+                plannedX: closest.plannedX,
+                plannedY: closest.plannedY,
+                pointId: closest.pointId,
+                snapped: true,
+                adjusted: closest.adjusted,
+                dist: minDist
+            };
+        }
+
+        // Snap tolerance helper retained for API compatibility
+        function snapCoordinateWithTolerance(valueMeters, loc = currentLocation) {
+            const raw = Number(valueMeters);
+            const nearestGrid = Math.round((raw - 0.5) / 2.0) * 2.0 + 0.5;
+            return {
+                value: Number(nearestGrid.toFixed(2)),
+                snapped: true,
+                delta: Math.abs(raw - nearestGrid)
             };
         }
 
@@ -3474,6 +3807,95 @@
             }
         };
 
+        function toggleSurveyPointsOverlay() {
+            showSurveyPointsOverlay = !showSurveyPointsOverlay;
+            const btn = document.getElementById('btn-toggle-survey-points');
+            if (btn) btn.classList.toggle('active', showSurveyPointsOverlay);
+            renderSurveyPointOverlay();
+        }
+
+        function togglePointIdLabels() {
+            showPointIdLabels = !showPointIdLabels;
+            const btn = document.getElementById('btn-toggle-point-labels');
+            if (btn) btn.classList.toggle('active', showPointIdLabels);
+            renderSurveyPointOverlay();
+        }
+
+        function renderSurveyPointOverlay() {
+            const layer = document.getElementById('survey-point-layer');
+            if (!layer) return;
+            layer.innerHTML = '';
+
+            const btnPoints = document.getElementById('btn-toggle-survey-points');
+            if (btnPoints) btnPoints.classList.toggle('active', showSurveyPointsOverlay);
+            const btnLabels = document.getElementById('btn-toggle-point-labels');
+            if (btnLabels) btnLabels.classList.toggle('active', showPointIdLabels);
+
+            if (!showSurveyPointsOverlay) return;
+
+            const planned = getFieldSurveyPoints(currentLocation);
+            const activeMap = new Map();
+            (activePoints || []).forEach(p => {
+                const pid = p.pointId || getPointId(p.x, p.y, currentLocation);
+                activeMap.set(pid, p);
+            });
+
+            const serpentine = getSerpentineSurveyOrder(currentLocation);
+            let nextPointId = null;
+            if (currentCase === 'Case1' && currentCondition !== 'Average') {
+                const unmeasured = serpentine.find(p => !activeMap.has(p.pointId));
+                if (unmeasured) nextPointId = unmeasured.pointId;
+            }
+
+            planned.forEach(p => {
+                const px = meterToPixelX(p.actualX);
+                const py = meterToPixelY(p.actualY);
+
+                const isMeasured = activeMap.has(p.pointId);
+                const isNext = p.pointId === nextPointId;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'survey-point-marker' + (isNext ? ' next-recommended' : '');
+                wrapper.style.position = 'absolute';
+                wrapper.style.left = `${px}px`;
+                wrapper.style.top = `${py}px`;
+                wrapper.style.transform = 'translate(-50%, -50%)';
+                wrapper.style.display = 'flex';
+                wrapper.style.flexDirection = 'column';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.pointerEvents = 'none';
+                wrapper.style.zIndex = '6';
+
+                if (!isMeasured) {
+                    const circle = document.createElement('div');
+                    circle.style.width = isNext ? '18px' : '14px';
+                    circle.style.height = isNext ? '18px' : '14px';
+                    circle.style.borderRadius = '50%';
+                    circle.style.border = isNext ? '2.5px solid #FF8C00' : '2px dashed #555';
+                    circle.style.backgroundColor = isNext ? 'rgba(255,140,0,.22)' : 'rgba(255,255,255,.9)';
+                    circle.style.boxShadow = isNext ? '0 0 10px rgba(255,140,0,.8)' : 'none';
+                    wrapper.appendChild(circle);
+                }
+
+                if (showPointIdLabels) {
+                    const label = document.createElement('span');
+                    label.textContent = p.pointId + (isNext ? ' NEXT' : '');
+                    label.style.fontSize = '9px';
+                    label.style.fontWeight = 'bold';
+                    label.style.color = isNext ? '#D9480F' : '#555';
+                    label.style.backgroundColor = isNext ? '#FFE8CC' : 'rgba(255,255,255,.88)';
+                    label.style.padding = '1px 3px';
+                    label.style.borderRadius = '3px';
+                    label.style.marginTop = '2px';
+                    label.style.whiteSpace = 'nowrap';
+                    label.style.border = isNext ? '1px solid #FF8C00' : '1px solid rgba(0,0,0,.1)';
+                    wrapper.appendChild(label);
+                }
+
+                layer.appendChild(wrapper);
+            });
+        }
+
         drawPoint = function (x, y, rssi, key) {
             const p = normalizeStoredPoint({ x, y, rssi }, currentLocation);
             const container = document.getElementById('heatmap-layer');
@@ -3492,6 +3914,10 @@
             dot.style.left = `${pixelX}px`;
             dot.style.top = `${pixelY}px`;
             dot.dataset.key = key;
+            dot.style.backgroundColor =
+                (rssi >= -50) ? '#2ECC71' :
+                    (rssi >= -70) ? '#F1C40F' :
+                        (rssi > -100) ? '#E74C3C' : '#7F8C8D';
 
             dot.onclick = (e) => {
                 if (isClearSelectedModeActive) {
@@ -4040,11 +4466,11 @@
 
         /* ----- Add Furniture ----- */
         function addFurniture() {
-            const name = document.getElementById('furn-name-input').value.trim() || 'เฟอร์นิเจอร์';
+            const name = document.getElementById('furn-name-input').value.trim();
             const wM = parseFloat(document.getElementById('furn-w-input').value);
             const hM = parseFloat(document.getElementById('furn-h-input').value);
             if (isNaN(wM) || isNaN(hM) || wM <= 0 || hM <= 0) {
-                showToast('⚠️ กรุณากรอกขนาดเฟอร์นิเจอร์ให้ถูกต้อง');
+                showToast('⚠️ กรุณากรอกขนาดให้ถูกต้อง');
                 return;
             }
             const id = 'furn_' + Date.now();
@@ -4052,8 +4478,9 @@
             saveFurniture(currentLocation);
             renderAllFurniture();
             selectFurniture(id);
-            showToast(`➕ เพิ่ม ${name} (${wM}×${hM} ม.)`);
+            showToast(`➕ เพิ่ม${name ? ' ' + name : ''} (${wM}×${hM} ม.)`);
         }
+
 
         /* ----- Select/Deselect Furniture ----- */
         function selectFurniture(id) {
@@ -4084,22 +4511,202 @@
             showToast(`🗑️ ลบ ${f ? f.name : 'เฟอร์นิเจอร์'} แล้ว`);
         }
 
+        /* ----- Add Access Point ----- */
+        function addAccessPoint() {
+            const rawName = document.getElementById('ap-name-input').value.trim();
+            const name = rawName || 'AP-1';
+            const sizeM = 0.40;
+            const id = 'furn_ap_' + Date.now();
+            furnitureItems.push({ id, name, xM: 0.5, yM: 0.5, wM: sizeM, hM: sizeM, isAP: true });
+            saveFurniture(currentLocation);
+            renderAllFurniture();
+            selectFurniture(id);
+            showToast(`📡 เพิ่ม ${name} (AP) แล้ว — ลากไปวางตำแหน่งที่ต้องการ`);
+        }
+
         /* ----- Save / Load Furniture ----- */
         function saveFurniture(loc) {
             localStorage.setItem('roomFurniture_' + loc,
-                JSON.stringify(furnitureItems.map(({ id, name, xM, yM, wM, hM }) => ({ id, name, xM, yM, wM, hM })))
+                JSON.stringify(furnitureItems.map(f => ({
+                    id: f.id, name: f.name,
+                    xM: f.xM, yM: f.yM, wM: f.wM, hM: f.hM,
+                    isAP: !!f.isAP,
+                    isDoor: !!f.isDoor,
+                    wallSide: f.wallSide || null,
+                    hingeSide: f.hingeSide || 'start'
+                })))
             );
         }
         function loadFurniture(loc) {
             const s = localStorage.getItem('roomFurniture_' + loc);
             furnitureItems = s ? JSON.parse(s) : [];
+
+            // Migrate old door items that were stored by name only
+            furnitureItems.forEach(f => {
+                if (!f.isDoor && f.name && f.name.trim().toLowerCase().startsWith('ประตู')) {
+                    f.isDoor = true;
+                    if (!f.wallSide) f.wallSide = 'right';
+                    if (!f.hingeSide) f.hingeSide = 'start';
+                }
+            });
+
+            // Remove accidental overlapping door duplicates left from earlier test versions.
+            // This fixes the "multiple arcs/leaves drawn on top of each other" problem.
+            const nonDoors = furnitureItems.filter(f => !f.isDoor);
+            const doors = furnitureItems.filter(f => f.isDoor);
+
+            const doorTimestamp = f => {
+                const m = String(f.id || '').match(/(\d{10,})$/);
+                return m ? Number(m[1]) : 0;
+            };
+
+            // newest first
+            doors.sort((a, b) => doorTimestamp(b) - doorTimestamp(a));
+
+            const keptDoors = [];
+            for (const d of doors) {
+                const wall = d.wallSide || 'right';
+                const vertical = wall === 'left' || wall === 'right';
+                const a0 = vertical ? Number(d.yM || 0) : Number(d.xM || 0);
+                const a1 = a0 + Number(d.wM || 0);
+
+                const overlapsExisting = keptDoors.some(k => {
+                    if ((k.wallSide || 'right') !== wall) return false;
+
+                    const b0 = vertical ? Number(k.yM || 0) : Number(k.xM || 0);
+                    const b1 = b0 + Number(k.wM || 0);
+
+                    const overlap = Math.max(0, Math.min(a1, b1) - Math.max(a0, b0));
+                    const smaller = Math.max(0.001, Math.min(Number(d.wM || 0), Number(k.wM || 0)));
+
+                    return overlap / smaller >= 0.50;
+                });
+
+                if (!overlapsExisting) keptDoors.push(d);
+            }
+
+            furnitureItems = [...nonDoors, ...keptDoors];
+
+            // Persist cleanup once, so the old duplicate does not come back.
+            saveFurniture(loc);
             renderAllFurniture();
         }
 
         /* ----- Helpers ----- */
-        function isDoorItem(name) {
-            return name && name.trim().toLowerCase().startsWith('ประตู');
+        function isArchDoor(f) {
+            return !!f.isDoor;
         }
+
+        function isApItem(f) {
+            return !!f.isAP;
+        }
+
+        /* ----- Add Door ----- */
+        function addDoor() {
+            const name = document.getElementById('door-name-input').value.trim() || 'ประตู';
+            const wM = parseFloat(document.getElementById('door-width-input').value) || 0.90;
+            const hM = parseFloat(document.getElementById('door-height-input').value) || 2.00;
+            const wallSide = document.getElementById('door-wall-input').value;
+            const hingeSide = document.getElementById('door-hinge-input').value;
+            const cfg = getRoomConfig();
+            const id = 'furn_door_' + Date.now();
+
+            // xM/yM store the TOP-LEFT corner of the R×R element
+            // The perpendicular axis is locked to the wall edge
+            let xM = 0, yM = 0;
+            if (wallSide === 'left') { xM = 0; yM = Math.max(0, (cfg.heightMeters - wM) / 2); }
+            if (wallSide === 'right') { xM = cfg.widthMeters - wM; yM = Math.max(0, (cfg.heightMeters - wM) / 2); }
+            if (wallSide === 'top') { xM = Math.max(0, (cfg.widthMeters - wM) / 2); yM = 0; }
+            if (wallSide === 'bottom') { xM = Math.max(0, (cfg.widthMeters - wM) / 2); yM = cfg.heightMeters - wM; }
+
+            furnitureItems.push({ id, name, xM, yM, wM, hM, isDoor: true, wallSide, hingeSide });
+            saveFurniture(currentLocation);
+            renderAllFurniture();
+            selectFurniture(id);
+            showToast(`🚪 เพิ่ม ${name} (${wM} ม.) ที่ผนัง ${wallSide}`);
+        }
+
+        /* ----- Render Door SVG (measured-plan style) ----- */
+        /*
+           IMPORTANT:
+           The measured Huawei classroom plan uses a 1.60 m DOUBLE-LEAF door.
+           The value f.wM is the TOTAL wall opening width.
+           Each leaf is therefore f.wM / 2.
+
+           For a right-wall door, the measured-plan symbol is:
+           - opening along the right wall
+           - hinge at BOTH ends of the opening
+           - upper leaf opens 90° into the room
+           - lower leaf opens 90° into the room
+           - two quarter-circle swing arcs meet at the center of the opening
+           - no filled sector
+           - f.hM is the real door height and is NOT used as top-view depth
+
+           The same geometry is rotated/mirrored for the other walls.
+        */
+        function renderDoorSVG(f) {
+            const R = Math.max(1, Math.round(f.wM * PX_PER_METER)); // total opening
+            const L = R / 2;                                      // one leaf
+            const wall = f.wallSide || 'right';
+
+            const LEAF = '#111';
+            const ARC = '#111';
+            const WALL = '#212529';
+            const CUT = '#fff';
+
+            // Build the right-wall version first, then rotate it for the other walls.
+            // Right-wall local coordinates:
+            // opening = x=R, y=0..R
+            // top hinge = (R,0), bottom hinge = (R,R)
+            // open leaves point horizontally left by L
+            const rightDoor = `
+                <!-- erase the room-border line only across the opening -->
+                <line x1="${R - 2}" y1="0" x2="${R - 2}" y2="${R}"
+                      stroke="${CUT}" stroke-width="7" stroke-linecap="butt"/>
+
+                <!-- upper leaf: hinge at top end, opened 90° into room -->
+                <line x1="${R - 2}" y1="0" x2="${R - L}" y2="0"
+                      stroke="${LEAF}" stroke-width="1.8" stroke-linecap="square"/>
+
+                <!-- upper quarter-circle: open leaf -> closed center -->
+                <path d="M ${R - L} 0
+                         A ${L} ${L} 0 0 0 ${R - 2} ${L}"
+                      fill="none" stroke="${ARC}" stroke-width="1.5"/>
+
+                <!-- lower leaf: hinge at bottom end, opened 90° into room -->
+                <line x1="${R - 2}" y1="${R}" x2="${R - L}" y2="${R}"
+                      stroke="${LEAF}" stroke-width="1.8" stroke-linecap="square"/>
+
+                <!-- lower quarter-circle: open leaf -> closed center -->
+                <path d="M ${R - L} ${R}
+                         A ${L} ${L} 0 0 1 ${R - 2} ${L}"
+                      fill="none" stroke="${ARC}" stroke-width="1.5"/>
+            `;
+
+            let transform = '';
+            if (wall === 'right') {
+                transform = '';
+            } else if (wall === 'left') {
+                // mirror horizontally
+                transform = `translate(${R} 0) scale(-1 1)`;
+            } else if (wall === 'top') {
+                // rotate right-wall symbol 90° CCW into the room
+                transform = `translate(0 ${R}) rotate(-90)`;
+            } else { // bottom
+                // rotate right-wall symbol 90° CW into the room
+                transform = `translate(${R} 0) rotate(90)`;
+            }
+
+            return `<svg xmlns="http://www.w3.org/2000/svg"
+                         class="door-svg"
+                         viewBox="-10 -10 ${R + 20} ${R + 20}"
+                         style="position:absolute;top:0;left:0;width:${R}px;height:${R}px;overflow:visible;">
+                <g transform="${transform}">
+                    ${rightDoor}
+                </g>
+            </svg>`;
+        }
+
 
         /* ----- Render All Furniture ----- */
         function renderAllFurniture() {
@@ -4115,22 +4722,40 @@
                 el.style.height = Math.round(f.hM * PX_PER_METER) + 'px';
                 if (f.id === selectedFurnId) el.classList.add('selected');
 
-                if (isDoorItem(f.name)) {
-                    // --- Door shape ---
-                    el.classList.add('door-item');
+                if (isApItem(f)) {
+                    // --- AP shape: circle with Wi-Fi icon ---
+                    el.classList.add('ap-item');
                     el.textContent = '';
-                    const wPx = Math.round(f.wM * PX_PER_METER);
-                    const hPx = Math.round(f.hM * PX_PER_METER);
-                    // Arc SVG (quarter-circle sweep)
                     el.innerHTML = `
-                        <svg class="door-arc" viewBox="0 0 ${wPx} ${hPx}" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M ${wPx * 0.12} ${hPx} A ${wPx * 0.88} ${hPx} 0 0 1 ${wPx} ${hPx * 0.12}"
-                                  fill="rgba(245,159,0,0.18)" stroke="#F59F00" stroke-width="1.5" stroke-dasharray="4 3"/>
-                            <rect x="0" y="0" width="${wPx * 0.13}" height="${hPx}"
-                                  fill="#F59F00" rx="2"/>
-                        </svg>
-                        <span class="door-label">🚪 ${f.name}</span>
+                        <div class="ap-inner">
+                            <svg class="ap-wifi-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
+                                <circle cx="24" cy="24" r="23" fill="rgba(255,140,0,0.10)" stroke="#FF8C00" stroke-width="1.5"/>
+                                <!-- Wi-Fi arcs -->
+                                <path d="M10 22 Q24 10 38 22" stroke="#FF8C00" stroke-width="3" stroke-linecap="round" fill="none"/>
+                                <path d="M14.5 27 Q24 18 33.5 27" stroke="#FF8C00" stroke-width="3" stroke-linecap="round" fill="none"/>
+                                <path d="M19.5 32 Q24 26.5 28.5 32" stroke="#FF8C00" stroke-width="3" stroke-linecap="round" fill="none"/>
+                                <circle cx="24" cy="36.5" r="2.5" fill="#FF8C00"/>
+                            </svg>
+                            <span class="ap-label">${f.name}</span>
+                        </div>
                     `;
+                } else if (isArchDoor(f)) {
+                    // --- Architectural door symbol: R×R square, anchored to wall edge ---
+                    el.classList.add('door-item');
+                    const R = Math.round(f.wM * PX_PER_METER);
+                    const cfg = getRoomConfig();
+                    const wall = f.wallSide || 'right';
+                    // Override size: always R×R (hM is real height, NOT rendered as depth)
+                    el.style.width = R + 'px';
+                    el.style.height = R + 'px';
+                    // Snap perpendicular axis to wall edge
+                    if (wall === 'right') el.style.left = Math.round((cfg.widthMeters - f.wM) * PX_PER_METER) + 'px';
+                    if (wall === 'left') el.style.left = '0px';
+                    if (wall === 'top') el.style.top = '0px';
+                    if (wall === 'bottom') el.style.top = Math.round((cfg.heightMeters - f.wM) * PX_PER_METER) + 'px';
+                    // Measured-plan door symbol only.
+                    // Do not place a floating label over the swing arcs.
+                    el.innerHTML = renderDoorSVG(f);
                 } else {
                     // --- Normal rectangle ---
                     el.textContent = f.name;
@@ -4198,6 +4823,36 @@
 
             let newX = origXM + dx;
             let newY = origYM + dy;
+
+            // Doors: slide smoothly along their assigned wall only.
+            // Do this before generic furniture snapping so a door never sticks to a table/AP.
+            if (isArchDoor(f)) {
+                const wall = f.wallSide || 'right';
+
+                if (wall === 'left') {
+                    newX = 0;
+                    newY = Math.max(0, Math.min(newY, cfg.heightMeters - f.wM));
+                } else if (wall === 'right') {
+                    newX = cfg.widthMeters - f.wM;
+                    newY = Math.max(0, Math.min(newY, cfg.heightMeters - f.wM));
+                } else if (wall === 'top') {
+                    newY = 0;
+                    newX = Math.max(0, Math.min(newX, cfg.widthMeters - f.wM));
+                } else { // bottom
+                    newY = cfg.heightMeters - f.wM;
+                    newX = Math.max(0, Math.min(newX, cfg.widthMeters - f.wM));
+                }
+
+                f.xM = newX;
+                f.yM = newY;
+
+                const el = document.querySelector(`.furniture-item[data-furn-id="${id}"]`);
+                if (el) {
+                    el.style.left = Math.round(newX * PX_PER_METER) + 'px';
+                    el.style.top = Math.round(newY * PX_PER_METER) + 'px';
+                }
+                return;
+            }
 
             const snapM = SNAP_PX / PX_PER_METER;
             const snapFurnM = SNAP_PX / PX_PER_METER; // same threshold for furniture-to-furniture
@@ -4301,7 +4956,7 @@
         /* ----- Restore room sizes and furniture on page load (after hooks are set) ----- */
         // Pre-load room sizes for all rooms so ROOM_CONFIG stays accurate for split-view etc.
         (function initEditorFromStorage() {
-            ['Room1', 'Lab1'].forEach(function (loc) {
+            ['Room1'].forEach(function (loc) {
                 const savedSize = loadRoomSize(loc);
                 if (savedSize) {
                     const cfg = getRoomConfig(loc);
@@ -4327,6 +4982,1061 @@
             loadFurniture(currentLocation);
         })();
 
+
+
+
+        /* =====================================================================
+           PROJECT CASE 1 / 2 / 3 SUPPORT PATCH + AUTOMATIC CALCULATION ENGINE
+           - Keeps the existing visual design and existing ESP32/Firebase flow.
+           - Removes T-309 from active use; only Huawei classroom is available.
+           - Case 1: Round1 / Round2 / Round3 / Average, survey grid 2.0 m.
+           - Case 2: threshold evaluation using the same measurement engine.
+           - Case 3: PositionA / PositionB / PositionC + ranking summary.
+           ===================================================================== */
+        let currentCase = 'Case1';
+        let currentCondition = 'Round1';
+        let rssiThreshold = Number(localStorage.getItem('wifiProjectRssiThreshold') || -67);
+        if (!Number.isFinite(rssiThreshold)) rssiThreshold = -67;
+        const CASE1_SURVEY_GRID_METERS = 2.0;
+        const CASE1_VISUAL_GRID_METERS = 1.0;
+        const EDITOR_GRID_METERS = 0.5;
+
+        // Backward-compatible variable retained because older functions reference it.
+        // It now mirrors the active experimental condition rather than Before/After.
+        currentInstallMode = currentCondition;
+        currentLocation = 'Room1';
+
+        function getConditionLabel() {
+            if (currentCase === 'Case1') {
+                if (currentCondition === 'Average') return 'ค่าเฉลี่ย 3 รอบ';
+                return currentCondition.replace('Round', 'รอบที่ ');
+            }
+            if (currentCase === 'Case2') return 'Threshold Evaluation';
+            if (currentCase === 'Case3') return currentCondition.replace('Position', 'ตำแหน่ง ');
+            return currentCondition;
+        }
+
+        function getExperimentBasePath(condition = currentCondition) {
+            return `HeatmapData/${currentProfile}/${currentCase}/${currentLocation}/${condition}`;
+        }
+
+        function getExperimentFreqPath(freq = currentFreq, condition = currentCondition) {
+            const safeFreq = freq.replace('.', '_');
+            return `${getExperimentBasePath(condition)}/${safeFreq}`;
+        }
+
+        function setLocation(loc) {
+            // Huawei classroom only. Keep this function for compatibility with the existing editor/profile code.
+            currentLocation = 'Room1';
+            const cfg = getRoomConfig('Room1');
+            const mapContainer = document.getElementById('map-container');
+            const classroomPlan = document.getElementById('classroom-plan');
+            const locBtn = document.getElementById('loc-room1');
+            if (locBtn) locBtn.classList.add('active');
+            if (classroomPlan) classroomPlan.style.display = 'block';
+            mapContainer.style.width = `${cfg.widthPx}px`;
+            mapContainer.style.height = `${cfg.heightPx}px`;
+        }
+        if (typeof loadFurniture === 'function') loadFurniture('Room1');
+        if (isGridVisible) applyProjectGridVisual();
+        refreshProjectView();
+
+        function getGridMeters(loc = currentLocation) {
+            return CASE1_SURVEY_GRID_METERS;
+        }
+
+        function getGridPx(loc = currentLocation) {
+            return PX_PER_METER * getGridMeters(loc);
+        }
+
+        function applyProjectGridVisual() {
+            const mapContainer = document.getElementById('map-container');
+            const btnGrid = document.getElementById('btn-grid');
+            if (!mapContainer) return;
+            const gridMeters = (typeof isEditorMode !== 'undefined' && isEditorMode) ? EDITOR_GRID_METERS : CASE1_VISUAL_GRID_METERS;
+            const gridPx = Math.round(gridMeters * PX_PER_METER);
+            mapContainer.style.backgroundImage =
+                'linear-gradient(to right, #e0e0e0 1px, transparent 1px), ' +
+                'linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
+            mapContainer.style.backgroundSize = `${gridPx}px ${gridPx}px`;
+            if (btnGrid) {
+                btnGrid.innerText = `ปิดตาราง Grid 🔲 (Grid แสดงผล: ${gridMeters} m · วัดจริง: ${CASE1_SURVEY_GRID_METERS} m)`;
+                btnGrid.classList.add('active');
+            }
+            renderSurveyPointOverlay();
+        }
+
+        toggleGrid = function () {
+            const mapContainer = document.getElementById('map-container');
+            const btnGrid = document.getElementById('btn-grid');
+            isGridVisible = !isGridVisible;
+            if (isGridVisible) {
+                applyProjectGridVisual();
+            } else {
+                if (mapContainer) mapContainer.style.backgroundImage = 'none';
+                if (btnGrid) {
+                    btnGrid.innerText = 'เปิดตาราง Grid 🔳';
+                    btnGrid.classList.remove('active');
+                }
+            }
+        };
+
+        function renderCaseControls() {
+            ['Case1', 'Case2', 'Case3'].forEach(c => {
+                const el = document.getElementById('btn-' + c.toLowerCase());
+                if (el) el.classList.toggle('active', c === currentCase);
+            });
+            const box = document.getElementById('case-condition-controls');
+            if (!box) return;
+
+            if (currentCase === 'Case1') {
+                box.innerHTML = `
+                    <div style="font-size:11px;color:#666;margin-bottom:5px;font-weight:bold;">🔁 รอบการวัด:</div>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                        ${['Round1', 'Round2', 'Round3', 'Average'].map(v => `<button class="btn btn-install ${currentCondition === v ? 'active' : ''}" onclick="setCaseCondition('${v}')" style="font-size:10px;padding:5px 7px;flex:1;">${v === 'Average' ? 'เฉลี่ย' : v.replace('Round', 'R')}</button>`).join('')}
+                    </div>
+                    <div style="font-size:10px;color:#888;margin-top:6px;">Grid แสดงผล: 1.0 m · ระยะจุดวัดจริง: 2.0 m (24 จุด)</div>`;
+            } else if (currentCase === 'Case2') {
+                box.innerHTML = `
+                    <div style="font-size:11px;color:#666;margin-bottom:5px;font-weight:bold;">📏 RSSI Threshold:</div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <input id="threshold-input" type="number" value="${rssiThreshold}" min="-100" max="-20" step="1" style="width:70px;padding:6px;border:1px solid #ccc;border-radius:8px;text-align:center;">
+                        <span style="font-size:11px;">dBm</span>
+                        <button class="btn btn-install" onclick="applyThreshold()" style="font-size:10px;padding:6px 8px;">ใช้เกณฑ์</button>
+                    </div>
+                    <div style="font-size:10px;color:#888;margin-top:6px;">เกณฑ์นี้ใช้ประเมิน Pass / Below Threshold และ Coverage %</div>`;
+            } else {
+                box.innerHTML = `
+                    <div style="font-size:11px;color:#666;margin-bottom:5px;font-weight:bold;">📡 ตำแหน่ง AP:</div>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                        ${['PositionA', 'PositionB', 'PositionC'].map(v => `<button class="btn btn-install ${currentCondition === v ? 'active' : ''}" onclick="setCaseCondition('${v}')" style="font-size:10px;padding:5px 7px;flex:1;">${v.replace('Position', '')}</button>`).join('')}
+                    </div>
+                    <div style="font-size:10px;color:#888;margin-top:6px;">ใช้ AP/การตั้งค่าเดียวกัน แล้วเปรียบเทียบ Coverage %</div>`;
+            }
+        }
+
+        function setProjectCase(caseId) {
+            currentCase = caseId;
+            if (caseId === 'Case1') currentCondition = 'Round1';
+            if (caseId === 'Case2') currentCondition = 'Evaluation';
+            if (caseId === 'Case3') currentCondition = 'PositionA';
+            currentInstallMode = currentCondition;
+            renderCaseControls();
+            refreshProjectView();
+        }
+
+        function setCaseCondition(condition) {
+            currentCondition = condition;
+            currentInstallMode = condition;
+            renderCaseControls();
+            refreshProjectView();
+        }
+
+        function applyThreshold() {
+            const input = document.getElementById('threshold-input');
+            const value = input ? Number(input.value) : NaN;
+            if (!Number.isFinite(value) || value < -100 || value > -20) {
+                showToast('⚠️ Threshold ต้องอยู่ระหว่าง -100 ถึง -20 dBm');
+                return;
+            }
+            rssiThreshold = value;
+            localStorage.setItem('wifiProjectRssiThreshold', String(rssiThreshold));
+            showToast(`✅ ใช้ Threshold ${rssiThreshold} dBm แล้ว`);
+            refreshProjectView();
+        }
+
+        function classifySignal(rssi) {
+            if (Number(rssi) <= -100) return { label: 'ไม่พบสัญญาณ', color: '#7F8C8D' };
+            if (Number(rssi) >= -50) return { label: 'ดีมาก', color: '#2ECC71' };
+            if (Number(rssi) >= -70) return { label: 'ปานกลาง', color: '#F1C40F' };
+            return { label: 'อ่อน', color: '#E74C3C' };
+        }
+
+        function thresholdResult(rssi) {
+            return Number(rssi) >= rssiThreshold ? 'ผ่านเกณฑ์' : 'ต่ำกว่าเกณฑ์';
+        }
+
+        function addProjectSummaryCard() {
+            let card = document.getElementById('project-case-summary');
+            if (card) return card;
+            const map = document.getElementById('map-container');
+            if (!map || !map.parentNode) return null;
+            card = document.createElement('div');
+            card.id = 'project-case-summary';
+            card.className = 'data-card';
+            card.style.maxWidth = '850px';
+            card.style.display = 'block';
+            card.style.margin = '15px auto';
+            map.parentNode.insertBefore(card, map.nextSibling);
+            return card;
+        }
+
+        function calculateStats(points) {
+            const vals = (points || [])
+                .map(p => Number(p.rssi))
+                .filter(v => Number.isFinite(v));
+            if (!vals.length) {
+                return { count: 0, avg: null, min: null, max: null, pass: 0, fail: 0, coverage: null };
+            }
+            const pass = vals.filter(v => v >= rssiThreshold).length;
+            const fail = vals.length - pass;
+            return {
+                count: vals.length,
+                avg: vals.reduce((a, b) => a + b, 0) / vals.length,
+                min: Math.min(...vals),
+                max: Math.max(...vals),
+                pass,
+                fail,
+                coverage: (pass / vals.length) * 100
+            };
+        }
+
+        function renderSummary(points, extraHtml = '') {
+            const card = addProjectSummaryCard();
+            if (!card) return;
+            const st = calculateStats(points);
+            if (!st.count) {
+                card.innerHTML = `<strong>📊 ${currentCase} — ${getConditionLabel()}</strong><div style="margin-top:8px;color:#888;">ยังไม่มีข้อมูลในมุมมองนี้</div>${extraHtml}`;
+                return;
+            }
+            const coverageLabel = st.coverage >= 90 ? 'ครอบคลุมดีมาก' : st.coverage >= 75 ? 'ครอบคลุมดี' : st.coverage >= 50 ? 'ควรปรับปรุง' : 'ครอบคลุมต่ำ';
+            card.innerHTML = `
+                <strong>📊 ${currentCase} — ${getConditionLabel()} — ${currentFreq}</strong>
+                <div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13px;">
+                    <span>จุดข้อมูล <b>${st.count}</b></span>
+                    <span>Average <b>${st.avg.toFixed(1)} dBm</b></span>
+                    <span>Min <b>${st.min.toFixed(1)} dBm</b></span>
+                    <span>Max <b>${st.max.toFixed(1)} dBm</b></span>
+                    <span style="color:#2B8A3E;">Pass <b>${st.pass}</b></span>
+                    <span style="color:#C92A2A;">Fail <b>${st.fail}</b></span>
+                    <span>Coverage ≥ ${rssiThreshold} dBm <b>${st.coverage.toFixed(1)}%</b></span>
+                </div>
+                <div style="margin-top:8px;font-size:11px;color:#666;">ผลประเมิน: <b>${coverageLabel}</b> · Pass = RSSI ≥ ${rssiThreshold} dBm</div>
+                ${extraHtml}`;
+        }
+
+        function aggregateRounds(roundArrays) {
+            const groups = new Map();
+            roundArrays.forEach((roundArr, roundIndex) => {
+                (roundArr || []).forEach(raw => {
+                    const p = normalizeStoredPoint(raw, currentLocation);
+                    const id = p.pointId || getPointId(p.x, p.y, currentLocation);
+                    if (!groups.has(id)) groups.set(id, []);
+                    groups.get(id).push({ ...p, _round: roundIndex + 1 });
+                });
+            });
+            return Array.from(groups.entries()).map(([pointId, arr]) => ({
+                pointId,
+                x: arr.reduce((s, p) => s + Number(p.x), 0) / arr.length,
+                y: arr.reduce((s, p) => s + Number(p.y), 0) / arr.length,
+                rawX: arr[0].rawX ?? arr[0].x,
+                rawY: arr[0].rawY ?? arr[0].y,
+                rssi: Number((arr.reduce((s, p) => s + Number(p.rssi), 0) / arr.length).toFixed(1)),
+                timestamp: Math.max(...arr.map(p => Number(p.timestamp) || 0)),
+                sampleCount: arr.length,
+                roundCount: new Set(arr.map(p => p._round)).size,
+                gridMeters: CASE1_SURVEY_GRID_METERS,
+                unit: 'm'
+            }));
+        }
+
+        function loadAverageCase1() {
+            resetHeatmapLayers();
+            const tableBody = document.getElementById('table-body');
+            if (tableBody) tableBody.innerHTML = '';
+            activePoints = []; currentTableData = []; currentExportData = [];
+            clearSelection();
+            const safeFreq = currentFreq.replace('.', '_');
+            Promise.all(['Round1', 'Round2', 'Round3'].map(r => db.ref(`${getExperimentBasePath(r)}/${safeFreq}`).once('value')))
+                .then(snaps => {
+                    const rounds = snaps.map(snap => {
+                        const arr = []; if (snap.exists()) snap.forEach(ch => arr.push(ch.val())); return arr;
+                    });
+                    const avgPoints = aggregateRounds(rounds);
+                    avgPoints.forEach((p, idx) => processProjectIncomingData(p, `AVG_${idx}`, true));
+                    const complete = avgPoints.filter(p => p.roundCount === 3).length;
+                    const incomplete = avgPoints.length - complete;
+                    renderSummary(avgPoints, `<div style="font-size:11px;color:#888;margin-top:8px;">เฉลี่ยตาม Point ID จาก Round 1–3 · ครบ 3 รอบ ${complete} จุด${incomplete ? ` · ยังไม่ครบ ${incomplete} จุด` : ''}</div>`);
+                });
+        }
+
+        function processProjectIncomingData(rawData, key, isAverage = false) {
+            const data = normalizeStoredPoint(rawData, currentLocation);
+            const cls = classifySignal(data.rssi);
+            const domRefs = drawPoint(data.x, data.y, data.rssi, key);
+            const dateStr = data.timestamp ? new Date(data.timestamp).toLocaleTimeString('th-TH') : '-';
+            const pointIdText = data.pointId || getPointId(data.x, data.y, currentLocation);
+            const xText = Number(data.x).toFixed(2), yText = Number(data.y).toFixed(2);
+            const rawXValue = data.rawX ?? data.x, rawYValue = data.rawY ?? data.y;
+            const rawXText = Number(rawXValue).toFixed(2), rawYText = Number(rawYValue).toFixed(2);
+            const snapText = isAverage ? `AVG ${data.roundCount || 0}/3 รอบ (${data.sampleCount || 0} samples)` : (data.snapApplied === true ? 'SNAP ±0.25 m' : 'RAW / ไม่ Snap');
+            const snapColor = isAverage ? '#7048E8' : (data.snapApplied === true ? '#2B7A78' : '#E67E22');
+            const conditionLabel = getConditionLabel();
+            const thResult = thresholdResult(data.rssi);
+            const rowId = `row-${String(key).replace(/[^A-Za-z0-9_-]/g, '_')}`;
+            const tableBody = document.getElementById('table-body');
+            if (tableBody) tableBody.insertAdjacentHTML('afterbegin', `<tr id="${rowId}">
+                <td>${dateStr}</td><td>${currentCase} / ${conditionLabel}</td><td>${getLocationDisplayName(currentLocation)}</td><td>${currentFreq}</td>
+                <td style="font-weight:bold;color:#7048E8;white-space:nowrap;">${pointIdText}</td>
+                <td style="font-weight:bold;color:#2B7A78;white-space:nowrap;">(${xText}, ${yText})</td>
+                <td style="color:#666;white-space:nowrap;">(${rawXText}, ${rawYText})</td>
+                <td style="font-weight:bold;color:${snapColor};white-space:nowrap;">${snapText}</td>
+                <td style="color:${cls.color};font-weight:bold;">${data.rssi} dBm (${cls.label})${(currentCase === 'Case2' || currentCase === 'Case3' || (currentCase === 'Case1' && currentCondition === 'Average')) ? `<br><small>${thResult}</small>` : ''}</td></tr>`);
+            activePoints.push({
+                key,
+                pointId: pointIdText,
+                x: data.x, y: data.y, rssi: Number(data.rssi), timestamp: data.timestamp,
+                domBlur: domRefs.blur, domDot: domRefs.dot, rowId,
+                tableRowData: [dateStr, currentCase, conditionLabel, getLocationDisplayName(currentLocation), currentFreq, pointIdText, xText, yText, Number(data.rssi), cls.label, thResult],
+                exportRowData: [dateStr, currentCase, conditionLabel, getLocationDisplayName(currentLocation), currentFreq, pointIdText, xText, yText, Number(data.rssi), cls.label, thResult]
+            });
+            updateTableDataArray();
+        }
+
+        processIncomingData = function (rawData, key) { processProjectIncomingData(rawData, key, false); };
+
+        addPoint = function (event) {
+            if (isClearSelectedModeActive) return;
+            if (currentCase === 'Case1' && currentCondition === 'Average') {
+                showToast('ℹ️ โหมด Average ใช้ดูผลเฉลี่ย ไม่สามารถบันทึกจุดใหม่ได้'); return;
+            }
+            const age = getDataAgeInSeconds();
+            if (age > STALE_DATA_THRESHOLD_SEC) {
+                showToast(`⏳ ข้อมูลจาก ESP32 เก่าเกินไป (${age} วินาทีที่แล้ว) กรุณารอสแกนรอบใหม่ก่อนวางจุด!`, 'warning', 3500); return;
+            }
+            const container = document.getElementById('map-container');
+            const rect = container.getBoundingClientRect();
+            const cfg = getRoomConfig(currentLocation);
+            const clickXM = Math.max(0, Math.min(cfg.widthMeters, pixelToMeterX(event.clientX - rect.left)));
+            const clickYM = Math.max(0, Math.min(cfg.heightMeters, pixelToMeterY(event.clientY - rect.top)));
+
+            const snapped = snapToSurveyPoint(clickXM, clickYM, currentLocation);
+            const x = snapped.x;
+            const y = snapped.y;
+            const pointId = snapped.pointId;
+            const rawX = Number(clickXM.toFixed(2));
+            const rawY = Number(clickYM.toFixed(2));
+
+            // Check duplicate measurement in current round
+            const existingPoint = (activePoints || []).find(p => (p.pointId || getPointId(p.x, p.y, currentLocation)) === pointId);
+            if (existingPoint) {
+                const replaceConfirmed = confirm(`จุด ${pointId} ถูกวัดใน Round นี้แล้ว\nต้องการวัดซ้ำและแทนค่าเดิมหรือไม่?`);
+                if (!replaceConfirmed) return;
+            }
+
+            db.ref('WiFi_Scan/current').once('value').then(snapshot => {
+                const data = snapshot.exists() ? snapshot.val() : {};
+                const r24 = Number.isFinite(Number(data.rssi_24g)) ? Number(data.rssi_24g) : (currentRssi24 ?? -100);
+                const r5 = Number.isFinite(Number(data.rssi_5g)) ? Number(data.rssi_5g) : (currentRssi5 ?? -100);
+                const timestamp = Date.now();
+                const common = {
+                    x, y,
+                    actualX: snapped.actualX,
+                    actualY: snapped.actualY,
+                    plannedX: snapped.plannedX,
+                    plannedY: snapped.plannedY,
+                    adjustedFromPlanned: !!snapped.adjusted,
+                    rawX, rawY, pointId,
+                    snapApplied: true, snapX: true, snapY: true,
+                    snapTolerance: SNAP_TOLERANCE, gridMeters: SURVEY_SPACING_METERS,
+                    unit: 'm', projectCase: currentCase, condition: currentCondition, location: currentLocation
+                };
+                const p24 = { ...common, rssi: r24, timestamp }, p5 = { ...common, rssi: r5, timestamp };
+                const path24 = `${getExperimentBasePath()}/2_4GHz`, path5 = `${getExperimentBasePath()}/5GHz`;
+
+                // If duplicate, delete old keys before writing new record
+                const deleteOldPromises = [];
+                if (existingPoint) {
+                    (activePoints || []).filter(p => (p.pointId || getPointId(p.x, p.y, currentLocation)) === pointId).forEach(oldP => {
+                        if (oldP._key) {
+                            deleteOldPromises.push(db.ref(`${path24}/${oldP._key}`).remove());
+                            deleteOldPromises.push(db.ref(`${path5}/${oldP._key}`).remove());
+                        }
+                    });
+                }
+
+                Promise.all(deleteOldPromises).then(() => {
+                    const ref24 = db.ref(path24).push(), key = ref24.key, ref5 = db.ref(`${path5}/${key}`);
+                    processProjectIncomingData(currentFreq === '2.4GHz' ? p24 : p5, key, false);
+                    Promise.all([ref24.set(p24), ref5.set(p5), db.ref(`Profiles/${currentProfile}/updated_at`).set(timestamp)])
+                        .then(() => {
+                            if (existingPoint) showToast(`🔄 แทนค่าจุด ${pointId} ใน ${getConditionLabel()} เรียบร้อยแล้ว`);
+                            renderSummary(activePoints);
+                        }).catch(err => console.log('Dual Band Upload Failed:', err));
+                });
+            }).catch(err => { console.error(err); alert('เกิดข้อผิดพลาดในการอ่านค่าจาก ESP32'); });
+        };
+
+        loadHeatmapData = function () {
+            if (currentCase === 'Case1' && currentCondition === 'Average') { loadAverageCase1(); return; }
+            resetHeatmapLayers();
+            const tableBody = document.getElementById('table-body'); if (tableBody) tableBody.innerHTML = '';
+            activePoints = []; currentTableData = []; currentExportData = []; clearSelection();
+            if (currentDbListener) currentDbListener.off();
+            const dbPath = getExperimentFreqPath();
+            currentDbListener = db.ref(dbPath);
+            currentDbListener.once('value', snapshot => {
+                if (snapshot.exists()) snapshot.forEach(child => processProjectIncomingData(child.val(), child.key, false));
+                renderSummary(activePoints);
+                if (currentCase === 'Case3') renderCase3Ranking();
+            });
+        };
+
+        function refreshProjectView() { loadHeatmapData(); }
+
+        // Case 3 ranking: compares A/B/C within the current frequency using the Case 2 threshold.
+        function renderCase3Ranking() {
+            const safeFreq = currentFreq.replace('.', '_');
+            Promise.all(['PositionA', 'PositionB', 'PositionC'].map(pos => db.ref(`${getExperimentBasePath(pos)}/${safeFreq}`).once('value')))
+                .then(snaps => {
+                    const rows = snaps.map((snap, idx) => {
+                        const pts = [];
+                        if (snap.exists()) snap.forEach(ch => {
+                            const raw = ch.val();
+                            const v = Number(raw && raw.rssi);
+                            if (Number.isFinite(v)) pts.push({ rssi: v });
+                        });
+                        const st = calculateStats(pts);
+                        return { pos: ['A', 'B', 'C'][idx], ...st };
+                    });
+                    // Ranking rule: Coverage % first, then Average RSSI, then worst-point (Min RSSI).
+                    const available = rows.filter(r => r.count > 0).sort((a, b) =>
+                        (b.coverage - a.coverage) ||
+                        (b.avg - a.avg) ||
+                        (b.min - a.min)
+                    );
+                    const winner = available[0];
+                    const rankMap = new Map(available.map((r, i) => [r.pos, i + 1]));
+                    const card = addProjectSummaryCard(); if (!card) return;
+                    card.insertAdjacentHTML('beforeend', `
+                        <div style="border-top:1px solid #eee;margin-top:10px;padding-top:10px;">
+                            <b>🏆 Case 3 Ranking (คำนวณอัตโนมัติ)</b>
+                            <div style="font-size:10px;color:#888;margin-top:3px;">จัดอันดับจาก Coverage % → Average RSSI → Min RSSI</div>
+                            <div style="overflow-x:auto;margin-top:7px;">
+                                <table style="margin-top:0;box-shadow:none;">
+                                    <tr><th>Rank</th><th>Position</th><th>Points</th><th>Avg RSSI</th><th>Min</th><th>Max</th><th>Pass</th><th>Fail</th><th>Coverage ≥ ${rssiThreshold}</th></tr>
+                                    ${rows.map(r => `<tr>
+                                        <td>${rankMap.get(r.pos) || '-'}</td>
+                                        <td><b>${r.pos}</b></td>
+                                        <td>${r.count}</td>
+                                        <td>${r.avg === null ? '-' : r.avg.toFixed(1) + ' dBm'}</td>
+                                        <td>${r.min === null ? '-' : r.min.toFixed(1) + ' dBm'}</td>
+                                        <td>${r.max === null ? '-' : r.max.toFixed(1) + ' dBm'}</td>
+                                        <td style="color:#2B8A3E;font-weight:bold;">${r.count ? r.pass : '-'}</td>
+                                        <td style="color:#C92A2A;font-weight:bold;">${r.count ? r.fail : '-'}</td>
+                                        <td>${r.coverage === null ? '-' : r.coverage.toFixed(1) + '%'}</td>
+                                    </tr>`).join('')}
+                                </table>
+                            </div>
+                            ${winner ? `<div style="margin-top:8px;font-weight:bold;color:#2B7A78;">Recommended AP Position: ${winner.pos} · Coverage ${winner.coverage.toFixed(1)}% · Avg ${winner.avg.toFixed(1)} dBm</div>` : '<div style="margin-top:8px;color:#888;">ยังไม่มีข้อมูลตำแหน่ง AP</div>'}
+                        </div>`);
+                });
+        }
+
+        exportCSV = function () {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "เวลา,Case,Condition,สถานที่,คลื่น,Point ID,X (m),Y (m),RSSI (dBm),ระดับสัญญาณ,Threshold Result\n";
+            currentExportData.forEach(row => { csvContent += row.join(',') + '\n'; });
+            const link = document.createElement('a'); link.href = encodeURI(csvContent);
+            link.download = `Heatmap_${sanitizeFileNamePart(currentProfile)}_${currentCase}_${sanitizeFileNamePart(currentCondition)}_${sanitizeFileNamePart(getLocationDisplayName(currentLocation))}_${currentFreq}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        undoLastPoint = function () {
+            if (!activePoints.length || (currentCase === 'Case1' && currentCondition === 'Average')) { showToast('ไม่มีจุดให้ลบในมุมมองนี้'); return; }
+            const last = activePoints.reduce((a, b) => (Number(a.timestamp || 0) > Number(b.timestamp || 0) ? a : b));
+            if (!last || !last.key) return;
+            Promise.all([db.ref(`${getExperimentBasePath()}/2_4GHz/${last.key}`).remove(), db.ref(`${getExperimentBasePath()}/5GHz/${last.key}`).remove()]).then(() => { showToast('↩️ ลบจุดล่าสุดแล้ว'); loadHeatmapData(); });
+        };
+
+        deleteSelectedPoints = function () {
+            if (!selectedPointKeys.size) return;
+
+            // Average is a derived view. AVG_0 / AVG_1 / ... are NOT Firebase keys.
+            // Deleting an Average point therefore means deleting the source
+            // measurement with the same Point ID from Round1, Round2 and Round3
+            // (both 2.4 GHz and 5 GHz).
+            if (currentCase === 'Case1' && currentCondition === 'Average') {
+                const selectedPointIds = new Set();
+
+                selectedPointKeys.forEach(avgKey => {
+                    const p = (activePoints || []).find(item => String(item.key) === String(avgKey));
+                    if (p && p.pointId) selectedPointIds.add(p.pointId);
+                });
+
+                if (!selectedPointIds.size) {
+                    showToast('⚠️ ไม่พบ Point ID ของจุด Average ที่เลือก');
+                    return;
+                }
+
+                const ids = Array.from(selectedPointIds);
+                const ok = confirm(
+                    `ต้องการลบ ${ids.length} จุดจากหน้า Average หรือไม่?\n\n` +
+                    `Point ID: ${ids.join(', ')}\n\n` +
+                    `การลบนี้จะลบข้อมูลต้นฉบับของ Point ID เดียวกันจาก Round1, Round2 และ Round3 ทั้ง 2.4 GHz และ 5 GHz`
+                );
+                if (!ok) return;
+
+                const rounds = ['Round1', 'Round2', 'Round3'];
+                const freqs = ['2_4GHz', '5GHz'];
+
+                const readJobs = [];
+                rounds.forEach(round => {
+                    freqs.forEach(freq => {
+                        const path = `${getExperimentBasePath(round)}/${freq}`;
+                        readJobs.push(
+                            db.ref(path).once('value').then(snapshot => {
+                                const deletes = [];
+                                if (snapshot.exists()) {
+                                    snapshot.forEach(child => {
+                                        const val = child.val() || {};
+                                        const pid = val.pointId || getPointId(val.x, val.y, currentLocation);
+                                        if (selectedPointIds.has(pid)) {
+                                            deletes.push(child.ref.remove());
+                                        }
+                                    });
+                                }
+                                return Promise.all(deletes);
+                            })
+                        );
+                    });
+                });
+
+                Promise.all(readJobs)
+                    .then(() => {
+                        const count = selectedPointIds.size;
+                        selectedPointKeys.clear();
+                        showToast(`🗑️ ลบ ${count} Point ID จากทั้ง 3 รอบแล้ว`);
+                        loadAverageCase1();
+                    })
+                    .catch(err => {
+                        console.error('Average delete failed:', err);
+                        showToast('❌ ลบจุด Average ไม่สำเร็จ');
+                    });
+                return;
+            }
+
+            // Normal Round/Condition deletion: selected keys are real Firebase push keys.
+            const count = selectedPointKeys.size;
+            const jobs = [];
+            selectedPointKeys.forEach(key => {
+                jobs.push(db.ref(`${getExperimentBasePath()}/2_4GHz/${key}`).remove());
+                jobs.push(db.ref(`${getExperimentBasePath()}/5GHz/${key}`).remove());
+            });
+            Promise.all(jobs).then(() => {
+                showToast(`🗑️ ลบ ${count} จุดแล้ว`);
+                selectedPointKeys.clear();
+                loadHeatmapData();
+            });
+        };
+
+        clearAllPoints = function () {
+            if (currentCase === 'Case1' && currentCondition === 'Average') { showToast('โหมด Average ไม่มีข้อมูลต้นฉบับให้ลบ'); return; }
+            if (!confirm(`ต้องการลบข้อมูลทั้งหมดของ ${currentCase} / ${getConditionLabel()} / ${currentFreq} หรือไม่?`)) return;
+            Promise.all([db.ref(`${getExperimentBasePath()}/2_4GHz`).remove(), db.ref(`${getExperimentBasePath()}/5GHz`).remove()]).then(() => { showToast('🗑️ ลบข้อมูลทั้ง 2 ย่านของ Condition นี้แล้ว'); loadHeatmapData(); });
+        };
+
+
+        /* =====================================================================
+           MULTI-LOCATION / FLOORPLAN MANAGER PATCH
+           - Room1 (Huawei) remains the only selectable location in Case 1.
+           - Case 2 / Case 3 can use additional locations without editing HTML.
+           - Each location has independent dimensions, survey grid, furniture and Heatmap data.
+           - Physical layout metadata is stored locally; measurement data remains in Firebase
+             under Profile / Case / Location / Condition / Frequency.
+           ===================================================================== */
+        const LOCATION_REGISTRY_KEY = 'wifiProjectLocationsV1';
+        const CASE_LOCATION_KEY = 'wifiProjectCaseLocationsV1';
+
+        function defaultLocationRegistry() {
+            return {
+                Room1: {
+                    id: 'Room1',
+                    name: 'ห้องเรียน Huawei',
+                    widthMeters: 8.40,
+                    heightMeters: 10.35,
+                    gridMeters: 2.00,
+                    lockedForCase1: true
+                }
+            };
+        }
+
+        function loadLocationRegistry() {
+            let registry = defaultLocationRegistry();
+            try {
+                const saved = JSON.parse(localStorage.getItem(LOCATION_REGISTRY_KEY) || '{}');
+                if (saved && typeof saved === 'object') registry = Object.assign(registry, saved);
+            } catch (e) { console.warn('Location registry parse failed:', e); }
+            // Huawei geometry always exists and keeps its stable ID so existing data is preserved.
+            registry.Room1 = Object.assign(defaultLocationRegistry().Room1, registry.Room1 || {});
+            return registry;
+        }
+
+        let projectLocations = loadLocationRegistry();
+        let caseLocationMap = (() => {
+            try { return JSON.parse(localStorage.getItem(CASE_LOCATION_KEY) || '{}') || {}; }
+            catch (_) { return {}; }
+        })();
+        if (!caseLocationMap.Case1) caseLocationMap.Case1 = 'Room1';
+
+        function saveLocationRegistry() {
+            localStorage.setItem(LOCATION_REGISTRY_KEY, JSON.stringify(projectLocations));
+            localStorage.setItem(CASE_LOCATION_KEY, JSON.stringify(caseLocationMap));
+        }
+
+        function ensureLocationConfig(loc) {
+            const meta = projectLocations[loc] || projectLocations.Room1;
+            if (!ROOM_CONFIG[loc]) ROOM_CONFIG[loc] = {};
+            const savedSize = typeof loadRoomSize === 'function' ? loadRoomSize(loc) : null;
+            const w = savedSize && Number(savedSize.w) > 0 ? Number(savedSize.w) : Number(meta.widthMeters || 8.4);
+            const h = savedSize && Number(savedSize.h) > 0 ? Number(savedSize.h) : Number(meta.heightMeters || 10.35);
+            Object.assign(ROOM_CONFIG[loc], {
+                name: meta.name || loc,
+                widthMeters: w,
+                heightMeters: h,
+                widthPx: Math.round(w * PX_PER_METER),
+                heightPx: Math.round(h * PX_PER_METER),
+                gridMeters: Number(meta.gridMeters || 2.0),
+                editorGridMeters: EDITOR_GRID_METERS
+            });
+            return ROOM_CONFIG[loc];
+        }
+
+        Object.keys(projectLocations).forEach(ensureLocationConfig);
+
+        // Dynamic version: all location IDs resolve to their own saved geometry.
+        getRoomConfig = function (loc = currentLocation) {
+            if (!projectLocations[loc]) loc = 'Room1';
+            return ensureLocationConfig(loc);
+        };
+        getLocationDisplayName = function (loc = currentLocation) {
+            const meta = projectLocations[loc];
+            return meta ? meta.name : loc;
+        };
+        getGridMeters = function (loc = currentLocation) {
+            return SURVEY_SPACING_METERS;
+        };
+        getGridPx = function (loc = currentLocation) {
+            return PX_PER_METER * VISUAL_GRID_METERS;
+        };
+
+        function renderLocationSelector() {
+            const select = document.getElementById('location-select');
+            const info = document.getElementById('location-info');
+            const manage = document.getElementById('location-management-row');
+            if (!select) return;
+
+            const allowedIds = currentCase === 'Case1' ? ['Room1'] : Object.keys(projectLocations);
+            if (!allowedIds.includes(currentLocation)) currentLocation = currentCase === 'Case1' ? 'Room1' : (allowedIds[0] || 'Room1');
+
+            select.innerHTML = '';
+            allowedIds.forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = getLocationDisplayName(id);
+                opt.selected = id === currentLocation;
+                select.appendChild(opt);
+            });
+
+            const cfg = getRoomConfig(currentLocation);
+            if (info) info.textContent = `${cfg.widthMeters.toFixed(2)} × ${cfg.heightMeters.toFixed(2)} m · Grid แสดงผล ${VISUAL_GRID_METERS.toFixed(1)} m · ระยะจุดวัดจริง ${SURVEY_SPACING_METERS.toFixed(1)} m`;
+            if (manage) manage.style.display = currentCase === 'Case1' ? 'none' : 'flex';
+        }
+
+        function applyCurrentLocationToMap() {
+            const cfg = getRoomConfig(currentLocation);
+            const mapContainer = document.getElementById('map-container');
+            const classroomPlan = document.getElementById('classroom-plan');
+            const labPlan = document.getElementById('lab-plan');
+            if (classroomPlan) classroomPlan.style.display = 'block';
+            if (labPlan) labPlan.style.display = 'none';
+            if (mapContainer) {
+                mapContainer.style.width = `${cfg.widthPx}px`;
+                mapContainer.style.height = `${cfg.heightPx}px`;
+            }
+            if (typeof loadFurniture === 'function') loadFurniture(currentLocation);
+            if (isGridVisible) applyProjectGridVisual();
+            renderLocationSelector();
+        }
+
+        // Override the Huawei-only compatibility function with a real multi-location selector.
+        setLocation = function (loc) {
+            if (currentCase === 'Case1') loc = 'Room1';
+            if (!projectLocations[loc]) {
+                showToast('⚠️ ไม่พบสถานที่ที่เลือก');
+                return;
+            }
+            if (typeof saveFurniture === 'function' && currentLocation) saveFurniture(currentLocation);
+            currentLocation = loc;
+            caseLocationMap[currentCase] = loc;
+            saveLocationRegistry();
+            ensureLocationConfig(loc);
+            applyCurrentLocationToMap();
+            refreshProjectView();
+        };
+
+        function createLocation() {
+            if (currentCase === 'Case1') {
+                showToast('ℹ️ Case 1 กำหนดให้ใช้ห้องเรียน Huawei เท่านั้น');
+                return;
+            }
+            const name = (prompt('ชื่อสถานที่ใหม่ เช่น ห้องทดลอง B หรือ Open Study Area:') || '').trim();
+            if (!name) return;
+            const w = Number(prompt('ความกว้างห้อง (เมตร):', '8.00'));
+            const h = Number(prompt('ความยาวห้อง (เมตร):', '10.00'));
+            const grid = Number(prompt('ระยะ Grid สำหรับสำรวจ (เมตร):', '.00'));
+            if (!(w > 0) || !(h > 0) || !(grid > 0)) {
+                showToast('⚠️ ขนาดห้องและ Grid ต้องเป็นตัวเลขมากกว่า 0');
+                return;
+            }
+            const id = 'Loc_' + Date.now().toString(36);
+            projectLocations[id] = { id, name, widthMeters: w, heightMeters: h, gridMeters: grid, lockedForCase1: false };
+            ROOM_CONFIG[id] = {
+                name, widthMeters: w, heightMeters: h,
+                widthPx: Math.round(w * PX_PER_METER), heightPx: Math.round(h * PX_PER_METER),
+                gridMeters: grid, editorGridMeters: EDITOR_GRID_METERS
+            };
+            saveRoomSize(id, w, h);
+            localStorage.setItem('roomFurniture_' + id, '[]');
+            saveLocationRegistry();
+            renderLocationSelector();
+            setLocation(id);
+            showToast(`✅ สร้างสถานที่ “${name}” แล้ว — เปิด Room Editor เพื่อใส่เฟอร์นิเจอร์ได้เลย`);
+        }
+
+        function renameCurrentLocation() {
+            const meta = projectLocations[currentLocation];
+            if (!meta) return;
+            const name = (prompt('ชื่อใหม่ของสถานที่:', meta.name) || '').trim();
+            if (!name || name === meta.name) return;
+            meta.name = name;
+            ensureLocationConfig(currentLocation).name = name;
+            saveLocationRegistry();
+            renderLocationSelector();
+            renderSummary(activePoints || []);
+            showToast(`✏️ เปลี่ยนชื่อสถานที่เป็น “${name}” แล้ว`);
+        }
+
+        function deleteCurrentLocation() {
+            if (currentLocation === 'Room1') {
+                showToast('⚠️ ห้องเรียน Huawei เป็นสถานที่หลักของ Case 1 จึงไม่สามารถลบได้');
+                return;
+            }
+            const id = currentLocation;
+            const meta = projectLocations[id];
+            if (!meta) return;
+            if (!confirm(`ลบแผนผังสถานที่ “${meta.name}” ออกจากหน้าเว็บหรือไม่?\n\nหมายเหตุ: การลบนี้ไม่ลบข้อมูล RSSI ที่เคยเก็บใน Firebase เพื่อป้องกันข้อมูลทดลองสูญหาย`)) return;
+            delete projectLocations[id];
+            delete ROOM_CONFIG[id];
+            localStorage.removeItem('roomSize_' + id);
+            localStorage.removeItem('roomFurniture_' + id);
+            Object.keys(caseLocationMap).forEach(k => { if (caseLocationMap[k] === id) caseLocationMap[k] = 'Room1'; });
+            currentLocation = 'Room1';
+            saveLocationRegistry();
+            applyCurrentLocationToMap();
+            refreshProjectView();
+            showToast('🗑️ ลบแผนผังสถานที่แล้ว (ข้อมูลวัดใน Firebase ยังอยู่)');
+        }
+
+        // Keep location metadata in sync when the existing Room Size editor changes dimensions.
+        const _multiLocApplyRoomSize = applyRoomSize;
+        applyRoomSize = function (wM, hM) {
+            _multiLocApplyRoomSize(wM, hM);
+            const cfg = getRoomConfig(currentLocation);
+            if (projectLocations[currentLocation]) {
+                projectLocations[currentLocation].widthMeters = cfg.widthMeters;
+                projectLocations[currentLocation].heightMeters = cfg.heightMeters;
+                saveLocationRegistry();
+                renderLocationSelector();
+            }
+        };
+
+        // Dynamic project grid: 0.5 m while editing furniture, survey grid per active experiment/location otherwise.
+        applyProjectGridVisual = function () {
+            const mapContainer = document.getElementById('map-container');
+            const btnGrid = document.getElementById('btn-grid');
+            if (!mapContainer) return;
+            const gridMeters = (typeof isEditorMode !== 'undefined' && isEditorMode) ? EDITOR_GRID_METERS : VISUAL_GRID_METERS;
+            const gridPx = Math.round(gridMeters * PX_PER_METER);
+            mapContainer.style.backgroundImage = 'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)';
+            mapContainer.style.backgroundSize = `${gridPx}px ${gridPx}px`;
+            if (btnGrid) {
+                btnGrid.innerText = `ปิดตาราง Grid 🔲 (Grid แสดงผล: ${gridMeters} m · วัดจริง: ${SURVEY_SPACING_METERS} m)`;
+                btnGrid.classList.add('active');
+            }
+            renderLocationSelector();
+            renderSurveyPointOverlay();
+        };
+
+        // Case switch also restores the last location used for that case.
+        const _multiLocSetProjectCase = setProjectCase;
+        setProjectCase = function (caseId) {
+            _multiLocSetProjectCase(caseId);
+            const preferred = caseId === 'Case1' ? 'Room1' : caseLocationMap[caseId];
+            const nextLoc = preferred && projectLocations[preferred] ? preferred : 'Room1';
+            currentLocation = nextLoc;
+            caseLocationMap[caseId] = nextLoc;
+            saveLocationRegistry();
+            applyCurrentLocationToMap();
+            refreshProjectView();
+        };
+
+        // Make new points/location metadata fully dynamic for Case 2/3 while preserving Case 1 behavior.
+        addPoint = function (event) {
+            if (isClearSelectedModeActive) return;
+            if (currentCase === 'Case1' && currentCondition === 'Average') {
+                showToast('ℹ️ โหมด Average ใช้ดูผลเฉลี่ย ไม่สามารถบันทึกจุดใหม่ได้'); return;
+            }
+            const age = getDataAgeInSeconds();
+            if (age > STALE_DATA_THRESHOLD_SEC) {
+                showToast(`⏳ ข้อมูลจาก ESP32 เก่าเกินไป (${age} วินาทีที่แล้ว) กรุณารอสแกนรอบใหม่ก่อนวางจุด!`, 'warning', 3500); return;
+            }
+            const container = document.getElementById('map-container');
+            const rect = container.getBoundingClientRect();
+            const cfg = getRoomConfig(currentLocation);
+            const clickXM = Math.max(0, Math.min(cfg.widthMeters, pixelToMeterX(event.clientX - rect.left)));
+            const clickYM = Math.max(0, Math.min(cfg.heightMeters, pixelToMeterY(event.clientY - rect.top)));
+
+            const snapped = snapToSurveyPoint(clickXM, clickYM, currentLocation);
+            const x = snapped.x;
+            const y = snapped.y;
+            const pointId = snapped.pointId;
+            const rawX = Number(clickXM.toFixed(2));
+            const rawY = Number(clickYM.toFixed(2));
+
+            // Check duplicate measurement in current round
+            const existingPoint = (activePoints || []).find(p => (p.pointId || getPointId(p.x, p.y, currentLocation)) === pointId);
+            if (existingPoint) {
+                const replaceConfirmed = confirm(`จุด ${pointId} ถูกวัดใน Round นี้แล้ว\nต้องการวัดซ้ำและแทนค่าเดิมหรือไม่?`);
+                if (!replaceConfirmed) return;
+            }
+
+            db.ref('WiFi_Scan/current').once('value').then(snapshot => {
+                const data = snapshot.exists() ? snapshot.val() : {};
+                const r24 = Number.isFinite(Number(data.rssi_24g)) ? Number(data.rssi_24g) : (currentRssi24 ?? -100);
+                const r5 = Number.isFinite(Number(data.rssi_5g)) ? Number(data.rssi_5g) : (currentRssi5 ?? -100);
+                const timestamp = Date.now();
+                const common = {
+                    x, y, rawX, rawY,
+                    pointId: pointId,
+                    snapApplied: true,
+                    snapX: true, snapY: true,
+                    snapTolerance: SNAP_TOLERANCE,
+                    gridMeters: SURVEY_SPACING_METERS, unit: 'm',
+                    projectCase: currentCase, condition: currentCondition,
+                    location: currentLocation, locationName: getLocationDisplayName(currentLocation)
+                };
+                const p24 = { ...common, rssi: r24, timestamp }, p5 = { ...common, rssi: r5, timestamp };
+                const path24 = `${getExperimentBasePath()}/2_4GHz`, path5 = `${getExperimentBasePath()}/5GHz`;
+
+                // If duplicate, delete old keys before writing new record
+                const deleteOldPromises = [];
+                if (existingPoint) {
+                    (activePoints || []).filter(p => (p.pointId || getPointId(p.x, p.y, currentLocation)) === pointId).forEach(oldP => {
+                        if (oldP._key) {
+                            deleteOldPromises.push(db.ref(`${path24}/${oldP._key}`).remove());
+                            deleteOldPromises.push(db.ref(`${path5}/${oldP._key}`).remove());
+                        }
+                    });
+                }
+
+                Promise.all(deleteOldPromises).then(() => {
+                    const ref24 = db.ref(path24).push(), key = ref24.key, ref5 = db.ref(`${path5}/${key}`);
+                    processProjectIncomingData(currentFreq === '2.4GHz' ? p24 : p5, key, false);
+                    Promise.all([ref24.set(p24), ref5.set(p5), db.ref(`Profiles/${currentProfile}/updated_at`).set(timestamp)])
+                        .then(() => {
+                            if (existingPoint) showToast(`🔄 แทนค่าจุด ${pointId} ใน ${getConditionLabel()} เรียบร้อยแล้ว`);
+                            renderSummary(activePoints);
+                        }).catch(err => console.log('Dual Band Upload Failed:', err));
+                });
+            }).catch(err => { console.error(err); alert('เกิดข้อผิดพลาดในการอ่านค่าจาก ESP32'); });
+        };
+
+        // Update CSV naming/display to the active location automatically.
+        exportCSV = function () {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "เวลา,Case,Condition,สถานที่,คลื่น,Point ID,X (m),Y (m),RSSI (dBm),ระดับสัญญาณ,Threshold Result\n";
+            currentExportData.forEach(row => { csvContent += row.join(',') + '\n'; });
+            const link = document.createElement('a'); link.href = encodeURI(csvContent);
+            link.download = `Heatmap_${sanitizeFileNamePart(currentProfile)}_${currentCase}_${sanitizeFileNamePart(currentCondition)}_${sanitizeFileNamePart(getLocationDisplayName(currentLocation))}_${currentFreq}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        // Adapt existing table header without redesigning the table.
+        (function patchProjectUI() {
+            const ths = document.querySelectorAll('table thead th');
+            if (ths.length >= 2) ths[1].innerText = 'Case / Condition';
+            const split = document.getElementById('split-view-wrapper'); if (split) split.style.display = 'none';
+            const slider = document.getElementById('overlay-slider-box'); if (slider) slider.style.display = 'none';
+            const floating = document.getElementById('btn-floating-compare'); if (floating) floating.style.display = 'none';
+            renderCaseControls();
+            setProjectCase('Case1');
+            if (isGridVisible) applyProjectGridVisual();
+        })();
+
+
+        /* ================================================================
+           Coverage visualization: Raw Points / IDW Heatmap / Threshold Contour
+           - Raw Points = only measured points
+           - Coverage Heatmap = IDW spatial interpolation + measured-point markers
+           - Threshold/Contour = pass/fail field with an isoline at RSSI threshold
+           ================================================================ */
+        let coverageVizMode = localStorage.getItem('wifiCoverageVizMode') || 'points';
+        let coverageRenderTimer = null;
+
+        function ensureCoverageCanvas() {
+            const map = document.getElementById('map-container');
+            if (!map) return null;
+            let c = document.getElementById('coverage-canvas');
+            if (!c) {
+                c = document.createElement('canvas');
+                c.id = 'coverage-canvas';
+                const heat = document.getElementById('heatmap-layer');
+                if (heat) map.insertBefore(c, heat); else map.appendChild(c);
+            }
+            const w = Math.max(1, Math.round(map.clientWidth)), h = Math.max(1, Math.round(map.clientHeight));
+            if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+            return c;
+        }
+
+        function addCoverageVizControls() {
+            if (document.getElementById('coverage-viz-controls')) return;
+            const freqBtn = document.getElementById('freq-24');
+            const parent = freqBtn?.closest('div[style*="flex-direction: column"]')?.parentElement || document.getElementById('controls-dropdown');
+            if (!parent) return;
+            const box = document.createElement('div');
+            box.id = 'coverage-viz-controls'; box.className = 'coverage-viz-controls';
+            box.innerHTML = `<span style="font-weight:bold;font-size:12px;color:#666;display:block;margin-bottom:6px;">🗺️ รูปแบบ Heatmap:</span>
+              <div class="coverage-viz-row">
+                <button id="viz-points" class="btn coverage-viz-btn" onclick="setCoverageVizMode('points')">● จุดวัดจริง</button>
+                <button id="viz-idw" class="btn coverage-viz-btn" onclick="setCoverageVizMode('idw')">🌈 Coverage</button>
+                <button id="viz-contour" class="btn coverage-viz-btn" onclick="setCoverageVizMode('contour')">〰 Threshold</button>
+              </div>
+              <div id="coverage-viz-note">จุด = ค่าที่วัดจริง · Coverage = IDW interpolation · Threshold = พื้นที่ผ่าน/ไม่ผ่านเกณฑ์</div>
+              <div id="threshold-viz-legend"
+                   style="margin-top:7px;padding:7px 8px;border:1px solid #E9ECEF;border-radius:8px;background:#FAFAFA;font-size:10px;line-height:1.7;color:#555;">
+                <div style="font-weight:bold;color:#666;margin-bottom:2px;">Threshold: <span id="threshold-legend-value">${rssiThreshold} dBm</span></div>
+                <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#2ECC71;margin-right:5px;"></span>ผ่าน: RSSI ≥ <span id="threshold-legend-pass">${rssiThreshold} dBm</span></div>
+                <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#E74C3C;margin-right:5px;"></span>ไม่ผ่าน: RSSI &lt; <span id="threshold-legend-fail">${rssiThreshold} dBm</span></div>
+                <div><span style="display:inline-block;width:16px;border-top:2px solid #7048E8;margin-right:5px;vertical-align:middle;"></span>เส้นขอบ = ${rssiThreshold} dBm</div>
+              </div>`;
+            parent.appendChild(box);
+            updateCoverageVizButtons();
+        }
+
+        function updateCoverageVizButtons() {
+            ['points', 'idw', 'contour'].forEach(m => {
+                const b = document.getElementById('viz-' + m); if (!b) return;
+                b.classList.toggle('active', coverageVizMode === m);
+            });
+        }
+
+        function setCoverageVizMode(mode) {
+            coverageVizMode = mode; localStorage.setItem('wifiCoverageVizMode', mode);
+            updateCoverageVizButtons(); renderCoverageVisualization();
+        }
+
+        function scheduleCoverageRender() {
+            clearTimeout(coverageRenderTimer);
+            coverageRenderTimer = setTimeout(renderCoverageVisualization, 80);
+        }
+
+        function idwValueAt(px, py, pts, power = 2) {
+            let num = 0, den = 0;
+            for (const p of pts) {
+                const dx = px - p.px, dy = py - p.py, d2 = dx * dx + dy * dy;
+                if (d2 < 4) return p.rssi;
+                const w = 1 / Math.pow(Math.sqrt(d2), power);
+                num += w * p.rssi; den += w;
+            }
+            return den ? num / den : null;
+        }
+
+        function rssiToRGBA(v, a = 0.52) {
+            // continuous blue/green/yellow/red-like ramp without changing existing point legend
+            const stops = [[-90, [231, 76, 60]], [-70, [241, 196, 15]], [-50, [46, 204, 113]], [-30, [52, 152, 219]]];
+            if (v <= stops[0][0]) return [...stops[0][1], a];
+            if (v >= stops.at(-1)[0]) return [...stops.at(-1)[1], a];
+            for (let i = 0; i < stops.length - 1; i++) {
+                const [v0, c0] = stops[i], [v1, c1] = stops[i + 1];
+                if (v >= v0 && v <= v1) { const t = (v - v0) / (v1 - v0); return [0, 1, 2].map(k => Math.round(c0[k] + (c1[k] - c0[k]) * t)).concat(a); }
+            }
+            return [127, 140, 141, a];
+        }
+
+        function renderCoverageVisualization() {
+            const c = ensureCoverageCanvas(); if (!c) return;
+            const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+            const blurs = document.querySelectorAll('#heatmap-layer .heatmap-blur');
+            const dots = document.querySelectorAll('#heatmap-layer .heatmap-dot');
+            dots.forEach(d => d.style.display = 'block');
+            if (coverageVizMode === 'points') {
+                // Point mode = show the real measured point together with its RSSI color halo.
+                // Previously this hid .heatmap-blur, leaving only the black center dot.
+                c.style.display = 'none';
+                blurs.forEach(b => b.style.display = 'block');
+                return;
+            }
+            c.style.display = 'block'; blurs.forEach(b => b.style.display = 'none');
+            const pts = (activePoints || []).map(p => ({ px: meterToPixelX(Number(p.x)), py: meterToPixelY(Number(p.y)), rssi: Number(p.rssi) })).filter(p => Number.isFinite(p.rssi));
+            if (!pts.length) return;
+            const step = 8, cols = Math.ceil(c.width / step), rows = Math.ceil(c.height / step);
+            const vals = Array.from({ length: rows }, () => Array(cols).fill(null));
+            for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) vals[gy][gx] = idwValueAt(gx * step + step / 2, gy * step + step / 2, pts, 2);
+            if (coverageVizMode === 'idw') {
+                for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+                    const v = vals[gy][gx]; if (v == null) continue; const [r, g, b, a] = rssiToRGBA(v, 0.48);
+                    ctx.fillStyle = `rgba(${r},${g},${b},${a})`; ctx.fillRect(gx * step, gy * step, step + 1, step + 1);
+                }
+            } else {
+                // pass/fail area based on current threshold
+                for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+                    const v = vals[gy][gx]; if (v == null) continue;
+                    ctx.fillStyle = v >= rssiThreshold ? 'rgba(46,204,113,0.25)' : 'rgba(231,76,60,0.27)';
+                    ctx.fillRect(gx * step, gy * step, step + 1, step + 1);
+                }
+                // simple isoline: draw cell edges where pass/fail changes
+                ctx.strokeStyle = 'rgba(90,50,160,0.95)'; ctx.lineWidth = 2; ctx.beginPath();
+                for (let gy = 0; gy < rows - 1; gy++) for (let gx = 0; gx < cols - 1; gx++) {
+                    const here = vals[gy][gx] >= rssiThreshold;
+                    if ((vals[gy][gx + 1] >= rssiThreshold) !== here) { const x = (gx + 1) * step; ctx.moveTo(x, gy * step); ctx.lineTo(x, (gy + 1) * step); }
+                    if ((vals[gy + 1][gx] >= rssiThreshold) !== here) { const y = (gy + 1) * step; ctx.moveTo(gx * step, y); ctx.lineTo((gx + 1) * step, y); }
+                }
+                ctx.stroke();
+            }
+        }
+
+        // Re-render whenever a point is processed, threshold changes, or map geometry changes.
+        const _coverageProcessProjectIncomingData = processProjectIncomingData;
+        processProjectIncomingData = function (...args) { const out = _coverageProcessProjectIncomingData.apply(this, args); scheduleCoverageRender(); return out; };
+        function updateThresholdVizLegend() {
+            const value = `${rssiThreshold} dBm`;
+            const ids = ['threshold-legend-value', 'threshold-legend-pass', 'threshold-legend-fail'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            });
+            const legend = document.getElementById('threshold-viz-legend');
+            if (legend) {
+                const lines = legend.querySelectorAll('div');
+                if (lines[3]) {
+                    lines[3].innerHTML = `<span style="display:inline-block;width:16px;border-top:2px solid #7048E8;margin-right:5px;vertical-align:middle;"></span>เส้นขอบ = ${value}`;
+                }
+            }
+        }
+
+        const _coverageApplyThreshold = applyThreshold;
+        applyThreshold = function (...args) {
+            const out = _coverageApplyThreshold.apply(this, args);
+            updateThresholdVizLegend();
+            scheduleCoverageRender();
+            return out;
+        };
+        const _coverageApplyCurrentLocationToMap = applyCurrentLocationToMap;
+        applyCurrentLocationToMap = function (...args) { const out = _coverageApplyCurrentLocationToMap.apply(this, args); setTimeout(scheduleCoverageRender, 120); return out; };
+        window.addEventListener('resize', scheduleCoverageRender);
+        addCoverageVizControls();
+        setTimeout(scheduleCoverageRender, 200);
 
     </script>
 </body>
