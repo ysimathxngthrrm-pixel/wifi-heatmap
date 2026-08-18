@@ -2180,6 +2180,19 @@
             <div style="font-size:10px;color:#2B7A78;margin:3px 0 7px;">
                 ☁️ ผังห้องและเฟอร์นิเจอร์ซิงค์ผ่าน Firebase ทุกอุปกรณ์
             </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                <button type="button" class="btn" onclick="uploadCurrentLayoutToFirebase()"
+                    style="font-size:10px;padding:6px 10px;background:#2B7A78;color:white;">
+                    ☁️ Upload Layout
+                </button>
+                <button type="button" class="btn" onclick="downloadLayoutFromFirebase()"
+                    style="font-size:10px;padding:6px 10px;">
+                    ⬇️ Load Cloud Layout
+                </button>
+            </div>
+            <div id="layout-cloud-status" style="font-size:10px;color:#666;margin-bottom:8px;min-height:14px;">
+                Cloud status: ยังไม่ได้ตรวจสอบ
+            </div>
             <button id="btn-toggle-editor" onclick="toggleEditorMode()">✏️ เปิด Editor Mode</button>
             <div id="editor-controls">
                 <div class="editor-sub-title">📐 ขนาดห้อง</div>
@@ -4669,6 +4682,98 @@
             }
         }
 
+        function setLayoutCloudStatus(message, ok = null) {
+            const el = document.getElementById('layout-cloud-status');
+            if (!el) return;
+            el.textContent = message;
+            el.style.color = ok === true ? '#2B8A3E' : ok === false ? '#C92A2A' : '#666';
+        }
+
+        async function uploadCurrentLayoutToFirebase() {
+            const loc = currentLocation;
+            if (typeof db === 'undefined' || !db) {
+                setLayoutCloudStatus('❌ Firebase ยังไม่พร้อม', false);
+                return;
+            }
+
+            try {
+                setLayoutCloudStatus('⏳ กำลังอัปโหลด Layout...', null);
+
+                const size = loadRoomSize(loc) || (() => {
+                    const cfg = getRoomConfig(loc);
+                    return {
+                        w: Number(cfg.widthMeters),
+                        h: Number(cfg.heightMeters)
+                    };
+                })();
+
+                const furniture = serializeFurniture();
+                const now = Date.now();
+
+                await db.ref(getRoomLayoutCloudPath(loc)).set({
+                    roomSize: {
+                        w: Number(size.w),
+                        h: Number(size.h),
+                        updatedAt: now
+                    },
+                    furniture: {
+                        items: furniture,
+                        updatedAt: now
+                    }
+                });
+
+                localStorage.setItem('roomFurnitureUpdatedAt_' + loc, String(now));
+                setLayoutCloudStatus(`✅ Uploaded ${furniture.length} items ไป Firebase แล้ว`, true);
+                console.log(`Uploaded room layout to Firebase: ${loc}`, furniture);
+            } catch (err) {
+                console.error('Manual room layout upload failed:', err);
+                const msg = err && err.message ? err.message : String(err);
+                setLayoutCloudStatus(`❌ Upload ไม่สำเร็จ: ${msg}`, false);
+                alert('Upload Layout ไม่สำเร็จ\n\n' + msg + '\n\nถ้าขึ้น PERMISSION_DENIED ต้องแก้ Firebase Realtime Database Rules');
+            }
+        }
+
+        async function downloadLayoutFromFirebase() {
+            const loc = currentLocation;
+            if (typeof db === 'undefined' || !db) {
+                setLayoutCloudStatus('❌ Firebase ยังไม่พร้อม', false);
+                return;
+            }
+
+            try {
+                setLayoutCloudStatus('⏳ กำลังโหลด Layout จาก Firebase...', null);
+                const snap = await db.ref(getRoomLayoutCloudPath(loc)).once('value');
+
+                if (!snap.exists()) {
+                    setLayoutCloudStatus('⚠️ Firebase ยังไม่มี Layout ของห้องนี้', false);
+                    return;
+                }
+
+                const cloud = snap.val() || {};
+
+                if (cloud.roomSize) {
+                    applyCloudRoomSize(loc, cloud.roomSize);
+                }
+
+                let count = 0;
+                if (cloud.furniture && Array.isArray(cloud.furniture.items)) {
+                    count = cloud.furniture.items.length;
+                    localStorage.setItem(
+                        'roomFurnitureUpdatedAt_' + loc,
+                        String(Number(cloud.furniture.updatedAt || Date.now()))
+                    );
+                    applyFurnitureItems(loc, cloud.furniture.items, true);
+                }
+
+                setLayoutCloudStatus(`✅ Loaded ${count} items จาก Firebase แล้ว`, true);
+            } catch (err) {
+                console.error('Manual room layout download failed:', err);
+                const msg = err && err.message ? err.message : String(err);
+                setLayoutCloudStatus(`❌ Load ไม่สำเร็จ: ${msg}`, false);
+                alert('Load Cloud Layout ไม่สำเร็จ\n\n' + msg);
+            }
+        }
+
         function syncRoomLayoutFromCloud(loc) {
             if (typeof db === 'undefined' || !db) return;
 
@@ -4677,6 +4782,7 @@
             // One initial read handles first-time migration from the computer's old localStorage.
             root.once('value').then(snapshot => {
                 if (snapshot.exists()) {
+                    if (loc === currentLocation) setLayoutCloudStatus('✅ พบ Layout บน Firebase', true);
                     const cloud = snapshot.val() || {};
 
                     if (cloud.roomSize) {
@@ -4691,6 +4797,7 @@
                         applyFurnitureItems(loc, cloud.furniture.items, true);
                     }
                 } else {
+                    if (loc === currentLocation) setLayoutCloudStatus('⚠️ Firebase ยังไม่มี Layout — กด Upload Layout บนเครื่องที่เห็นแปลนครบ', false);
                     // No cloud layout yet:
                     // migrate the existing layout from THIS browser only if it has real data.
                     const localFurnitureRaw = localStorage.getItem('roomFurniture_' + loc);
@@ -4728,7 +4835,13 @@
                             .catch(err => console.error('Initial room layout migration failed:', err));
                     }
                 }
-            }).catch(err => console.error('Room layout cloud load failed:', err));
+            }).catch(err => {
+                console.error('Room layout cloud load failed:', err);
+                if (loc === currentLocation) {
+                    const msg = err && err.message ? err.message : String(err);
+                    setLayoutCloudStatus(`❌ Firebase error: ${msg}`, false);
+                }
+            });
 
             // Realtime listener: if layout changes on computer, iPad updates too after Firebase sync.
             if (roomLayoutCloudListeners[loc]) {
