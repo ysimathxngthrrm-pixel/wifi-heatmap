@@ -816,23 +816,24 @@
 
         .heatmap-blur {
             position: absolute;
-            width: 80px;
-            height: 80px;
+            width: 88px;
+            height: 88px;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             mix-blend-mode: multiply;
-            filter: blur(8px);
+            filter: blur(9px);
         }
 
         .heatmap-dot {
             position: absolute;
-            width: 6px;
-            height: 6px;
-            background-color: #212529;
+            width: 7px;
+            height: 7px;
+            background-color: #1d4ed8;
             border: 1.5px solid #ffffff;
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            z-index: 8;
         }
 
         /* ---------------- การ์ดและตาราง ---------------- */
@@ -982,14 +983,14 @@
         }
 
         #heatmap-layer.clear-mode-active .heatmap-dot.selected {
-            background-color: #F1C40F !important;
-            border: 2px solid #2C3E50 !important;
-            box-shadow: 0 0 10px #F1C40F !important;
+            background-color: #f97316 !important;
+            border: 2px solid #ffffff !important;
+            box-shadow: 0 0 10px #f97316 !important;
             transform: translate(-50%, -50%) scale(1.4) !important;
         }
 
         #heatmap-layer.clear-mode-active .heatmap-dot.selected:hover {
-            background-color: #F39C12 !important;
+            background-color: #ea580c !important;
             transform: translate(-50%, -50%) scale(1.6) !important;
         }
 
@@ -2043,6 +2044,131 @@
             line-height: 1.35
         }
     </style>
+
+    <style id="project-summary-card-styles">
+        #project-case-summary {
+            max-width: 920px !important;
+            padding: 16px 18px !important;
+        }
+
+        .result-summary-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .result-summary-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #253238;
+            line-height: 1.35;
+            text-align: left;
+        }
+
+        .result-summary-meta {
+            font-size: 11px;
+            color: #7A7A7A;
+            font-weight: 600;
+        }
+
+        .result-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 9px;
+        }
+
+        .result-metric {
+            background: #F8FAFB;
+            border: 1px solid #E7ECEF;
+            border-radius: 12px;
+            padding: 10px 8px;
+            min-height: 68px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .result-metric-label {
+            font-size: 10px;
+            color: #737B80;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .result-metric-value {
+            margin-top: 5px;
+            font-size: 17px;
+            line-height: 1.1;
+            font-weight: 850;
+            white-space: nowrap;
+        }
+
+        .metric-average .result-metric-value {
+            color: #167C80;
+        }
+
+        .metric-min .result-metric-value {
+            color: #E67700;
+        }
+
+        .metric-max .result-metric-value {
+            color: #2B8A3E;
+        }
+
+        .metric-pass .result-metric-value {
+            color: #2B8A3E;
+        }
+
+        .metric-fail .result-metric-value {
+            color: #C92A2A;
+        }
+
+        .metric-coverage {
+            background: linear-gradient(135deg, #EAF8EF, #F4FBF6);
+            border: 2px solid #69B77A;
+            box-shadow: 0 3px 10px rgba(43, 138, 62, 0.10);
+        }
+
+        .metric-coverage .result-metric-label {
+            color: #367644;
+        }
+
+        .metric-coverage .result-metric-value {
+            color: #1F7A35;
+            font-size: 20px;
+        }
+
+        .result-summary-foot {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #EDF0F2;
+            font-size: 10.5px;
+            color: #666;
+            text-align: center;
+            line-height: 1.55;
+        }
+
+        @media (max-width: 1100px) {
+            .result-summary-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 650px) {
+            .result-summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .result-summary-title {
+                font-size: 14px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -2060,20 +2186,36 @@
             style="margin-top: 0; color: #2B7A78; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 16px;">
             ✨ Wi-Fi Heatmap Dashboard ✨</h3>
 
-        <h4 style="margin: 10px 0 5px 0; font-size: 13px;">ระดับสัญญาณ (RSSI):</h4>
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="color-dot dot-green"></div><span style="font-size: 13px;">ดีมาก (0 ถึง -50 dBm)</span>
+        <h4 style="margin: 10px 0 5px 0; font-size: 13px;">Cisco RSSI Reference:</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;font-size:12px;text-align:left;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:14px;height:14px;border-radius:50%;background:#006837;"></div>
+                <span><b>Amazing</b> — -30 dBm</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="color-dot dot-yellow"></div><span style="font-size: 13px;">ปานกลาง (-51 ถึง -70 dBm)</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:14px;height:14px;border-radius:50%;background:#66bd63;"></div>
+                <span><b>Very Good</b> — -67 dBm</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="color-dot dot-red"></div><span style="font-size: 13px;">อ่อน (ต่ำกว่า -70 dBm)</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:14px;height:14px;border-radius:50%;background:#fee08b;"></div>
+                <span><b>Okay</b> — -70 dBm</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="color-dot dot-gray"></div><span style="font-size: 13px;">ไม่พบสัญญาณ (อับสัญญาณ)</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:14px;height:14px;border-radius:50%;background:#f46d43;"></div>
+                <span><b>Not Good</b> — -80 dBm</span>
             </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:14px;height:14px;border-radius:50%;background:#8b0000;"></div>
+                <span><b>Unusable</b> — -90 dBm</span>
+            </div>
+        </div>
+        <div
+            style="font-size:10px;line-height:1.5;color:#666;background:#F8F9FA;border:1px solid #E9ECEF;border-radius:8px;padding:7px 8px;margin-bottom:15px;text-align:left;">
+            <b>อ้างอิง:</b> Cisco “Acceptable Signal Strengths” RSSI values<br>
+            Cisco ระบุเป็น <b>reference points</b> ไม่ใช่ช่วงมาตรฐาน IEEE แบบตายตัว<br>
+            สีของ Point/Heatmap ไล่แบบ <b>continuous RSSI</b> ภายในแต่ละช่วง เพื่อให้เห็นความต่างของสัญญาณชัดเจน<br>
+            เกณฑ์ Coverage / Pass ของงานนี้:
+            <b><span id="sidebar-coverage-threshold">-67</span> dBm</b>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
@@ -2086,6 +2228,10 @@
                     style="font-size: 11px; padding: 6px 8px; flex: 1;">Case 2</button>
                 <button class="btn btn-install" id="btn-case3" onclick="setProjectCase('Case3')"
                     style="font-size: 11px; padding: 6px 8px; flex: 1;">Case 3</button>
+            </div>
+            <div id="case-display-title"
+                style="font-size:10px;color:#555;font-weight:700;line-height:1.45;margin-top:7px;padding:6px 8px;background:#F8F9FA;border-radius:8px;">
+                การประเมินความครอบคลุมของสัญญาณ Wi-Fi ภายในห้องเรียน
             </div>
             <div id="case-condition-controls" style="margin-top:8px;"></div>
         </div>
@@ -2155,6 +2301,25 @@
         </div>
 
         <!-- ✏️ Room & Furniture Editor Section -->
+
+        <div id="data-management-section" style="border-top:1px solid #eee;padding-top:10px;margin-top:10px;">
+            <button type="button" class="btn" id="data-mgmt-toggle" onclick="toggleDataManagementPanel()"
+                style="width:100%;font-size:12px;padding:7px 10px;background:#F1F3F5;color:#495057;">
+                🗑️ จัดการข้อมูล
+            </button>
+            <div id="data-mgmt-panel" style="display:none;margin-top:8px;">
+                <div class="point-mgmt-container"
+                    style="margin:0;padding:10px;max-width:none;display:flex;flex-direction:column;align-items:stretch;gap:8px;">
+                    <div style="font-weight:bold;color:#C0392B;font-size:11px;text-align:left;margin-bottom:2px;">⚠️
+                        Danger Zone</div>
+                    <button class="btn-mgmt btn-undo" onclick="undoLastPoint()">ย้อนกลับ (ลบจุดล่าสุด) ↩️</button>
+                    <button class="btn-mgmt btn-clear-selected" id="btn-clear-selected"
+                        onclick="toggleClearSelectedMode()">ลบจุดที่เลือก 🎯</button>
+                    <button class="btn-mgmt btn-clear-all" onclick="clearAllPoints()">ลบจุดทั้งหมดในมุมมองนี้
+                        🗑️</button>
+                </div>
+            </div>
+        </div>
         <div id="room-editor-section">
             <span class="editor-title">✏️ แก้ไขผังห้อง (Room Editor)</span>
             <div style="font-size:10px;color:#2B7A78;margin:3px 0 7px;">
@@ -2345,14 +2510,6 @@
         </div>
 
         <!-- Point Management Section (Danger Zone) -->
-        <div class="point-mgmt-container">
-            <span style="font-weight: bold; color: #E74C3C;">⚠️ จัดการจุด (Danger Zone):</span>
-            <button class="btn-mgmt btn-undo" onclick="undoLastPoint()">ย้อนกลับ (ลบจุดล่าสุด) ↩️</button>
-            <button class="btn-mgmt btn-clear-selected" id="btn-clear-selected"
-                onclick="toggleClearSelectedMode()">ลบจุดที่เลือก 🎯</button>
-            <button class="btn-mgmt btn-clear-all" onclick="clearAllPoints()">ลบจุดทั้งหมดในมุมมองนี้ 🗑️</button>
-        </div>
-
         <div style="text-align: right;">
             <button class="btn btn-csv" onclick="exportCSV()">📥 ดาวน์โหลด CSV (ของพื้นที่นี้)</button>
         </div>
@@ -2360,13 +2517,11 @@
             <thead>
                 <tr>
                     <th>เวลาที่บันทึก</th>
-                    <th>สถานะ</th>
+                    <th>Case / รอบ</th>
                     <th>สถานที่</th>
                     <th>คลื่นความถี่</th>
                     <th>Point ID</th>
-                    <th>Used Position (m)</th>
-                    <th>Raw Position (m)</th>
-                    <th>Snap Status</th>
+                    <th>ตำแหน่ง X,Y (m)</th>
                     <th>ความแรงสัญญาณ (RSSI)</th>
                 </tr>
             </thead>
@@ -2494,10 +2649,9 @@
         }
 
         function getColorByRssi(rssi) {
-            if (rssi <= -100) return 'radial-gradient(circle, rgba(127,140,141,0.8) 0%, rgba(127,140,141,0) 70%)';
-            if (rssi >= -50) return 'radial-gradient(circle, rgba(46,204,113,0.8) 0%, rgba(46,204,113,0) 70%)';
-            if (rssi >= -70) return 'radial-gradient(circle, rgba(241,196,15,0.8) 0%, rgba(241,196,15,0) 70%)';
-            return 'radial-gradient(circle, rgba(231,76,60,0.8) 0%, rgba(231,76,60,0) 70%)';
+            const v = Number(rssi);
+            const [r, g, b] = rssiToRGBA(v, 1);
+            return `radial-gradient(circle, rgba(${r},${g},${b},0.96) 0%, rgba(${r},${g},${b},0.72) 28%, rgba(${r},${g},${b},0) 76%)`;
         }
 
         function drawPoint(x, y, rssi, key) {
@@ -2512,10 +2666,7 @@
             dot.className = 'heatmap-dot';
             dot.style.left = `${x}px`; dot.style.top = `${y}px`;
             dot.dataset.key = key;
-            dot.style.backgroundColor =
-                (rssi >= -50) ? '#2ECC71' :
-                    (rssi >= -70) ? '#F1C40F' :
-                        (rssi > -100) ? '#E74C3C' : '#7F8C8D';
+            dot.style.backgroundColor = rssiPointColor(rssi);
 
             // Handle clicking individual point to toggle selection in clear mode
             dot.onclick = (e) => {
@@ -3898,7 +4049,9 @@
                 const py = meterToPixelY(p.actualY);
 
                 const isMeasured = activeMap.has(p.pointId);
-                const isNext = p.pointId === nextPointId;
+                // NEXT recommendation is only a field-measurement aid.
+                // Never show it in the Average/report view.
+                const isNext = (currentCase === 'Case1' && currentCondition !== 'Average' && p.pointId === nextPointId);
 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'survey-point-marker' + (isNext ? ' next-recommended' : '');
@@ -3925,7 +4078,7 @@
 
                 if (showPointIdLabels) {
                     const label = document.createElement('span');
-                    label.textContent = p.pointId + (isNext ? ' NEXT' : '');
+                    label.textContent = p.pointId;
                     label.style.fontSize = '9px';
                     label.style.fontWeight = 'bold';
                     label.style.color = isNext ? '#D9480F' : '#555';
@@ -3960,10 +4113,7 @@
             dot.style.left = `${pixelX}px`;
             dot.style.top = `${pixelY}px`;
             dot.dataset.key = key;
-            dot.style.backgroundColor =
-                (rssi >= -50) ? '#2ECC71' :
-                    (rssi >= -70) ? '#F1C40F' :
-                        (rssi > -100) ? '#E74C3C' : '#7F8C8D';
+            dot.style.backgroundColor = rssiPointColor(rssi);
 
             dot.onclick = (e) => {
                 if (isClearSelectedModeActive) {
@@ -5281,6 +5431,13 @@
         currentInstallMode = currentCondition;
         currentLocation = 'Room1';
 
+        function getCaseDisplayTitle(caseId = currentCase) {
+            if (caseId === 'Case1') return 'การประเมินความครอบคลุมของสัญญาณ Wi-Fi ภายในห้องเรียน';
+            if (caseId === 'Case2') return 'การวิเคราะห์การกระจายและการลดทอนของสัญญาณตามพื้นที่';
+            if (caseId === 'Case3') return 'การวิเคราะห์การลดทอนของสัญญาณระหว่างชั้น';
+            return caseId;
+        }
+
         function getConditionLabel() {
             if (currentCase === 'Case1') {
                 if (currentCondition === 'Average') return 'ค่าเฉลี่ย 3 รอบ';
@@ -5361,6 +5518,10 @@
                 const el = document.getElementById('btn-' + c.toLowerCase());
                 if (el) el.classList.toggle('active', c === currentCase);
             });
+
+            const titleEl = document.getElementById('case-display-title');
+            if (titleEl) titleEl.textContent = getCaseDisplayTitle(currentCase);
+
             const box = document.getElementById('case-condition-controls');
             if (!box) return;
 
@@ -5396,6 +5557,8 @@
             if (caseId === 'Case2') currentCondition = 'Evaluation';
             if (caseId === 'Case3') currentCondition = 'PositionA';
             currentInstallMode = currentCondition;
+            const initialSidebarThreshold = document.getElementById('sidebar-coverage-threshold');
+            if (initialSidebarThreshold) initialSidebarThreshold.textContent = String(rssiThreshold);
             renderCaseControls();
             refreshProjectView();
         }
@@ -5416,15 +5579,32 @@
             }
             rssiThreshold = value;
             localStorage.setItem('wifiProjectRssiThreshold', String(rssiThreshold));
+            const sidebarThreshold = document.getElementById('sidebar-coverage-threshold');
+            if (sidebarThreshold) sidebarThreshold.textContent = String(rssiThreshold);
             showToast(`✅ ใช้ Threshold ${rssiThreshold} dBm แล้ว`);
             refreshProjectView();
         }
 
+        function rssiPointColor(rssi) {
+            const v = Number(rssi);
+            // Continuous point color inside Cisco reference categories.
+            // This preserves Cisco labels while still showing variation such as -64 vs -45 dBm.
+            const [r, g, b] = rssiToRGBA(v, 1);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
         function classifySignal(rssi) {
-            if (Number(rssi) <= -100) return { label: 'ไม่พบสัญญาณ', color: '#7F8C8D' };
-            if (Number(rssi) >= -50) return { label: 'ดีมาก', color: '#2ECC71' };
-            if (Number(rssi) >= -70) return { label: 'ปานกลาง', color: '#F1C40F' };
-            return { label: 'อ่อน', color: '#E74C3C' };
+            const v = Number(rssi);
+            if (!Number.isFinite(v)) return { label: 'Unknown', color: '#7F8C8D' };
+
+            // Cisco publishes reference values (-30, -67, -70, -80, -90 dBm),
+            // not mandatory IEEE interval bands. These labels use those anchors.
+            if (v >= -30) return { label: 'Amazing', color: '#006837' };
+            if (v >= -67) return { label: 'Very Good', color: '#4CAF50' };
+            if (v >= -70) return { label: 'Okay', color: '#C79A00' };
+            if (v >= -80) return { label: 'Not Good', color: '#E85D3A' };
+            if (v > -90) return { label: 'Near Unusable', color: '#D73027' };
+            return { label: 'Unusable', color: '#8B0000' };
         }
 
         function thresholdResult(rssi) {
@@ -5469,72 +5649,317 @@
         function renderSummary(points, extraHtml = '') {
             const card = addProjectSummaryCard();
             if (!card) return;
+
             const st = calculateStats(points);
+
             if (!st.count) {
-                card.innerHTML = `<strong>📊 ${currentCase} — ${getConditionLabel()}</strong><div style="margin-top:8px;color:#888;">ยังไม่มีข้อมูลในมุมมองนี้</div>${extraHtml}`;
+                card.innerHTML = `
+                    <div class="result-summary-head">
+                        <div>
+                            <div class="result-summary-title">📊 ${getCaseDisplayTitle(currentCase)}</div>
+                            <div class="result-summary-meta" style="margin-top:3px;">${currentCase} · ${getConditionLabel()} · ${currentFreq}</div>
+                        </div>
+                    </div>
+                    <div style="padding:12px;color:#888;">ยังไม่มีข้อมูลในมุมมองนี้</div>
+                    ${extraHtml}`;
                 return;
             }
-            const coverageLabel = st.coverage >= 90 ? 'ครอบคลุมดีมาก' : st.coverage >= 75 ? 'ครอบคลุมดี' : st.coverage >= 50 ? 'ควรปรับปรุง' : 'ครอบคลุมต่ำ';
+
+            const coverageLabel =
+                st.coverage >= 90 ? 'ครอบคลุมดีมาก' :
+                    st.coverage >= 75 ? 'ครอบคลุมดี' :
+                        st.coverage >= 50 ? 'ควรปรับปรุง' :
+                            'ครอบคลุมต่ำ';
+
+            const passText = `${st.pass}/${st.count}`;
+
             card.innerHTML = `
-                <strong>📊 ${currentCase} — ${getConditionLabel()} — ${currentFreq}</strong>
-                <div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13px;">
-                    <span>จุดข้อมูล <b>${st.count}</b></span>
-                    <span>Average <b>${st.avg.toFixed(1)} dBm</b></span>
-                    <span>Min <b>${st.min.toFixed(1)} dBm</b></span>
-                    <span>Max <b>${st.max.toFixed(1)} dBm</b></span>
-                    <span style="color:#2B8A3E;">Pass <b>${st.pass}</b></span>
-                    <span style="color:#C92A2A;">Fail <b>${st.fail}</b></span>
-                    <span>Coverage ≥ ${rssiThreshold} dBm <b>${st.coverage.toFixed(1)}%</b></span>
+                <div class="result-summary-head">
+                    <div>
+                        <div class="result-summary-title">📊 ${getCaseDisplayTitle(currentCase)}</div>
+                        <div class="result-summary-meta" style="margin-top:3px;">${currentCase} · ${getConditionLabel()} · ${currentFreq}</div>
+                    </div>
+                    <div class="result-summary-meta">ข้อมูล ${st.count} จุด · Threshold ${rssiThreshold} dBm</div>
                 </div>
-                <div style="margin-top:8px;font-size:11px;color:#666;">ผลประเมิน: <b>${coverageLabel}</b> · Pass = RSSI ≥ ${rssiThreshold} dBm</div>
-                ${extraHtml}`;
+
+                <div class="result-summary-grid">
+                    <div class="result-metric metric-average">
+                        <div class="result-metric-label">Average RSSI</div>
+                        <div class="result-metric-value">${st.avg.toFixed(1)} dBm</div>
+                    </div>
+
+                    <div class="result-metric metric-min">
+                        <div class="result-metric-label">Min RSSI</div>
+                        <div class="result-metric-value">${st.min.toFixed(1)} dBm</div>
+                    </div>
+
+                    <div class="result-metric metric-max">
+                        <div class="result-metric-label">Max RSSI</div>
+                        <div class="result-metric-value">${st.max.toFixed(1)} dBm</div>
+                    </div>
+
+                    <div class="result-metric metric-pass">
+                        <div class="result-metric-label">Pass Points</div>
+                        <div class="result-metric-value">${passText}</div>
+                    </div>
+
+                    <div class="result-metric metric-fail">
+                        <div class="result-metric-label">Fail Points</div>
+                        <div class="result-metric-value">${st.fail}</div>
+                    </div>
+
+                    <div class="result-metric metric-coverage">
+                        <div class="result-metric-label">Coverage ≥ ${rssiThreshold} dBm</div>
+                        <div class="result-metric-value">${st.coverage.toFixed(1)}%</div>
+                    </div>
+                </div>
+
+                <div class="result-summary-foot">
+                    ผลประเมิน: <b>${coverageLabel}</b> · Pass เมื่อ RSSI ≥ ${rssiThreshold} dBm
+                    ${extraHtml}
+                </div>`;
+        }
+
+        // Case 1 Average:
+        // 1) Rebuild the canonical Point ID from the measured X/Y position.
+        //    This avoids old/stale pointId fields causing all samples to collapse into R1C1.
+        // 2) Keep only the latest sample for each Point ID in each Round.
+        // 3) Average the same Point ID across Round1, Round2 and Round3.
+        function getCanonicalCase1PointId(point) {
+            const p = normalizeStoredPoint(point, 'Room1');
+            return getPointId(Number(p.x), Number(p.y), 'Room1');
+        }
+
+        function dedupeRoundByPointId(roundArr, roundIndex) {
+            const latestByPoint = new Map();
+
+            (roundArr || []).forEach(raw => {
+                if (!raw) return;
+
+                const p = normalizeStoredPoint(raw, 'Room1');
+                const rssi = Number(p.rssi);
+                if (!Number.isFinite(rssi)) return;
+
+                const pointId = getCanonicalCase1PointId(p);
+                const candidate = {
+                    ...p,
+                    pointId,
+                    _round: roundIndex + 1
+                };
+
+                const previous = latestByPoint.get(pointId);
+                const previousTs = Number(previous && previous.timestamp) || 0;
+                const candidateTs = Number(candidate.timestamp) || 0;
+
+                // If a Point ID was accidentally measured more than once in one round,
+                // use the newest record only.
+                if (!previous || candidateTs >= previousTs) {
+                    latestByPoint.set(pointId, candidate);
+                }
+            });
+
+            return Array.from(latestByPoint.values());
         }
 
         function aggregateRounds(roundArrays) {
             const groups = new Map();
+
             roundArrays.forEach((roundArr, roundIndex) => {
-                (roundArr || []).forEach(raw => {
-                    const p = normalizeStoredPoint(raw, currentLocation);
-                    const id = p.pointId || getPointId(p.x, p.y, currentLocation);
-                    if (!groups.has(id)) groups.set(id, []);
-                    groups.get(id).push({ ...p, _round: roundIndex + 1 });
+                const cleanRound = dedupeRoundByPointId(roundArr, roundIndex);
+
+                cleanRound.forEach(p => {
+                    if (!groups.has(p.pointId)) groups.set(p.pointId, []);
+                    groups.get(p.pointId).push(p);
                 });
             });
-            return Array.from(groups.entries()).map(([pointId, arr]) => ({
-                pointId,
-                x: arr.reduce((s, p) => s + Number(p.x), 0) / arr.length,
-                y: arr.reduce((s, p) => s + Number(p.y), 0) / arr.length,
-                rawX: arr[0].rawX ?? arr[0].x,
-                rawY: arr[0].rawY ?? arr[0].y,
-                rssi: Number((arr.reduce((s, p) => s + Number(p.rssi), 0) / arr.length).toFixed(1)),
-                timestamp: Math.max(...arr.map(p => Number(p.timestamp) || 0)),
-                sampleCount: arr.length,
-                roundCount: new Set(arr.map(p => p._round)).size,
-                gridMeters: CASE1_SURVEY_GRID_METERS,
-                unit: 'm'
-            }));
+
+            const plannedOrder = new Map(
+                getPlannedSurveyPoints('Room1').map((p, i) => [p.pointId, i])
+            );
+
+            return Array.from(groups.entries())
+                .map(([pointId, arr]) => {
+                    const fieldPoint = getFieldSurveyPoints('Room1')
+                        .find(p => p.pointId === pointId);
+
+                    // Use the actual measured position averaged across available rounds.
+                    // It preserves the real field offsets while keeping the Point ID fixed.
+                    const x = arr.reduce((s, p) => s + Number(p.x), 0) / arr.length;
+                    const y = arr.reduce((s, p) => s + Number(p.y), 0) / arr.length;
+
+                    return {
+                        pointId,
+                        x: Number(x.toFixed(2)),
+                        y: Number(y.toFixed(2)),
+                        actualX: Number(x.toFixed(2)),
+                        actualY: Number(y.toFixed(2)),
+                        plannedX: fieldPoint ? Number(fieldPoint.plannedX) : Number(arr[0].plannedX ?? x),
+                        plannedY: fieldPoint ? Number(fieldPoint.plannedY) : Number(arr[0].plannedY ?? y),
+                        rawX: arr[0].rawX ?? arr[0].x,
+                        rawY: arr[0].rawY ?? arr[0].y,
+                        rssi: Number(
+                            (arr.reduce((s, p) => s + Number(p.rssi), 0) / arr.length).toFixed(1)
+                        ),
+                        timestamp: Math.max(...arr.map(p => Number(p.timestamp) || 0)),
+                        sampleCount: arr.length,
+                        roundCount: new Set(arr.map(p => p._round)).size,
+                        gridMeters: CASE1_SURVEY_GRID_METERS,
+                        unit: 'm'
+                    };
+                })
+                .sort((a, b) =>
+                    (plannedOrder.get(a.pointId) ?? 999) -
+                    (plannedOrder.get(b.pointId) ?? 999)
+                );
         }
 
-        function loadAverageCase1() {
+        function snapshotToPointArray(snapshot) {
+            const arr = [];
+            if (!snapshot || !snapshot.exists()) return arr;
+
+            snapshot.forEach(child => {
+                const value = child.val();
+
+                // Normal structure: /frequency/<pushKey>/{point record}
+                if (value && typeof value === 'object' &&
+                    (value.rssi !== undefined || value.x !== undefined || value.pointId !== undefined)) {
+                    arr.push({ ...value, _firebaseKey: child.key });
+                    return;
+                }
+
+                // Defensive fallback for an accidentally nested level.
+                if (value && typeof value === 'object') {
+                    Object.keys(value).forEach(k => {
+                        const nested = value[k];
+                        if (nested && typeof nested === 'object' &&
+                            (nested.rssi !== undefined || nested.x !== undefined || nested.pointId !== undefined)) {
+                            arr.push({ ...nested, _firebaseKey: k });
+                        }
+                    });
+                }
+            });
+
+            return arr;
+        }
+
+        async function readCase1RoundWithFallback(round, safeFreq) {
+            // Current project structure first.
+            const candidatePaths = [
+                `${getExperimentBasePath(round)}/${safeFreq}`,
+
+                // Older versions saved Round1/Round2/Round3 in the old
+                // currentInstallMode slot before Case1 was introduced.
+                `HeatmapData/${currentProfile}/${round}/Room1/${safeFreq}`,
+
+                // Extra compatibility for builds that placed Case/Condition
+                // before Location.
+                `HeatmapData/${currentProfile}/Case1/${round}/Room1/${safeFreq}`
+            ];
+
+            const results = await Promise.all(
+                candidatePaths.map(async path => {
+                    try {
+                        const snap = await db.ref(path).once('value');
+                        const points = snapshotToPointArray(snap);
+                        return { path, points };
+                    } catch (err) {
+                        console.warn('Average read failed:', path, err);
+                        return { path, points: [] };
+                    }
+                })
+            );
+
+            // Pick the source that contains the most distinct survey positions.
+            // This prevents a stray/test record from taking precedence over
+            // the complete 24-point dataset.
+            results.forEach(result => {
+                const ids = new Set(
+                    result.points.map(p => {
+                        try { return getCanonicalCase1PointId(p); }
+                        catch (_) { return ''; }
+                    }).filter(Boolean)
+                );
+                result.distinctCount = ids.size;
+            });
+
+            results.sort((a, b) =>
+                (b.distinctCount - a.distinctCount) ||
+                (b.points.length - a.points.length)
+            );
+
+            return results[0] || { path: candidatePaths[0], points: [] };
+        }
+
+        async function loadAverageCase1() {
             resetHeatmapLayers();
+
             const tableBody = document.getElementById('table-body');
             if (tableBody) tableBody.innerHTML = '';
-            activePoints = []; currentTableData = []; currentExportData = [];
+
+            activePoints = [];
+            currentTableData = [];
+            currentExportData = [];
             clearSelection();
+
+            // Average is a one-time derived view; detach any previous round listener.
+            if (currentDbListener) {
+                currentDbListener.off();
+                currentDbListener = null;
+            }
+
             const safeFreq = currentFreq.replace('.', '_');
-            Promise.all(['Round1', 'Round2', 'Round3'].map(r => db.ref(`${getExperimentBasePath(r)}/${safeFreq}`).once('value')))
-                .then(snaps => {
-                    const rounds = snaps.map(snap => {
-                        const arr = []; if (snap.exists()) snap.forEach(ch => arr.push(ch.val())); return arr;
-                    });
-                    const avgPoints = aggregateRounds(rounds);
-                    avgPoints.forEach((p, idx) => processProjectIncomingData(p, `AVG_${idx}`, true));
-                    const complete = avgPoints.filter(p => p.roundCount === 3).length;
-                    const incomplete = avgPoints.length - complete;
-                    renderSummary(avgPoints, `<div style="font-size:11px;color:#888;margin-top:8px;">เฉลี่ยตาม Point ID จาก Round 1–3 · ครบ 3 รอบ ${complete} จุด${incomplete ? ` · ยังไม่ครบ ${incomplete} จุด` : ''}</div>`);
-                });
+
+            try {
+                const sources = await Promise.all(
+                    ['Round1', 'Round2', 'Round3'].map(round =>
+                        readCase1RoundWithFallback(round, safeFreq)
+                    )
+                );
+
+                const rounds = sources.map(s => s.points);
+                const avgPoints = aggregateRounds(rounds);
+
+                avgPoints.forEach((p, idx) =>
+                    processProjectIncomingData(p, `AVG_${p.pointId || idx}`, true)
+                );
+
+                const complete = avgPoints.filter(p => p.roundCount === 3).length;
+                const incomplete = avgPoints.length - complete;
+
+                renderSummary(
+                    avgPoints,
+                    `<div style="font-size:11px;color:#888;margin-top:8px;">
+                        เฉลี่ยตาม Point ID จาก Round 1–3 · ครบ 3 รอบ ${complete} จุด
+                        ${incomplete ? ` · ยังไม่ครบ ${incomplete} จุด` : ''}
+                    </div>`
+                );
+
+                console.info(
+                    '[Case1 Average] sources:',
+                    sources.map((s, i) => ({
+                        round: i + 1,
+                        path: s.path,
+                        records: s.points.length,
+                        distinctPoints: s.distinctCount
+                    }))
+                );
+
+                if (avgPoints.length !== 24 || complete !== 24) {
+                    console.warn(
+                        `[Case1 Average] Expected 24 complete Point IDs, got ${avgPoints.length} total / ${complete} complete.`
+                    );
+                }
+            } catch (err) {
+                console.error('Case1 Average load failed:', err);
+                renderSummary([]);
+                showToast('⚠️ โหลดค่าเฉลี่ย Case 1 ไม่สำเร็จ กรุณาลองใหม่');
+            }
         }
 
+        // UI/CSV policy:
+        // Raw click position and snap metadata are kept internally/backward-compatible,
+        // but are intentionally not shown in the main table or exported CSV.
+        // Case 1 reporting uses Point ID + actual X/Y + RSSI as the essential fields.
         function processProjectIncomingData(rawData, key, isAverage = false) {
             const data = normalizeStoredPoint(rawData, currentLocation);
             const cls = classifySignal(data.rssi);
@@ -5542,21 +5967,19 @@
             const dateStr = data.timestamp ? new Date(data.timestamp).toLocaleTimeString('th-TH') : '-';
             const pointIdText = data.pointId || getPointId(data.x, data.y, currentLocation);
             const xText = Number(data.x).toFixed(2), yText = Number(data.y).toFixed(2);
-            const rawXValue = data.rawX ?? data.x, rawYValue = data.rawY ?? data.y;
-            const rawXText = Number(rawXValue).toFixed(2), rawYText = Number(rawYValue).toFixed(2);
-            const snapText = isAverage ? `AVG ${data.roundCount || 0}/3 รอบ (${data.sampleCount || 0} samples)` : (data.snapApplied === true ? 'SNAP ±0.25 m' : 'RAW / ไม่ Snap');
-            const snapColor = isAverage ? '#7048E8' : (data.snapApplied === true ? '#2B7A78' : '#E67E22');
             const conditionLabel = getConditionLabel();
             const thResult = thresholdResult(data.rssi);
             const rowId = `row-${String(key).replace(/[^A-Za-z0-9_-]/g, '_')}`;
             const tableBody = document.getElementById('table-body');
             if (tableBody) tableBody.insertAdjacentHTML('afterbegin', `<tr id="${rowId}">
-                <td>${dateStr}</td><td>${currentCase} / ${conditionLabel}</td><td>${getLocationDisplayName(currentLocation)}</td><td>${currentFreq}</td>
+                <td>${dateStr}</td>
+                <td>${currentCase} / ${conditionLabel}</td>
+                <td>${getLocationDisplayName(currentLocation)}</td>
+                <td>${currentFreq}</td>
                 <td style="font-weight:bold;color:#7048E8;white-space:nowrap;">${pointIdText}</td>
                 <td style="font-weight:bold;color:#2B7A78;white-space:nowrap;">(${xText}, ${yText})</td>
-                <td style="color:#666;white-space:nowrap;">(${rawXText}, ${rawYText})</td>
-                <td style="font-weight:bold;color:${snapColor};white-space:nowrap;">${snapText}</td>
-                <td style="color:${cls.color};font-weight:bold;">${data.rssi} dBm (${cls.label})${(currentCase === 'Case2' || currentCase === 'Case3' || (currentCase === 'Case1' && currentCondition === 'Average')) ? `<br><small>${thResult}</small>` : ''}</td></tr>`);
+                <td style="color:${cls.color};font-weight:bold;">${data.rssi} dBm (${cls.label})${(currentCase === 'Case2' || currentCase === 'Case3' || (currentCase === 'Case1' && currentCondition === 'Average')) ? `<br><small>${thResult}</small>` : ''}</td>
+            </tr>`);
             activePoints.push({
                 key,
                 pointId: pointIdText,
@@ -5710,7 +6133,7 @@
 
         exportCSV = function () {
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "เวลา,Case,Condition,สถานที่,คลื่น,Point ID,X (m),Y (m),RSSI (dBm),ระดับสัญญาณ,Threshold Result\n";
+            csvContent += "เวลา,Case,Round / Condition,สถานที่,คลื่น,Point ID,X (m),Y (m),RSSI (dBm),ระดับสัญญาณ,Threshold Result\n";
             currentExportData.forEach(row => { csvContent += row.join(',') + '\n'; });
             const link = document.createElement('a'); link.href = encodeURI(csvContent);
             link.download = `Heatmap_${sanitizeFileNamePart(currentProfile)}_${currentCase}_${sanitizeFileNamePart(currentCondition)}_${sanitizeFileNamePart(getLocationDisplayName(currentLocation))}_${currentFreq}.csv`;
@@ -6130,7 +6553,7 @@
         // Update CSV naming/display to the active location automatically.
         exportCSV = function () {
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "เวลา,Case,Condition,สถานที่,คลื่น,Point ID,X (m),Y (m),RSSI (dBm),ระดับสัญญาณ,Threshold Result\n";
+            csvContent += "เวลา,Case,Round / Condition,สถานที่,คลื่น,Point ID,X (m),Y (m),RSSI (dBm),ระดับสัญญาณ,Threshold Result\n";
             currentExportData.forEach(row => { csvContent += row.join(',') + '\n'; });
             const link = document.createElement('a'); link.href = encodeURI(csvContent);
             link.download = `Heatmap_${sanitizeFileNamePart(currentProfile)}_${currentCase}_${sanitizeFileNamePart(currentCondition)}_${sanitizeFileNamePart(getLocationDisplayName(currentLocation))}_${currentFreq}.csv`;
@@ -6140,7 +6563,7 @@
         // Adapt existing table header without redesigning the table.
         (function patchProjectUI() {
             const ths = document.querySelectorAll('table thead th');
-            if (ths.length >= 2) ths[1].innerText = 'Case / Condition';
+            if (ths.length >= 2) ths[1].innerText = 'Case / รอบ';
             const split = document.getElementById('split-view-wrapper'); if (split) split.style.display = 'none';
             const slider = document.getElementById('overlay-slider-box'); if (slider) slider.style.display = 'none';
             const floating = document.getElementById('btn-floating-compare'); if (floating) floating.style.display = 'none';
@@ -6187,13 +6610,35 @@
                 <button id="viz-idw" class="btn coverage-viz-btn" onclick="setCoverageVizMode('idw')">🌈 Coverage</button>
                 <button id="viz-contour" class="btn coverage-viz-btn" onclick="setCoverageVizMode('contour')">〰 Threshold</button>
               </div>
-              <div id="coverage-viz-note">จุด = ค่าที่วัดจริง · Coverage = IDW interpolation · Threshold = พื้นที่ผ่าน/ไม่ผ่านเกณฑ์</div>
+              <div id="coverage-viz-note">จุด = ค่าที่วัดจริง · Coverage = Absolute RSSI (IDW interpolation) · Threshold = พื้นที่ผ่าน/ไม่ผ่านเกณฑ์</div>
+              <div id="coverage-absolute-legend"
+                   style="margin-top:7px;padding:8px;border:1px solid #E9ECEF;border-radius:8px;background:#FAFAFA;font-size:10px;line-height:1.55;color:#555;">
+                <div style="font-weight:bold;color:#666;margin-bottom:5px;">Absolute RSSI Color Scale</div>
+                <div style="display:grid;grid-template-columns:repeat(10,1fr);height:10px;border-radius:5px;overflow:hidden;border:1px solid rgba(0,0,0,.08);">
+                  <span style="background:#8b0000;"></span>
+                  <span style="background:#d73027;"></span>
+                  <span style="background:#f46d43;"></span>
+                  <span style="background:#fdae61;"></span>
+                  <span style="background:#fee08b;"></span>
+                  <span style="background:#bedf6e;"></span>
+                  <span style="background:#84cc5f;"></span>
+                  <span style="background:#4caf50;"></span>
+                  <span style="background:#238f4c;"></span>
+                  <span style="background:#005c53;"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:3px;font-weight:600;">
+                  <span>≤ -90 dBm</span><span>≥ -38 dBm</span>
+                </div>
+                <div style="margin-top:4px;color:#777;">
+                  แดงเข้ม = อ่อนมาก · เหลือง = ปานกลาง · เขียวเข้ม = แรงมาก
+                </div>
+              </div>
               <div id="threshold-viz-legend"
                    style="margin-top:7px;padding:7px 8px;border:1px solid #E9ECEF;border-radius:8px;background:#FAFAFA;font-size:10px;line-height:1.7;color:#555;">
                 <div style="font-weight:bold;color:#666;margin-bottom:2px;">Threshold: <span id="threshold-legend-value">${rssiThreshold} dBm</span></div>
-                <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#2ECC71;margin-right:5px;"></span>ผ่าน: RSSI ≥ <span id="threshold-legend-pass">${rssiThreshold} dBm</span></div>
-                <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#E74C3C;margin-right:5px;"></span>ไม่ผ่าน: RSSI &lt; <span id="threshold-legend-fail">${rssiThreshold} dBm</span></div>
-                <div><span style="display:inline-block;width:16px;border-top:2px solid #7048E8;margin-right:5px;vertical-align:middle;"></span>เส้นขอบ = ${rssiThreshold} dBm</div>
+                <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#22c55e;margin-right:5px;"></span>Pass: RSSI ≥ <span id="threshold-legend-pass">${rssiThreshold} dBm</span></div>
+                <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#ef4444;margin-right:5px;"></span>Fail: RSSI &lt; <span id="threshold-legend-fail">${rssiThreshold} dBm</span></div>
+                <div><span style="display:inline-block;width:16px;border-top:2px solid #7c3aed;margin-right:5px;vertical-align:middle;"></span>Threshold boundary = <span id="threshold-legend-boundary">${rssiThreshold} dBm</span></div>
               </div>`;
             parent.appendChild(box);
             updateCoverageVizButtons();
@@ -6227,17 +6672,48 @@
             return den ? num / den : null;
         }
 
-        function rssiToRGBA(v, a = 0.52) {
-            // continuous blue/green/yellow/red-like ramp without changing existing point legend
-            const stops = [[-90, [231, 76, 60]], [-70, [241, 196, 15]], [-50, [46, 204, 113]], [-30, [52, 152, 219]]];
+        function rssiToRGBA(v, a = 0.94) {
+            // Cisco reference anchors remain unchanged:
+            // -30 Amazing, -67 Very Good, -70 Okay, -80 Not Good, -90 Unusable.
+            // The additional green stops below are visualization-only and make
+            // spatial differences inside the Very Good region easier to see.
+            const stops = [
+                [-90, [139, 0, 0]],   // Cisco: Unusable
+                [-80, [242, 111, 34]],   // Cisco: Not Good
+                [-70, [255, 214, 79]],   // Cisco: Okay
+                [-67, [205, 220, 75]],   // Cisco: Very Good threshold, yellow-green
+                [-63, [164, 214, 76]],   // light yellow-green
+                [-60, [112, 201, 82]],   // light green
+                [-57, [72, 181, 86]],   // medium green
+                [-54, [43, 158, 82]],   // deeper green
+                [-50, [18, 126, 76]],   // dark green
+                [-45, [5, 98, 67]],   // very dark green
+                [-38, [0, 78, 58]],   // strongest measured area
+                [-30, [0, 62, 48]]    // Cisco: Amazing
+            ];
+
             if (v <= stops[0][0]) return [...stops[0][1], a];
-            if (v >= stops.at(-1)[0]) return [...stops.at(-1)[1], a];
+            if (v >= stops[stops.length - 1][0]) return [...stops[stops.length - 1][1], a];
+
             for (let i = 0; i < stops.length - 1; i++) {
-                const [v0, c0] = stops[i], [v1, c1] = stops[i + 1];
-                if (v >= v0 && v <= v1) { const t = (v - v0) / (v1 - v0); return [0, 1, 2].map(k => Math.round(c0[k] + (c1[k] - c0[k]) * t)).concat(a); }
+                const [v0, c0] = stops[i];
+                const [v1, c1] = stops[i + 1];
+
+                if (v >= v0 && v <= v1) {
+                    const t = (v - v0) / (v1 - v0);
+                    return [
+                        Math.round(c0[0] + (c1[0] - c0[0]) * t),
+                        Math.round(c0[1] + (c1[1] - c0[1]) * t),
+                        Math.round(c0[2] + (c1[2] - c0[2]) * t),
+                        a
+                    ];
+                }
             }
-            return [127, 140, 141, a];
+
+            return [139, 0, 0, a];
         }
+
+        const HEATMAP_RENDER_STEP = 4;
 
         function renderCoverageVisualization() {
             const c = ensureCoverageCanvas(); if (!c) return;
@@ -6246,8 +6722,6 @@
             const dots = document.querySelectorAll('#heatmap-layer .heatmap-dot');
             dots.forEach(d => d.style.display = 'block');
             if (coverageVizMode === 'points') {
-                // Point mode = show the real measured point together with its RSSI color halo.
-                // Previously this hid .heatmap-blur, leaving only the black center dot.
                 c.style.display = 'none';
                 blurs.forEach(b => b.style.display = 'block');
                 return;
@@ -6255,23 +6729,23 @@
             c.style.display = 'block'; blurs.forEach(b => b.style.display = 'none');
             const pts = (activePoints || []).map(p => ({ px: meterToPixelX(Number(p.x)), py: meterToPixelY(Number(p.y)), rssi: Number(p.rssi) })).filter(p => Number.isFinite(p.rssi));
             if (!pts.length) return;
-            const step = 8, cols = Math.ceil(c.width / step), rows = Math.ceil(c.height / step);
+            const step = HEATMAP_RENDER_STEP, cols = Math.ceil(c.width / step), rows = Math.ceil(c.height / step);
             const vals = Array.from({ length: rows }, () => Array(cols).fill(null));
             for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) vals[gy][gx] = idwValueAt(gx * step + step / 2, gy * step + step / 2, pts, 2);
             if (coverageVizMode === 'idw') {
                 for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
-                    const v = vals[gy][gx]; if (v == null) continue; const [r, g, b, a] = rssiToRGBA(v, 0.48);
+                    const v = vals[gy][gx]; if (v == null) continue; const [r, g, b, a] = rssiToRGBA(v, 0.94);
                     ctx.fillStyle = `rgba(${r},${g},${b},${a})`; ctx.fillRect(gx * step, gy * step, step + 1, step + 1);
                 }
             } else {
-                // pass/fail area based on current threshold
+                // Threshold mode: PASS (#22c55e), FAIL (#ef4444) with isoline at #7c3aed
                 for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
                     const v = vals[gy][gx]; if (v == null) continue;
-                    ctx.fillStyle = v >= rssiThreshold ? 'rgba(46,204,113,0.25)' : 'rgba(231,76,60,0.27)';
+                    ctx.fillStyle = v >= rssiThreshold ? 'rgba(34,197,94,0.65)' : 'rgba(239,68,68,0.65)';
                     ctx.fillRect(gx * step, gy * step, step + 1, step + 1);
                 }
-                // simple isoline: draw cell edges where pass/fail changes
-                ctx.strokeStyle = 'rgba(90,50,160,0.95)'; ctx.lineWidth = 2; ctx.beginPath();
+                // Contour line (#7c3aed)
+                ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 3; ctx.beginPath();
                 for (let gy = 0; gy < rows - 1; gy++) for (let gx = 0; gx < cols - 1; gx++) {
                     const here = vals[gy][gx] >= rssiThreshold;
                     if ((vals[gy][gx + 1] >= rssiThreshold) !== here) { const x = (gx + 1) * step; ctx.moveTo(x, gy * step); ctx.lineTo(x, (gy + 1) * step); }
@@ -6286,7 +6760,7 @@
         processProjectIncomingData = function (...args) { const out = _coverageProcessProjectIncomingData.apply(this, args); scheduleCoverageRender(); return out; };
         function updateThresholdVizLegend() {
             const value = `${rssiThreshold} dBm`;
-            const ids = ['threshold-legend-value', 'threshold-legend-pass', 'threshold-legend-fail'];
+            const ids = ['threshold-legend-value', 'threshold-legend-pass', 'threshold-legend-fail', 'threshold-legend-boundary'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = value;
@@ -6295,7 +6769,7 @@
             if (legend) {
                 const lines = legend.querySelectorAll('div');
                 if (lines[3]) {
-                    lines[3].innerHTML = `<span style="display:inline-block;width:16px;border-top:2px solid #7048E8;margin-right:5px;vertical-align:middle;"></span>เส้นขอบ = ${value}`;
+                    lines[3].innerHTML = `<span style="display:inline-block;width:16px;border-top:2px solid #7c3aed;margin-right:5px;vertical-align:middle;"></span>Threshold boundary = <span id="threshold-legend-boundary">${value}</span>`;
                 }
             }
         }
@@ -6312,6 +6786,15 @@
         window.addEventListener('resize', scheduleCoverageRender);
         addCoverageVizControls();
         setTimeout(scheduleCoverageRender, 200);
+
+        function toggleDataManagementPanel() {
+            const panel = document.getElementById('data-mgmt-panel');
+            const btn = document.getElementById('data-mgmt-toggle');
+            if (!panel) return;
+            const willOpen = panel.style.display === 'none' || panel.style.display === '';
+            panel.style.display = willOpen ? 'block' : 'none';
+            if (btn) btn.textContent = willOpen ? '🗑️ จัดการข้อมูล ▲' : '🗑️ จัดการข้อมูล';
+        }
 
     </script>
 </body>
