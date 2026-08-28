@@ -5716,7 +5716,7 @@
         function setProjectCase(caseId) {
             currentCase = caseId;
             if (caseId === 'Case1') currentCondition = 'Round1';
-            if (caseId === 'Case2') currentCondition = 'Evaluation';
+            if (caseId === 'Case2') currentCondition = 'Round1';
             if (caseId === 'Case3') currentCondition = 'PositionA';
             currentInstallMode = currentCondition;
             const initialSidebarThreshold = document.getElementById('sidebar-coverage-threshold');
@@ -8044,14 +8044,302 @@
                 });
             };
 
-            // Repair old "Evaluation" state whenever Case 2 is active.
-            if (currentCase === 'Case2') {
-                normalizeCase2RoundV54();
-                setTimeout(() => {
-                    if (typeof renderCaseControls === 'function') renderCaseControls();
-                    refreshCase2AfterDeleteV54();
-                }, 0);
+        })();
+    </script>
+
+
+    <script id="case2-round-path-delete-fix-v55">
+        (function () {
+            const LEGACY_CASE2_ROUND_V55 = 'Evaluation';
+
+            function case2FloorV55() {
+                return localStorage.getItem('case2Floor') === 'Floor3' ? 'Floor3' : 'Floor2';
             }
+
+            function case2RoundV55() {
+                if (!['Round1', 'Round2', 'Round3'].includes(currentCondition)) {
+                    currentCondition = 'Round1';
+                    currentInstallMode = 'Round1';
+                }
+                return currentCondition;
+            }
+
+            function case2PointRefV55(round, freq, pointId) {
+                return db.ref(
+                    `HeatmapData/${currentProfile}/Case2/${case2FloorV55()}/${round}/${freq}/${pointId}`
+                );
+            }
+
+            function removeCase2PointEverywhereV55(pointId) {
+                const round = case2RoundV55();
+                const refs = [
+                    case2PointRefV55(round, '2_4GHz', pointId),
+                    case2PointRefV55(round, '5GHz', pointId)
+                ];
+
+                // Compatibility cleanup: old test builds stored Case2 under "Evaluation".
+                // Removing the same Point ID here prevents ghost data from reappearing on other devices.
+                if (round !== LEGACY_CASE2_ROUND_V55) {
+                    refs.push(case2PointRefV55(LEGACY_CASE2_ROUND_V55, '2_4GHz', pointId));
+                    refs.push(case2PointRefV55(LEGACY_CASE2_ROUND_V55, '5GHz', pointId));
+                }
+
+                return Promise.all(refs.map(ref => ref.remove()));
+            }
+
+            function refreshV55() {
+                if (typeof loadCase2MeasurementView === 'function') {
+                    loadCase2MeasurementView();
+                } else if (typeof loadHeatmapData === 'function') {
+                    loadHeatmapData();
+                }
+            }
+
+            // Replace v54 Case2 delete-selected behavior.
+            const previousDeleteSelectedPointsV55 = deleteSelectedPoints;
+            deleteSelectedPoints = function () {
+                if (currentCase !== 'Case2') {
+                    return previousDeleteSelectedPointsV55();
+                }
+
+                if (!selectedPointKeys.size) {
+                    showToast('ยังไม่ได้เลือกจุดที่จะลบ');
+                    return;
+                }
+
+                const ids = Array.from(selectedPointKeys);
+                const floor = case2FloorV55();
+                const round = case2RoundV55();
+
+                if (!confirm(
+                    `ต้องการลบ ${ids.length} จุดของ Case 2 หรือไม่?\n\n` +
+                    `${floor === 'Floor2' ? 'ชั้น 2' : 'ชั้น 3'} · ${round}\n` +
+                    `Point ID: ${ids.join(', ')}\n\n` +
+                    `จะลบทั้ง 2.4 GHz และ 5 GHz\n` +
+                    `รวมถึงข้อมูลทดลองเก่าที่ค้างอยู่ใต้ Evaluation ของ Point ID เดียวกัน`
+                )) return;
+
+                Promise.all(ids.map(removeCase2PointEverywhereV55))
+                    .then(() => {
+                        selectedPointKeys.clear();
+                        isClearSelectedModeActive = false;
+
+                        const btn = document.getElementById('btn-clear-selected');
+                        if (btn) {
+                            btn.classList.remove('active');
+                            btn.innerText = 'ลบจุดที่เลือก 🎯';
+                            btn.style.backgroundColor = '';
+                        }
+
+                        showToast(`🗑️ ลบ ${ids.length} จุดออกจาก Firebase แล้ว`);
+                        refreshV55();
+                    })
+                    .catch(err => {
+                        console.error('Case2 v55 delete failed:', err);
+                        showToast('❌ ลบจุด Case 2 จาก Firebase ไม่สำเร็จ');
+                    });
+            };
+
+            // Replace v54 undo so the latest Point ID is also removed from legacy Evaluation.
+            const previousUndoLastPointV55 = undoLastPoint;
+            undoLastPoint = function () {
+                if (currentCase !== 'Case2') {
+                    return previousUndoLastPointV55();
+                }
+
+                const pts = (activePoints || []).filter(p => p && p.pointId);
+                if (!pts.length) {
+                    showToast('ไม่มีจุด Case 2 ให้ย้อนกลับ');
+                    return;
+                }
+
+                const last = pts.reduce((a, b) =>
+                    Number(a.timestamp || 0) >= Number(b.timestamp || 0) ? a : b
+                );
+
+                removeCase2PointEverywhereV55(last.pointId)
+                    .then(() => {
+                        showToast(`↩️ ลบจุดล่าสุด ${last.pointId} จาก Firebase แล้ว`);
+                        refreshV55();
+                    })
+                    .catch(err => {
+                        console.error('Case2 v55 undo failed:', err);
+                        showToast('❌ ย้อนกลับจุด Case 2 ไม่สำเร็จ');
+                    });
+            };
+
+            // Replace v54 clear-all. Clear current round and stale Evaluation for the same floor.
+            const previousClearAllPointsV55 = clearAllPoints;
+            clearAllPoints = function () {
+                if (currentCase !== 'Case2') {
+                    return previousClearAllPointsV55();
+                }
+
+                const floor = case2FloorV55();
+                const round = case2RoundV55();
+
+                if (!(activePoints || []).length) {
+                    showToast('ไม่มีข้อมูล Case 2 ในมุมมองนี้ให้ลบ');
+                    return;
+                }
+
+                if (!confirm(
+                    `ต้องการลบข้อมูล Case 2 ทั้งหมดในมุมมองนี้หรือไม่?\n\n` +
+                    `${floor === 'Floor2' ? 'ชั้น 2' : 'ชั้น 3'} · ${round}\n` +
+                    `จะลบทั้ง 2.4 GHz และ 5 GHz\n` +
+                    `และล้างข้อมูลทดลองเก่าใต้ Evaluation ของชั้นนี้ด้วย`
+                )) return;
+
+                const jobs = [
+                    db.ref(`HeatmapData/${currentProfile}/Case2/${floor}/${round}/2_4GHz`).remove(),
+                    db.ref(`HeatmapData/${currentProfile}/Case2/${floor}/${round}/5GHz`).remove(),
+                ];
+
+                if (round !== LEGACY_CASE2_ROUND_V55) {
+                    jobs.push(
+                        db.ref(`HeatmapData/${currentProfile}/Case2/${floor}/${LEGACY_CASE2_ROUND_V55}/2_4GHz`).remove(),
+                        db.ref(`HeatmapData/${currentProfile}/Case2/${floor}/${LEGACY_CASE2_ROUND_V55}/5GHz`).remove()
+                    );
+                }
+
+                Promise.all(jobs)
+                    .then(() => {
+                        selectedPointKeys.clear();
+                        isClearSelectedModeActive = false;
+                        showToast('🗑️ ลบข้อมูล Case 2 จาก Firebase แล้ว');
+                        refreshV55();
+                    })
+                    .catch(err => {
+                        console.error('Case2 v55 clear-all failed:', err);
+                        showToast('❌ ลบข้อมูล Case 2 ทั้งหมดไม่สำเร็จ');
+                    });
+            };
+
+            // Force a valid Case2 round on startup and when this patch loads.
+            if (currentCase === 'Case2' && !['Round1', 'Round2', 'Round3'].includes(currentCondition)) {
+                currentCondition = 'Round1';
+                currentInstallMode = 'Round1';
+            }
+        })();
+    </script>
+
+
+    <style id="case2-legacy-cleanup-style-v56">
+        #case2-legacy-cleanup-wrap-v56 {
+            margin-top: 10px;
+        }
+
+        #case2-legacy-cleanup-v56 {
+            width: 100%;
+            border: 1px dashed #f59e0b;
+            background: #fff7ed;
+            color: #9a3412;
+            border-radius: 10px;
+            padding: 9px 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        #case2-legacy-cleanup-v56:hover {
+            background: #ffedd5;
+        }
+    </style>
+
+    <script id="case2-legacy-cleanup-v56">
+        (function () {
+            function getFloorV56() {
+                return localStorage.getItem('case2Floor') === 'Floor3' ? 'Floor3' : 'Floor2';
+            }
+
+            function insertLegacyCleanupButtonV56() {
+                if (document.getElementById('case2-legacy-cleanup-wrap-v56')) return;
+
+                // Put the cleanup control directly below the R1/R2/R3 controls if possible.
+                const roundButtons = Array.from(document.querySelectorAll('button')).filter(btn => {
+                    const t = (btn.textContent || '').trim();
+                    return ['R1', 'R2', 'R3'].includes(t);
+                });
+
+                if (!roundButtons.length) return;
+
+                const parent = roundButtons[0].parentElement;
+                if (!parent || !parent.parentElement) return;
+
+                const wrap = document.createElement('div');
+                wrap.id = 'case2-legacy-cleanup-wrap-v56';
+                wrap.innerHTML = `
+            <button id="case2-legacy-cleanup-v56" type="button">
+                🧹 ล้างข้อมูลทดลองเก่า (Evaluation)
+            </button>
+        `;
+
+                parent.insertAdjacentElement('afterend', wrap);
+
+                document.getElementById('case2-legacy-cleanup-v56')
+                    .addEventListener('click', clearLegacyEvaluationV56);
+            }
+
+            function clearLegacyEvaluationV56() {
+                if (currentCase !== 'Case2') {
+                    showToast('ปุ่มนี้ใช้สำหรับ Case 2 เท่านั้น');
+                    return;
+                }
+
+                const floor = getFloorV56();
+                const floorLabel = floor === 'Floor2' ? 'ชั้น 2' : 'ชั้น 3';
+                const base = `HeatmapData/${currentProfile}/Case2/${floor}/Evaluation`;
+
+                db.ref(base).once('value').then(snapshot => {
+                    if (!snapshot.exists()) {
+                        showToast(`ℹ️ ${floorLabel} ไม่มีข้อมูล Evaluation ค้างอยู่`);
+                        return;
+                    }
+
+                    let count24 = 0;
+                    let count5 = 0;
+
+                    const v = snapshot.val() || {};
+                    if (v['2_4GHz']) count24 = Object.keys(v['2_4GHz']).length;
+                    if (v['5GHz']) count5 = Object.keys(v['5GHz']).length;
+
+                    const ok = confirm(
+                        `ล้างข้อมูลทดลองเก่า Evaluation ของ ${floorLabel} หรือไม่?\n\n` +
+                        `2.4 GHz: ${count24} จุด\n` +
+                        `5 GHz: ${count5} จุด\n\n` +
+                        `ข้อมูล R1 / R2 / R3 จะไม่ถูกลบ`
+                    );
+
+                    if (!ok) return;
+
+                    return db.ref(base).remove().then(() => {
+                        showToast(`🧹 ล้าง Evaluation ของ ${floorLabel} จาก Firebase แล้ว`);
+                        if (typeof loadCase2MeasurementView === 'function') {
+                            loadCase2MeasurementView();
+                        } else if (typeof loadHeatmapData === 'function') {
+                            loadHeatmapData();
+                        }
+                    });
+                }).catch(err => {
+                    console.error('Legacy Evaluation cleanup failed:', err);
+                    showToast('❌ ล้าง Evaluation ไม่สำเร็จ');
+                });
+            }
+
+            // Keep the button available after UI rerenders.
+            const observer = new MutationObserver(() => {
+                if (currentCase === 'Case2') insertLegacyCleanupButtonV56();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            window.addEventListener('load', () => {
+                if (currentCase === 'Case2') {
+                    setTimeout(insertLegacyCleanupButtonV56, 100);
+                }
+            });
+
+            setTimeout(() => {
+                if (currentCase === 'Case2') insertLegacyCleanupButtonV56();
+            }, 250);
         })();
     </script>
 
