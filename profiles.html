@@ -1,1079 +1,2664 @@
 <!DOCTYPE html>
+
 <html lang="th">
 
+
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการโปรไฟล์ - Wi-Fi Heatmap Dashboard</title>
+
+    <title>ระบบจัดการโปรไฟล์ — Wi-Fi Heatmap Dashboard V11.9</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
+
         rel="stylesheet">
+
     <style>
+
         * {
+
             box-sizing: border-box;
+
             margin: 0;
+
             padding: 0;
+
         }
+
+
 
         body {
+
             font-family: 'Sarabun', sans-serif;
+
             background-color: #F8F9FA;
+
             color: #2C3E50;
+
             padding: 30px 20px;
+
             min-height: 100vh;
+
         }
+
+
 
         .container {
+
             max-width: 1100px;
+
             margin: 0 auto;
+
         }
 
-        /* ---------------- Header Section ---------------- */
+
+
+/* ---------------- Header Section ---------------- */
+
         .header {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             flex-wrap: wrap;
+
             gap: 15px;
+
             margin-bottom: 30px;
+
             background: white;
+
             padding: 20px 25px;
+
             border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+
         }
+
+
 
         .header-title h1 {
+
             font-size: 24px;
+
             font-weight: 700;
+
             color: #2C3E50;
+
             display: flex;
+
             align-items: center;
+
             gap: 10px;
+
         }
+
+
 
         .header-title p {
+
             font-size: 14px;
+
             color: #7F8C8D;
+
             margin-top: 4px;
+
         }
+
+
 
         .header-actions {
+
             display: flex;
+
             gap: 12px;
+
         }
 
-        /* ---------------- Buttons ---------------- */
+
+
+/* ---------------- Buttons ---------------- */
+
         .btn {
+
             padding: 10px 18px;
+
             border-radius: 12px;
+
             border: none;
+
             font-family: 'Sarabun', sans-serif;
+
             font-size: 14px;
+
             font-weight: 600;
+
             cursor: pointer;
+
             transition: all 0.25s ease;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 8px;
+
             text-decoration: none;
+
         }
+
+
 
         .btn-primary {
+
             background-color: #2B7A78;
+
             color: white;
+
         }
+
+
 
         .btn-primary:hover {
+
             background-color: #175d5b;
+
             transform: translateY(-2px);
+
             box-shadow: 0 4px 12px rgba(43, 122, 120, 0.25);
+
         }
+
+
 
         .btn-secondary {
+
             background-color: #E9ECEF;
+
             color: #495057;
+
         }
+
+
 
         .btn-secondary:hover {
+
             background-color: #DEE2E6;
+
             color: #212529;
+
         }
+
+
 
         .btn-warning {
+
             background-color: #FFF4E6;
+
             color: #D9480F;
+
             border: 1px solid #FFE8CC;
+
         }
+
+
 
         .btn-warning:hover {
+
             background-color: #FFE8CC;
+
         }
+
+
 
         .btn-danger {
+
             background-color: #FFF5F5;
+
             color: #E03131;
+
             border: 1px solid #FFD8D8;
+
         }
+
+
 
         .btn-danger:hover {
+
             background-color: #FFD8D8;
+
         }
 
-        /* ---------------- Search & Filter Bar ---------------- */
+
+
+/* ---------------- Search & Filter Bar ---------------- */
+
         .filter-bar {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: 25px;
+
             gap: 15px;
+
         }
+
+
 
         .search-input {
+
             padding: 10px 16px;
+
             border-radius: 12px;
+
             border: 1px solid #E2E8F0;
+
             font-family: 'Sarabun', sans-serif;
+
             font-size: 14px;
+
             width: 100%;
+
             max-width: 320px;
+
             background: white;
+
             outline: none;
+
             transition: 0.2s;
+
         }
+
+
 
         .search-input:focus {
+
             border-color: #2B7A78;
+
             box-shadow: 0 0 0 3px rgba(43, 122, 120, 0.15);
+
         }
 
-        /* ---------------- Profiles Grid & Card ---------------- */
+
+
+/* ---------------- Profiles Grid & Card ---------------- */
+
         .profiles-grid {
+
             display: grid;
+
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+
             gap: 20px;
+
         }
+
+
 
         .profile-card {
+
             background: white;
+
             border-radius: 16px;
+
             padding: 22px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+
             border: 1px solid #F1F3F5;
+
             transition: all 0.3s ease;
+
             display: flex;
+
             flex-direction: column;
+
             justify-content: space-between;
+
             position: relative;
+
         }
+
+
 
         .profile-card:hover {
+
             transform: translateY(-4px);
+
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+
             border-color: #E2E8F0;
+
         }
+
+
 
         .card-header {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: flex-start;
+
             margin-bottom: 12px;
+
         }
+
+
 
         .profile-name {
+
             font-size: 18px;
+
             font-weight: 700;
+
             color: #2C3E50;
+
             word-break: break-word;
+
         }
+
+
 
         .profile-case-badge {
+
             display: inline-flex;
+
             align-items: center;
+
             justify-content: center;
+
             padding: 4px 9px;
+
             border-radius: 999px;
+
             font-size: 11px;
+
             font-weight: 700;
+
             margin-left: 6px;
+
             white-space: nowrap;
+
         }
+
+
 
         .profile-case1-badge {
+
             background: #E7F5FF;
+
             color: #1971C2;
+
         }
+
+
 
         .profile-case2-badge {
+
             background: #E6FCF5;
+
             color: #087F5B;
+
         }
+
+
+
+        .profile-case3-badge {
+
+            background: #FFF4E6;
+
+            color: #C2410C;
+
+        }
+
+
 
         .profile-mixed-badge {
+
             background: #F3F0FF;
+
             color: #6741D9;
+
         }
+
+
 
         .badge-count {
+
             background-color: #E6FCF5;
+
             color: #0CA678;
+
             font-size: 12px;
+
             font-weight: 700;
+
             padding: 4px 10px;
+
             border-radius: 20px;
+
             white-space: nowrap;
+
         }
+
+
 
         .meta-group {
+
             display: flex;
+
             flex-direction: column;
+
             gap: 6px;
+
             font-size: 13px;
+
             color: #868E96;
+
             margin-bottom: 20px;
+
             padding-bottom: 15px;
+
             border-bottom: 1px dashed #E9ECEF;
+
         }
+
+
 
         .meta-item {
+
             display: flex;
+
             align-items: center;
+
             gap: 6px;
+
         }
+
+
 
         .card-actions {
+
             display: flex;
+
             gap: 8px;
+
             flex-wrap: wrap;
+
         }
 
-        /* ---------------- Modal Component ---------------- */
+
+
+/* ---------------- Modal Component ---------------- */
+
         .modal-overlay {
+
             position: fixed;
+
             top: 0;
+
             left: 0;
+
             width: 100vw;
+
             height: 100vh;
+
             background: rgba(0, 0, 0, 0.4);
+
             backdrop-filter: blur(4px);
+
             display: none;
+
             justify-content: center;
+
             align-items: center;
+
             z-index: 2000;
+
             padding: 20px;
+
         }
+
+
 
         .modal-overlay.show {
+
             display: flex;
+
         }
+
+
 
         .modal-card {
+
             background: white;
+
             border-radius: 20px;
+
             padding: 28px;
+
             width: 100%;
+
             max-width: 650px;
+
             max-height: 85vh;
+
             overflow-y: auto;
+
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+
             animation: modalFade 0.25s ease;
+
         }
+
+
 
         @keyframes modalFade {
+
             from {
+
                 opacity: 0;
+
                 transform: scale(0.95);
+
             }
+
+
 
             to {
+
                 opacity: 1;
+
                 transform: scale(1);
+
             }
+
         }
+
+
 
         .modal-title {
+
             font-size: 20px;
+
             font-weight: 700;
+
             color: #2C3E50;
+
             margin-bottom: 15px;
+
         }
+
+
 
         .modal-body {
+
             margin-bottom: 20px;
+
         }
+
+
 
         .form-group {
+
             display: flex;
+
             flex-direction: column;
+
             gap: 8px;
+
             margin-bottom: 15px;
+
         }
+
+
 
         .form-group label {
+
             font-size: 14px;
+
             font-weight: 600;
+
             color: #495057;
+
         }
+
+
 
         .form-input {
+
             padding: 10px 14px;
+
             border-radius: 10px;
+
             border: 1px solid #CED4DA;
+
             font-family: 'Sarabun', sans-serif;
+
             font-size: 14px;
+
             outline: none;
+
         }
+
+
 
         .form-input:focus {
+
             border-color: #2B7A78;
+
             box-shadow: 0 0 0 3px rgba(43, 122, 120, 0.15);
+
         }
+
+
 
         .modal-actions {
+
             display: flex;
+
             justify-content: flex-end;
+
             gap: 10px;
+
         }
 
-        /* ---------------- Data Summary Table ---------------- */
+
+
+/* ---------------- Data Summary Table ---------------- */
+
         .summary-stats {
+
             display: grid;
+
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+
             gap: 10px;
+
             margin-bottom: 15px;
+
         }
+
+
 
         .stat-box {
+
             background: #F8F9FA;
+
             padding: 12px;
+
             border-radius: 12px;
+
             text-align: center;
+
             border: 1px solid #E9ECEF;
+
         }
+
+
 
         .stat-box .num {
+
             font-size: 20px;
+
             font-weight: 700;
+
             color: #2B7A78;
+
         }
+
+
 
         .stat-box .lbl {
+
             font-size: 12px;
+
             color: #868E96;
+
         }
+
+
 
         table {
+
             width: 100%;
+
             border-collapse: collapse;
+
             font-size: 13px;
+
             margin-top: 10px;
+
         }
+
+
 
         th,
+
         td {
+
             padding: 10px 12px;
+
             border-bottom: 1px solid #E9ECEF;
+
             text-align: center;
+
         }
+
+
 
         th {
+
             background-color: #F1F3F5;
+
             color: #495057;
+
             font-weight: 600;
+
         }
+
+
 
         .empty-state {
+
             text-align: center;
+
             padding: 40px;
+
             color: #A0AEC0;
+
             grid-column: 1 / -1;
+
         }
+
+
+
+        .profile-case3-badge {
+
+            background: #FFF4E6;
+
+            color: #C2410C;
+
+        }
+
+
+
+
+
+
+
+/* V11.9 — quieter landing header and denser profile workspace. */
+
+        .header {
+
+            gap: 12px !important;
+
+            margin-bottom: 24px !important;
+
+            padding: 16px 20px !important;
+
+            border-radius: 14px !important;
+
+            border: 1px solid #F0F3F5 !important;
+
+            box-shadow: 0 3px 14px rgba(15, 23, 42, 0.04) !important;
+
+        }
+
+
+
+        .header-title h1 {
+
+            font-size: 22px !important;
+
+            font-weight: 700 !important;
+
+            line-height: 1.25 !important;
+
+        }
+
+
+
+        .header-title p {
+
+            margin-top: 3px !important;
+
+            font-size: 13px !important;
+
+            font-weight: 400 !important;
+
+            color: #8A949E !important;
+
+        }
+
+
+
+        .header-actions {
+
+            gap: 9px !important;
+
+        }
+
+
+
+        .header-actions .btn {
+
+            min-height: 40px !important;
+
+            padding: 9px 16px !important;
+
+            border-radius: 10px !important;
+
+        }
+
+
+
+        .filter-bar {
+
+            margin-bottom: 20px !important;
+
+        }
+
+
+
+        .profile-card {
+
+            padding: 19px !important;
+
+            border-radius: 14px !important;
+
+            box-shadow: 0 2px 9px rgba(15, 23, 42, 0.035) !important;
+
+        }
+
+
+
+        .profile-card:hover {
+
+            transform: translateY(-2px) !important;
+
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.055) !important;
+
+        }
+
+
+
+        .profile-name {
+
+            font-size: 17px !important;
+
+        }
+
+
+
+        @media (max-width: 720px) {
+
+            .header {
+
+                align-items: flex-start !important;
+
+            }
+
+
+
+            .header-actions {
+
+                width: 100%;
+
+                flex-wrap: wrap;
+
+            }
+
+        }
+
     </style>
+
+
+
+    <style id="v11-12-profile-unassigned-case">
+
+        .profile-unassigned-badge {
+
+            background: #F1F5F9 !important;
+
+            color: #64748B !important;
+
+            border: 1px solid #E2E8F0;
+
+        }
+
+    </style>
+
+
+
+
+
+    <style id="v11-27-empty-profile-state">
+
+/* Empty profiles are valid workspaces, but should not look like measured data. */
+
+        .badge-count.profile-empty-count {
+
+            background: #F1F5F9 !important;
+
+            color: #64748B !important;
+
+            border: 1px solid #E2E8F0 !important;
+
+            font-weight: 700 !important;
+
+        }
+
+    </style>
+
+
+
 </head>
 
+
+
 <body>
+
     <div class="container">
-        <!-- Header Section -->
+
+<!-- Header Section -->
+
         <div class="header">
+
             <div class="header-title">
-                <h1>📁 ระบบจัดการโปรไฟล์ (Profiles)</h1>
-                <p>จัดการโปรไฟล์ข้อมูล Case 1 / Case 2 ดูสรุปการวัด และควบคุมฐานข้อมูล</p>
+
+                <h1>ระบบจัดการโปรไฟล์</h1>
+
+                <p>เลือกโปรไฟล์เพื่อเริ่มการทดลองหรือดูผลการวัด</p>
+
             </div>
+
             <div class="header-actions">
-                <a href="index.html" class="btn btn-secondary">⬅️ กลับหน้าหลักแผนที่</a>
-                <button class="btn btn-primary" onclick="openCreateModal()">➕ สร้างโปรไฟล์ใหม่</button>
+
+                <a href="#" class="btn btn-secondary"
+
+                    onclick="openLastMeasurementPage(); return false;">กลับหน้าวัดล่าสุด</a>
+
+                <button class="btn btn-primary" onclick="openCreateModal()">สร้างโปรไฟล์ใหม่</button>
+
             </div>
+
         </div>
 
-        <!-- Filter / Search Bar -->
+
+
+<!-- Filter / Search Bar -->
+
         <div class="filter-bar">
-            <input type="text" id="search-input" class="search-input" placeholder="🔍 ค้นหาชื่อโปรไฟล์..."
+
+            <input type="text" id="search-input" class="search-input" placeholder="ค้นหาชื่อโปรไฟล์..."
+
                 oninput="filterProfiles()">
+
             <div style="font-size: 14px; color: #7F8C8D;">
+
                 จำนวนโปรไฟล์ทั้งหมด: <strong id="total-profiles-count" style="color: #2B7A78;">0</strong>
+
             </div>
+
         </div>
 
-        <!-- Profiles Grid -->
+
+
+<!-- Profiles Grid -->
+
         <div id="profiles-grid" class="profiles-grid">
-            <!-- Dynamic Profile Cards rendered here -->
+
+<!-- Dynamic Profile Cards rendered here -->
+
         </div>
+
     </div>
 
-    <!-- Create Profile Modal -->
+
+
+<!-- Create Profile Modal -->
+
     <div id="create-modal" class="modal-overlay">
+
         <div class="modal-card">
-            <h3 class="modal-title">➕ สร้างโปรไฟล์ใหม่</h3>
+
+            <h3 class="modal-title">สร้างโปรไฟล์ใหม่</h3>
+
             <div class="modal-body">
+
                 <div class="form-group">
+
                     <label for="create-name-input">ชื่อโปรไฟล์:</label>
+
                     <input type="text" id="create-name-input" class="form-input"
+
                         placeholder="เช่น case1 final หรือ case2 final">
+
                 </div>
+
             </div>
+
             <div class="modal-actions">
+
                 <button class="btn btn-secondary" onclick="closeModal('create-modal')">ยกเลิก</button>
+
                 <button class="btn btn-primary" onclick="submitCreateProfile()">สร้างโปรไฟล์</button>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Edit Profile Modal -->
+
+
+<!-- Edit Profile Modal -->
+
     <div id="edit-modal" class="modal-overlay">
+
         <div class="modal-card">
-            <h3 class="modal-title">✏️ แก้ไขชื่อโปรไฟล์</h3>
+
+            <h3 class="modal-title">แก้ไขชื่อโปรไฟล์</h3>
+
             <div class="modal-body">
+
                 <input type="hidden" id="edit-old-name">
+
                 <div class="form-group">
+
                     <label for="edit-name-input">ชื่อโปรไฟล์ใหม่:</label>
+
                     <input type="text" id="edit-name-input" class="form-input">
+
                 </div>
+
             </div>
+
             <div class="modal-actions">
+
                 <button class="btn btn-secondary" onclick="closeModal('edit-modal')">ยกเลิก</button>
+
                 <button class="btn btn-primary" onclick="submitEditProfile()">บันทึกการแก้ไข</button>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Delete Profile Modal (Cascading Delete Warning) -->
+
+
+<!-- Delete Profile Modal (Cascading Delete Warning) -->
+
     <div id="delete-modal" class="modal-overlay">
+
         <div class="modal-card">
-            <h3 class="modal-title" style="color: #E03131;">🗑️ ยืนยันการลบโปรไฟล์</h3>
+
+            <h3 class="modal-title" style="color: #E03131;">ยืนยันการลบโปรไฟล์</h3>
+
             <div class="modal-body">
+
                 <input type="hidden" id="delete-target-name">
+
                 <p style="font-size: 15px; margin-bottom: 12px; color: #495057;">
+
                     คุณต้องการลบโปรไฟล์ <strong id="delete-target-label" style="color: #E03131;"></strong> ใช่หรือไม่?
+
                 </p>
+
                 <div
+
                     style="background-color: #FFF5F5; border-left: 4px solid #E03131; padding: 12px; border-radius: 6px; font-size: 13px; color: #C92A2A;">
-                    ⚠️ <strong>การลบแบบ Cascading:</strong> การดำเนินการนี้จะทำการลบข้อมูลจุดสัญญาณ (Heatmap Points)
+
+                    <strong>การลบแบบ Cascading:</strong> การดำเนินการนี้จะทำการลบข้อมูลจุดสัญญาณ (Heatmap Points)
+
                     ทั้งหมดที่ผูกไว้กับโปรไฟล์นี้ออกจากฐานข้อมูล Firebase โดยสมบูรณ์เพื่อป้องกันข้อมูลขยะตกค้าง
+
                 </div>
+
             </div>
+
             <div class="modal-actions">
+
                 <button class="btn btn-secondary" onclick="closeModal('delete-modal')">ยกเลิก</button>
+
                 <button class="btn btn-danger" onclick="submitDeleteProfile()">ยืนยันลบโปรไฟล์</button>
+
             </div>
+
         </div>
+
     </div>
 
 
-    <!-- Data Summary View Modal — Current Case 1 / Case 2 Schema -->
+
+
+
+<!-- Data Summary View Modal — Case 1 / Case 2 / Case 3 -->
+
     <div id="summary-modal" class="modal-overlay">
+
         <div class="modal-card" style="max-width: 980px;">
-            <h3 class="modal-title" id="summary-title">📊 สรุปข้อมูลโปรไฟล์</h3>
+
+            <h3 class="modal-title" id="summary-title">สรุปข้อมูลโปรไฟล์</h3>
+
             <div class="modal-body">
+
                 <div
+
                     style="background:#F8F9FA;padding:12px 16px;border-radius:12px;border:1px solid #E2E8F0;margin-bottom:15px;">
+
                     <div id="summary-case-filter-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                        <span style="font-size:12px;font-weight:bold;color:#495057;">🧪 Case:</span>
+
+                        <span style="font-size:12px;font-weight:bold;color:#495057;">Case:</span>
+
                         <button class="segmented-btn active" id="summary-case-all"
+
                             onclick="filterSummaryData('case','all')">ทั้งหมด</button>
+
                         <button class="segmented-btn" id="summary-case-case1"
+
                             onclick="filterSummaryData('case','Case1')">Case 1</button>
+
                         <button class="segmented-btn" id="summary-case-case2"
+
                             onclick="filterSummaryData('case','Case2')">Case 2</button>
+
+                        <button class="segmented-btn" id="summary-case-case3"
+
+                            onclick="filterSummaryData('case','Case3')">Case 3</button>
+
                     </div>
+
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;">
-                        <span style="font-size:12px;font-weight:bold;color:#495057;">📶 คลื่นความถี่:</span>
+
+                        <span style="font-size:12px;font-weight:bold;color:#495057;">คลื่นความถี่:</span>
+
                         <button class="segmented-btn active" id="summary-freq-all"
+
                             onclick="filterSummaryData('freq','all')">ทั้งหมด</button>
+
                         <button class="segmented-btn" id="summary-freq-24"
+
                             onclick="filterSummaryData('freq','2_4GHz')">2.4 GHz</button>
+
                         <button class="segmented-btn" id="summary-freq-5" onclick="filterSummaryData('freq','5GHz')">5
+
                             GHz</button>
+
                     </div>
+
                 </div>
+
+
 
                 <div class="summary-stats">
+
                     <div class="stat-box">
+
                         <div class="num" id="stat-total">0</div>
+
                         <div class="lbl">รายการวัดทั้งหมด</div>
+
                     </div>
+
                     <div class="stat-box">
+
                         <div class="num" id="stat-case1">0</div>
+
                         <div class="lbl">Case 1</div>
+
                     </div>
+
                     <div class="stat-box">
+
                         <div class="num" id="stat-case2">0</div>
+
                         <div class="lbl">Case 2</div>
+
                     </div>
+
                     <div class="stat-box">
+
+                        <div class="num" id="stat-case3">0</div>
+
+                        <div class="lbl">Case 3</div>
+
+                    </div>
+
+                    <div class="stat-box">
+
                         <div class="num" id="stat-24">0</div>
+
                         <div class="lbl">2.4 GHz</div>
+
                     </div>
+
                     <div class="stat-box">
+
                         <div class="num" id="stat-5">0</div>
+
                         <div class="lbl">5 GHz</div>
+
                     </div>
+
                 </div>
+
+
 
                 <div
+
                     style="font-size:12px;color:#64748B;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 12px;margin-bottom:12px;text-align:left;">
+
                     <b>Case 1:</b> ห้องเรียน Huawei · R1/R2/R3 · 2.4/5 GHz<br>
-                    <b>Case 2:</b> Network Coverage ของ KMITL-WIFI · ชั้น 2/3 · R1/R2/R3 · Strongest BSSID ต่อ band
+
+                    <b>Case 2:</b> Network Coverage ของ KMITL-WIFI · ชั้น 2/3 · R1/R2/R3 · Strongest BSSID ต่อ band<br>
+
+                    <b>Case 3:</b> Controlled AP Testbed · Calibration / Validation · R1/R2/R3 · AP-CAL/BSSID ที่ล็อกไว้
+
                 </div>
+
+
 
                 <div style="max-height: 380px; overflow:auto;">
+
                     <table>
+
                         <thead>
+
                             <tr>
+
                                 <th>Case</th>
+
                                 <th>พื้นที่</th>
+
                                 <th>รอบ</th>
+
                                 <th>คลื่น</th>
+
                                 <th>Point ID</th>
+
                                 <th>RSSI</th>
+
                                 <th>รายละเอียด</th>
+
                             </tr>
+
                         </thead>
+
                         <tbody id="summary-table-body"></tbody>
+
                     </table>
+
                 </div>
+
             </div>
+
             <div class="modal-actions">
+
                 <button class="btn btn-secondary" onclick="closeModal('summary-modal')">ปิด</button>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Firebase SDK -->
+
+
+<!-- Firebase SDK -->
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+
+
     <script>
-        const firebaseConfig = {
+
+const firebaseConfig = {
+
             apiKey: "AIzaSyCFRMtLJVy07MrxJ6S8IbftnXcGcZhfxMo",
+
             authDomain: "wi-fi-heatmap-1d73a.firebaseapp.com",
+
             databaseURL: "https://wi-fi-heatmap-1d73a-default-rtdb.asia-southeast1.firebasedatabase.app",
+
             projectId: "wi-fi-heatmap-1d73a",
+
             storageBucket: "wi-fi-heatmap-1d73a.firebasestorage.app",
+
             messagingSenderId: "255026660024",
+
             appId: "1:255026660024:web:b5382f797711555bebaa4d"
+
         };
 
+
+
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.database();
 
-        let allProfilesData = [];
-        let allHeatmapDataCache = {};
+const db = firebase.database();
 
-        // Fetch Profiles & Heatmap Summary Data in Realtime
-        function initProfilesListener() {
+
+
+let allProfilesData = [];
+
+let allHeatmapDataCache = {};
+
+
+
+// Fetch Profiles & Heatmap Summary Data in Realtime
+
+function initProfilesListener() {
+
             db.ref('Profiles').on('value', (profilesSnap) => {
+
                 db.ref('HeatmapData').on('value', (heatmapSnap) => {
+
                     allHeatmapDataCache = heatmapSnap.exists() ? heatmapSnap.val() : {};
+
                     processProfilesData(profilesSnap.exists() ? profilesSnap.val() : {});
+
                 });
+
             });
+
         }
 
-        function processProfilesData(profilesObj) {
+
+
+function processProfilesData(profilesObj) {
+
             allProfilesData = [];
 
-            // Ensure Default exists if empty
+
+
+// Ensure Default exists if empty
+
             if (!profilesObj || Object.keys(profilesObj).length === 0) {
-                const now = Date.now();
+
+const now = Date.now();
+
                 db.ref('Profiles/Default').set({ name: 'Default', created_at: now, updated_at: now });
+
                 return;
+
             }
+
+
 
             Object.keys(profilesObj).forEach(key => {
-                const val = profilesObj[key];
-                let created_at = Date.now();
-                let updated_at = Date.now();
 
-                // Support legacy boolean or object metadata
+const val = profilesObj[key];
+
+let created_at = Date.now();
+
+let updated_at = Date.now();
+
+
+
+// Support legacy boolean or object metadata
+
                 if (typeof val === 'object' && val !== null) {
+
                     created_at = val.created_at || Date.now();
+
                     updated_at = val.updated_at || Date.now();
+
                 }
 
-                // Calculate point count for this profile across all sub-paths
-                const measurements = collectProfileMeasurements(key);
-                const count = measurements.length;
-                const hasCase1 = measurements.some(r => r.caseId === 'Case1');
-                const hasCase2 = measurements.some(r => r.caseId === 'Case2');
 
-                let detectedCase = 'empty';
-                if (hasCase1 && !hasCase2) detectedCase = 'Case1';
-                else if (hasCase2 && !hasCase1) detectedCase = 'Case2';
-                else if (hasCase1 && hasCase2) detectedCase = 'mixed';
+
+// Calculate point count for this profile across all sub-paths
+
+const measurements = collectProfileMeasurements(key);
+
+const count = measurements.length;
+
+const hasCase1 = measurements.some(r => r.caseId === 'Case1');
+
+const hasCase2 = measurements.some(r => r.caseId === 'Case2');
+
+const hasCase3 = measurements.some(r => r.caseId === 'Case3');
+
+
+
+const detectedCases = [
+
+                    hasCase1 ? 'Case1' : null,
+
+                    hasCase2 ? 'Case2' : null,
+
+                    hasCase3 ? 'Case3' : null
+
+                ].filter(Boolean);
+
+let detectedCase = 'empty';
+
+                if (detectedCases.length === 1) detectedCase = detectedCases[0];
+
+                else if (detectedCases.length > 1) detectedCase = 'mixed';
+
+
+
+const rawStoredCase = (val && typeof val === 'object' && ['Case1', 'Case2', 'Case3'].includes(val.case_id))
+
+                    ? val.case_id
+
+                    : '';
+
+const explicitAssignment = Boolean(val && typeof val === 'object' && (val.case_assigned_at || val.case_lock_source));
+
+const staleDefaultCase = (key === 'Default' && count === 0 && rawStoredCase && !explicitAssignment);
+
+const storedCase = staleDefaultCase ? '' : rawStoredCase;
+
+
 
                 allProfilesData.push({
+
                     name: key,
+
                     created_at: created_at,
+
                     updated_at: updated_at,
+
                     pointCount: count,
-                    detectedCase
+
+                    detectedCase,
+
+                    lockedCase: storedCase
+
                 });
+
             });
 
-            // Sort by updated_at descending
+
+
+// Sort by updated_at descending
+
             allProfilesData.sort((a, b) => b.updated_at - a.updated_at);
+
             renderProfilesGrid(allProfilesData);
+
         }
 
-        function normalizeFreqKey(freq) {
+
+
+function normalizeFreqKey(freq) {
+
             if (freq === '2.4GHz' || freq === '2_4GHz') return '2_4GHz';
+
             if (freq === '5GHz') return '5GHz';
+
             return freq;
+
         }
 
-        function collectProfileMeasurements(profileName) {
-            const profileData = allHeatmapDataCache[profileName];
-            const rows = [];
+
+
+function collectProfileMeasurements(profileName) {
+
+const profileData = allHeatmapDataCache[profileName];
+
+const rows = [];
+
             if (!profileData) return rows;
 
-            const pushPoints = (caseId, areaKey, areaLabel, roundKey, freqKey, pointsObj) => {
+
+
+const pushPoints = (caseId, areaKey, areaLabel, roundKey, freqKey, pointsObj) => {
+
                 if (!pointsObj || typeof pointsObj !== 'object') return;
+
                 Object.keys(pointsObj).forEach(key => {
-                    const p = pointsObj[key];
+
+const p = pointsObj[key];
+
                     if (!p || typeof p !== 'object') return;
 
-                    const rssi = Number(p.rssi);
+
+
+const rssi = Number(p.rssi);
+
                     if (!Number.isFinite(rssi)) return;
 
-                    const freq = normalizeFreqKey(p.frequency || freqKey);
-                    const pointId = p.pointId || key;
-                    const timestamp = Number(p.timestamp || 0);
+
+
+const freq = normalizeFreqKey(p.frequency || freqKey);
+
+const pointId = p.pointId || key;
+
+const timestamp = Number(p.timestamp || 0);
+
+
 
                     rows.push({
+
                         caseId,
+
                         areaKey,
+
                         areaLabel,
+
                         round: p.condition || roundKey || '-',
+
                         freq,
+
                         pointId,
+
                         rssi,
+
                         timestamp,
+
                         x: p.x,
+
                         y: p.y,
+
                         ssid: p.targetSsid || p.ssid || '',
+
                         bssid: p.strongestBssid || p.bssid || '',
+
                         channel: p.channel ?? '',
+
                         threshold: p.thresholdDbm ?? '',
+
                         status: p.status || ''
+
                     });
+
                 });
+
             };
 
-            // ---------------- Current Case 1 schema ----------------
-            // HeatmapData/<profile>/Case1/Room1/Round1/2_4GHz/<point>
-            const c1 = profileData.Case1;
+
+
+// ---------------- Current Case 1 schema ----------------
+
+// HeatmapData/<profile>/Case1/Room1/Round1/2_4GHz/<point>
+
+const c1 = profileData.Case1;
+
             if (c1 && typeof c1 === 'object') {
-                const room1 = c1.Room1 || {};
+
+const room1 = c1.Room1 || {};
+
                 ['Round1', 'Round2', 'Round3'].forEach(round => {
-                    const roundObj = room1[round];
+
+const roundObj = room1[round];
+
                     if (!roundObj) return;
+
                     ['2_4GHz', '5GHz'].forEach(freq => {
+
                         pushPoints('Case1', 'Room1', 'ห้องเรียน Huawei', round, freq, roundObj[freq]);
+
                     });
+
                 });
+
             }
 
-            // ---------------- Current Case 2 schema ----------------
-            // HeatmapData/<profile>/Case2/Floor2/Round1/2_4GHz/P01
-            const c2 = profileData.Case2;
+
+
+// ---------------- Current Case 2 schema ----------------
+
+// HeatmapData/<profile>/Case2/Floor2/Round1/2_4GHz/P01
+
+const c2 = profileData.Case2;
+
             if (c2 && typeof c2 === 'object') {
+
                 ['Floor2', 'Floor3'].forEach(floor => {
-                    const floorObj = c2[floor];
+
+const floorObj = c2[floor];
+
                     if (!floorObj) return;
-                    const areaLabel = floor === 'Floor2'
+
+const areaLabel = floor === 'Floor2'
+
                         ? 'ชั้น 2 ตึกภาควิชาโทรคมนาคม'
+
                         : 'ชั้น 3 ตึกภาควิชาโทรคมนาคม';
 
+
+
                     ['Round1', 'Round2', 'Round3'].forEach(round => {
-                        const roundObj = floorObj[round];
+
+const roundObj = floorObj[round];
+
                         if (!roundObj) return;
+
                         ['2_4GHz', '5GHz'].forEach(freq => {
+
                             pushPoints('Case2', floor, areaLabel, round, freq, roundObj[freq]);
+
                         });
+
                     });
+
                 });
+
             }
 
-            // ---------------- Compatibility with older current Case1 variants ----------------
-            // Some previous builds used Case1/Round1/Room1/... or Default/Case1/Room1/...
+
+
+// ---------------- Current Case 3 schema ----------------
+
+// HeatmapData/<profile>/Case3/TestbedFloor2/{Calibration|Validation}/<point>
+
+const c3 = profileData.Case3 && profileData.Case3.TestbedFloor2;
+
+            if (c3 && typeof c3 === 'object') {
+
+                ['Calibration', 'Validation'].forEach(setType => {
+
+const setObj = c3[setType];
+
+                    if (!setObj || typeof setObj !== 'object') return;
+
+                    Object.keys(setObj).forEach(pointKey => {
+
+const point = setObj[pointKey];
+
+                        if (!point || typeof point !== 'object') return;
+
+const pointId = point.pointId || pointKey;
+
+const env = point.environment === 'Room10' ? 'Room 10' : 'Corridor';
+
+const areaLabel = `${setType} — ${env}`;
+
+const measurements = point.measurements || {};
+
+                        ['R1', 'R2', 'R3'].forEach(round => {
+
+const m = measurements[round] || {};
+
+                            [
+
+                                ['2_4GHz', m.rssi24, m.observedBssid24, m.channel24],
+
+                                ['5GHz', m.rssi5, m.observedBssid5, m.channel5]
+
+                            ].forEach(([freq, rawRssi, bssid, channel]) => {
+
+const rssi = Number(rawRssi);
+
+                                if (!Number.isFinite(rssi)) return;
+
+                                rows.push({
+
+                                    caseId: 'Case3',
+
+                                    areaKey: setType,
+
+                                    areaLabel,
+
+                                    round,
+
+                                    freq,
+
+                                    pointId,
+
+                                    rssi,
+
+                                    timestamp: Number(m.timestamp || point.updatedAt || 0),
+
+                                    x: point.xMeters,
+
+                                    y: point.yMeters,
+
+                                    ssid: m.sourceSsid || point.deviceConfigSnapshot?.targetSsid || '',
+
+                                    bssid: bssid || '',
+
+                                    channel: channel ?? '',
+
+                                    threshold: '',
+
+                                    status: ''
+
+                                });
+
+                            });
+
+                        });
+
+                    });
+
+                });
+
+            }
+
+
+
+// ---------------- Compatibility with older current Case1 variants ----------------
+
+// Some previous builds used Case1/Round1/Room1/... or Default/Case1/Room1/...
+
             if (c1 && rows.filter(r => r.caseId === 'Case1').length === 0) {
+
                 ['Round1', 'Round2', 'Round3'].forEach(round => {
-                    const roundObj = c1[round];
+
+const roundObj = c1[round];
+
                     if (!roundObj) return;
-                    const room = roundObj.Room1 || roundObj;
+
+const room = roundObj.Room1 || roundObj;
+
                     ['2_4GHz', '5GHz'].forEach(freq => {
+
                         pushPoints('Case1', 'Room1', 'ห้องเรียน Huawei', round, freq, room[freq]);
+
                     });
+
                 });
+
             }
 
-            // ---------------- Legacy Before / After fallback ----------------
-            // Kept only so old profiles do not become unreadable.
+
+
+// ---------------- Legacy Before / After fallback ----------------
+
+// Kept only so old profiles do not become unreadable.
+
             ['Before', 'After'].forEach(mode => {
-                const modeObj = profileData[mode];
+
+const modeObj = profileData[mode];
+
                 if (!modeObj) return;
+
                 ['Room1', 'Lab1'].forEach(loc => {
-                    const locObj = modeObj[loc];
+
+const locObj = modeObj[loc];
+
                     if (!locObj) return;
+
                     ['2_4GHz', '5GHz'].forEach(freq => {
-                        const label = loc === 'Room1' ? 'ห้องเรียน Huawei' : 'ห้องแล็บ (Legacy)';
+
+const label = loc === 'Room1' ? 'ห้องเรียน Huawei' : 'ห้องแล็บ (Legacy)';
+
                         pushPoints('Legacy', loc, label, mode, freq, locObj[freq]);
+
                     });
+
                 });
+
             });
+
+
 
             return rows;
+
         }
 
-        function calculatePointsCount(profileName) {
+
+
+function calculatePointsCount(profileName) {
+
             return collectProfileMeasurements(profileName).length;
+
         }
 
-        function renderProfilesGrid(profilesList) {
-            const grid = document.getElementById('profiles-grid');
+
+
+async function useProfile(profileName, detectedCase, lockedCase = '') {
+
+const validCases = ['Case1', 'Case2', 'Case3'];
+
+let assignedCase = validCases.includes(lockedCase)
+
+                ? lockedCase
+
+                : (validCases.includes(detectedCase) ? detectedCase : '');
+
+
+
+// Existing one-case profiles are migrated to the explicit one-profile/one-case rule.
+
+            if (assignedCase && !validCases.includes(lockedCase)) {
+
+                try {
+
+const ref = db.ref(`Profiles/${profileName}`);
+
+const snap = await ref.once('value');
+
+const old = snap.val();
+
+const now = Date.now();
+
+const meta = (old && typeof old === 'object') ? { ...old } : {};
+
+                    meta.name = meta.name || profileName;
+
+                    meta.created_at = meta.created_at || now;
+
+                    meta.updated_at = now;
+
+                    meta.case_id = assignedCase;
+
+                    meta.case_assigned_at = meta.case_assigned_at || now;
+
+                    meta.case_lock_source = meta.case_lock_source || 'data-migration';
+
+                    await ref.set(meta);
+
+                } catch (e) {
+
+                    console.warn('Unable to save profile case assignment:', e);
+
+                }
+
+            }
+
+
+
+            try {
+
+                localStorage.setItem('wifiLastProfile', profileName);
+
+                if (assignedCase) {
+
+                    localStorage.setItem('wifiPreferredCase:' + profileName, assignedCase);
+
+                    localStorage.setItem('wifiCaseLocked:' + profileName, '1');
+
+                } else {
+
+                    localStorage.removeItem('wifiPreferredCase:' + profileName);
+
+                    localStorage.removeItem('wifiCaseLocked:' + profileName);
+
+                }
+
+            } catch (e) { }
+
+
+
+const params = new URLSearchParams();
+
+            params.set('profile', profileName);
+
+            if (assignedCase) {
+
+                params.set('case', assignedCase);
+
+                params.set('locked', '1');
+
+            }
+
+            window.location.href = 'index.html?' + params.toString();
+
+        }
+
+
+
+function openLastMeasurementPage() {
+
+let profileName = '';
+
+            try { profileName = localStorage.getItem('wifiLastProfile') || ''; } catch (e) { }
+
+            if (!profileName) {
+
+                alert('กรุณาเลือกโปรไฟล์ที่ต้องการใช้งานก่อน');
+
+                return;
+
+            }
+
+const p = allProfilesData.find(item => item.name === profileName);
+
+            useProfile(profileName, p ? p.detectedCase : '', p ? p.lockedCase : '');
+
+        }
+
+
+
+// iPad: provide a normal touchable link directly to the exact profile dashboard.
+// Reading a profile is navigation only: no Firebase writes are required.
+function getProfileOpenHref(profile) {
+    const validCases = ['Case1', 'Case2', 'Case3'];
+    let chosenCase = validCases.includes(profile.lockedCase)
+        ? profile.lockedCase
+        : (validCases.includes(profile.detectedCase) ? profile.detectedCase : '');
+
+    // Empty Case 3 workspaces have no measurements from which to detect a Case.
+    // Infer Case from a clearly named profile, without changing its metadata.
+    if (!chosenCase) {
+        const match = /^case\s*([123])(?:$|[\s_-])/i.exec(profile.name.trim());
+        if (match) chosenCase = 'Case' + match[1];
+    }
+
+    const destination = new URL('index.html', window.location.href);
+    destination.searchParams.set('profile', profile.name);
+    if (chosenCase) {
+        destination.searchParams.set('case', chosenCase);
+        destination.searchParams.set('locked', '1');
+    }
+    // Attribute-safe URL; the ampersand must be escaped in the generated HTML.
+    return destination.href.replace(/&/g, '&amp;');
+}
+
+function renderProfilesGrid(profilesList) {
+
+const grid = document.getElementById('profiles-grid');
+
             document.getElementById('total-profiles-count').innerText = profilesList.length;
+
             grid.innerHTML = '';
 
+
+
             if (profilesList.length === 0) {
+
                 grid.innerHTML = `<div class="empty-state">ไม่พบโปรไฟล์ตรงกับคำค้นหา</div>`;
+
                 return;
+
             }
+
+
 
             profilesList.forEach(p => {
-                const createdStr = new Date(p.created_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
-                const updatedStr = new Date(p.updated_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
-                const cardHtml = `
+const createdStr = new Date(p.created_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+
+const updatedStr = new Date(p.updated_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+
+const profileNameJs = JSON.stringify(p.name);
+
+const effectiveCase = ['Case1', 'Case2', 'Case3'].includes(p.lockedCase) ? p.lockedCase : p.detectedCase;
+
+const detectedCaseJs = JSON.stringify(['Case1', 'Case2', 'Case3'].includes(p.detectedCase) ? p.detectedCase : '');
+
+const lockedCaseJs = JSON.stringify(['Case1', 'Case2', 'Case3'].includes(p.lockedCase) ? p.lockedCase : '');
+
+
+
+const cardHtml = `
+
                     <div class="profile-card">
+
                         <div>
+
                             <div class="card-header">
+
                                 <div class="profile-name">
-                                    👤 ${p.name}
-                                    ${p.detectedCase === 'Case1'
+
+                                    ${p.name}
+
+                                    ${effectiveCase === 'Case1'
+
                         ? '<span class="profile-case-badge profile-case1-badge">Case 1</span>'
-                        : p.detectedCase === 'Case2'
+
+                        : effectiveCase === 'Case2'
+
                             ? '<span class="profile-case-badge profile-case2-badge">Case 2</span>'
-                            : p.detectedCase === 'mixed'
-                                ? '<span class="profile-case-badge profile-mixed-badge">หลาย Case</span>'
-                                : ''}
+
+                            : effectiveCase === 'Case3'
+
+                                ? '<span class="profile-case-badge profile-case3-badge">Case 3</span>'
+
+                                : effectiveCase === 'mixed'
+
+                                    ? '<span class="profile-case-badge profile-mixed-badge">หลาย Case</span>'
+
+                                    : effectiveCase === 'empty'
+
+                                        ? '<span class="profile-case-badge profile-unassigned-badge">ยังไม่กำหนด Case</span>'
+
+                                        : ''}
+
                                 </div>
-                                <span class="badge-count">📊 ${p.pointCount} รายการ</span>
+
+                                ${p.pointCount === 0
+
+                        ? '<span class="badge-count profile-empty-count">ว่าง</span>'
+
+                        : `<span class="badge-count">${p.pointCount} รายการ</span>`}
+
                             </div>
+
                             <div class="meta-group">
-                                <div class="meta-item">📅 สร้างเมื่อ: <span>${createdStr}</span></div>
-                                <div class="meta-item">✏️ แก้ไขล่าสุด: <span>${updatedStr}</span></div>
+
+                                <div class="meta-item">สร้างเมื่อ: <span>${createdStr}</span></div>
+
+                                <div class="meta-item">แก้ไขล่าสุด: <span>${updatedStr}</span></div>
+
                             </div>
+
                         </div>
+
                         <div class="card-actions">
-                            <button class="btn btn-secondary" style="font-size:12px; padding: 6px 12px;" onclick="openSummaryModal('${p.name}')">📊 ดูสรุปข้อมูล</button>
-                            <button class="btn btn-warning" style="font-size:12px; padding: 6px 12px;" onclick="openEditModal('${p.name}')">✏️ แก้ไขชื่อ</button>
-                            <button class="btn btn-danger" style="font-size:12px; padding: 6px 12px;" onclick="openDeleteModal('${p.name}')">🗑️ ลบ</button>
+
+                            <a class="btn btn-primary" style="font-size:14px; padding:10px 14px; min-height:44px; touch-action:manipulation;" href="${getProfileOpenHref(p)}">เปิดโปรไฟล์</a>
+
+                            <button class="btn btn-secondary" style="font-size:12px; padding:6px 12px;" onclick='openSummaryModal(${profileNameJs})'>ดูสรุปข้อมูล</button>
+
+                            <button class="btn btn-warning" style="font-size:12px; padding:6px 12px;" onclick='openEditModal(${profileNameJs})'>แก้ไขชื่อ</button>
+
+                            <button class="btn btn-danger" style="font-size:12px; padding:6px 12px;" onclick='openDeleteModal(${profileNameJs})'>ลบ</button>
+
                         </div>
+
                     </div>
+
                 `;
+
                 grid.insertAdjacentHTML('beforeend', cardHtml);
+
             });
+
         }
 
-        function filterProfiles() {
-            const query = document.getElementById('search-input').value.toLowerCase().trim();
-            const filtered = allProfilesData.filter(p => p.name.toLowerCase().includes(query));
+
+
+function filterProfiles() {
+
+const query = document.getElementById('search-input').value.toLowerCase().trim();
+
+const filtered = allProfilesData.filter(p => p.name.toLowerCase().includes(query));
+
             renderProfilesGrid(filtered);
+
         }
 
-        /* ---------------- Modal Controls ---------------- */
-        function openModal(id) { document.getElementById(id).classList.add('show'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-        function openCreateModal() {
+
+/* ---------------- Modal Controls ---------------- */
+
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+
+
+function openCreateModal() {
+
             document.getElementById('create-name-input').value = '';
+
             openModal('create-modal');
+
         }
 
-        function submitCreateProfile() {
-            let input = document.getElementById('create-name-input').value.trim();
-            // Automatically replace forward slashes '/' with '-' because '/' is a key delimiter in Firebase RTDB
+
+
+function submitCreateProfile() {
+
+let input = document.getElementById('create-name-input').value.trim();
+
+// Automatically replace forward slashes '/' with '-' because '/' is a key delimiter in Firebase RTDB
+
             if (input.includes('/')) {
+
                 input = input.replace(/\//g, '-');
+
             }
+
+
 
             if (!input || /[#$.[\]]/.test(input)) {
+
                 alert('โปรดระบุชื่อโปรไฟล์ให้ถูกต้อง และไม่มีอักขระพิเศษห้ามใช้ (เช่น #, $, ., [, ])');
+
                 return;
+
             }
+
             if (allProfilesData.some(p => p.name === input)) {
+
                 alert('มีโปรไฟล์ชื่อนี้อยู่ในระบบแล้ว');
+
                 return;
+
             }
 
-            const now = Date.now();
+
+
+const now = Date.now();
+
             db.ref(`Profiles/${input}`).set({
+
                 name: input,
+
                 created_at: now,
+
                 updated_at: now
+
             }).then(() => {
+
                 closeModal('create-modal');
+
             }).catch(err => alert('เกิดข้อผิดพลาดในการสร้างโปรไฟล์: ' + err.message));
+
         }
 
-        function openEditModal(oldName) {
+
+
+function openEditModal(oldName) {
+
             document.getElementById('edit-old-name').value = oldName;
+
             document.getElementById('edit-name-input').value = oldName;
+
             openModal('edit-modal');
+
         }
 
-        function submitEditProfile() {
-            const oldName = document.getElementById('edit-old-name').value;
-            let newName = document.getElementById('edit-name-input').value.trim();
+
+
+function submitEditProfile() {
+
+const oldName = document.getElementById('edit-old-name').value;
+
+let newName = document.getElementById('edit-name-input').value.trim();
+
             if (newName.includes('/')) {
+
                 newName = newName.replace(/\//g, '-');
+
             }
+
+
 
             if (!newName || /[#$.[\]]/.test(newName)) {
+
                 alert('โปรดระบุชื่อโปรไฟล์ใหม่ให้ถูกต้อง และไม่มีอักขระพิเศษ');
+
                 return;
+
             }
+
             if (oldName === newName) {
+
                 closeModal('edit-modal');
+
                 return;
+
             }
+
             if (allProfilesData.some(p => p.name === newName)) {
+
                 alert('มีโปรไฟล์ชื่อนี้อยู่ในระบบแล้ว');
+
                 return;
+
             }
 
-            const now = Date.now();
-            const oldProfileObj = allProfilesData.find(p => p.name === oldName);
-            const createdAt = oldProfileObj ? oldProfileObj.created_at : now;
 
-            // Migrate HeatmapData if it exists
-            const existingData = allHeatmapDataCache[oldName];
-            const updates = {};
+
+const now = Date.now();
+
+const oldProfileObj = allProfilesData.find(p => p.name === oldName);
+
+const createdAt = oldProfileObj ? oldProfileObj.created_at : now;
+
+
+
+// Migrate HeatmapData if it exists
+
+const existingData = allHeatmapDataCache[oldName];
+
+const updates = {};
+
+
 
             if (existingData) {
+
                 updates[`HeatmapData/${newName}`] = existingData;
+
                 updates[`HeatmapData/${oldName}`] = null;
+
             }
 
-            updates[`Profiles/${newName}`] = { name: newName, created_at: createdAt, updated_at: now };
+
+
+            updates[`Profiles/${newName}`] = { name: newName, created_at: createdAt, updated_at: now, ...(oldProfileObj && ['Case1', 'Case2', 'Case3'].includes(oldProfileObj.lockedCase || oldProfileObj.detectedCase) ? { case_id: (oldProfileObj.lockedCase || oldProfileObj.detectedCase) } : {}) };
+
             updates[`Profiles/${oldName}`] = null;
 
+
+
             db.ref().update(updates).then(() => {
+
                 closeModal('edit-modal');
+
             }).catch(err => alert('เกิดข้อผิดพลาดในการแก้ไขชื่อ: ' + err.message));
+
         }
 
-        function openDeleteModal(targetName) {
+
+
+function openDeleteModal(targetName) {
+
             document.getElementById('delete-target-name').value = targetName;
+
             document.getElementById('delete-target-label').innerText = targetName;
+
             openModal('delete-modal');
+
         }
 
-        function submitDeleteProfile() {
-            const targetName = document.getElementById('delete-target-name').value;
 
-            // Cascading delete: remove both Profiles node and HeatmapData node
-            const updates = {};
+
+function submitDeleteProfile() {
+
+const targetName = document.getElementById('delete-target-name').value;
+
+
+
+// Cascading delete: remove both Profiles node and HeatmapData node
+
+const updates = {};
+
             updates[`Profiles/${targetName}`] = null;
+
             updates[`HeatmapData/${targetName}`] = null;
 
+
+
             db.ref().update(updates).then(() => {
+
                 closeModal('delete-modal');
+
             }).catch(err => alert('เกิดข้อผิดพลาดในการลบโปรไฟล์: ' + err.message));
+
         }
 
-        let currentSummaryProfileName = '';
-        let activeSummaryPointsList = [];
-        let summaryFilterCase = 'all';
-        let summaryFilterFreq = 'all';
-        let summaryDetectedCase = 'mixed';
 
-        function openSummaryModal(profileName) {
+
+let currentSummaryProfileName = '';
+
+let activeSummaryPointsList = [];
+
+let summaryFilterCase = 'all';
+
+let summaryFilterFreq = 'all';
+
+let summaryDetectedCase = 'mixed';
+
+
+
+function openSummaryModal(profileName) {
+
             currentSummaryProfileName = profileName;
-            document.getElementById('summary-title').innerText = `📊 สรุปข้อมูลโปรไฟล์: ${profileName}`;
+
+            document.getElementById('summary-title').innerText = `สรุปข้อมูลโปรไฟล์: ${profileName}`;
+
+
 
             activeSummaryPointsList = collectProfileMeasurements(profileName);
 
-            const hasCase1 = activeSummaryPointsList.some(p => p.caseId === 'Case1');
-            const hasCase2 = activeSummaryPointsList.some(p => p.caseId === 'Case2');
 
-            if (hasCase1 && !hasCase2) {
-                summaryDetectedCase = 'Case1';
-                summaryFilterCase = 'Case1';
-            } else if (hasCase2 && !hasCase1) {
-                summaryDetectedCase = 'Case2';
-                summaryFilterCase = 'Case2';
+
+const hasCase1 = activeSummaryPointsList.some(p => p.caseId === 'Case1');
+
+const hasCase2 = activeSummaryPointsList.some(p => p.caseId === 'Case2');
+
+const hasCase3 = activeSummaryPointsList.some(p => p.caseId === 'Case3');
+
+const detectedCases = [
+
+                hasCase1 ? 'Case1' : null,
+
+                hasCase2 ? 'Case2' : null,
+
+                hasCase3 ? 'Case3' : null
+
+            ].filter(Boolean);
+
+
+
+            if (detectedCases.length === 1) {
+
+                summaryDetectedCase = detectedCases[0];
+
+                summaryFilterCase = detectedCases[0];
+
             } else {
+
                 summaryDetectedCase = 'mixed';
+
                 summaryFilterCase = 'all';
+
             }
+
+
 
             summaryFilterFreq = 'all';
 
-            // ถ้าโปรไฟล์เป็น Case เดียว ให้ซ่อนตัวเลือก Case อื่นทั้งหมด
-            const caseRow = document.getElementById('summary-case-filter-row');
-            const btnAll = document.getElementById('summary-case-all');
-            const btnCase1 = document.getElementById('summary-case-case1');
-            const btnCase2 = document.getElementById('summary-case-case2');
 
-            if (summaryDetectedCase === 'Case1') {
+
+// ถ้าโปรไฟล์เป็น Case เดียว ให้ซ่อนตัวเลือก Case อื่นทั้งหมด
+
+const caseRow = document.getElementById('summary-case-filter-row');
+
+const btnAll = document.getElementById('summary-case-all');
+
+const btnCase1 = document.getElementById('summary-case-case1');
+
+const btnCase2 = document.getElementById('summary-case-case2');
+
+const btnCase3 = document.getElementById('summary-case-case3');
+
+
+
+            if (summaryDetectedCase === 'Case1' || summaryDetectedCase === 'Case2' || summaryDetectedCase === 'Case3') {
+
                 if (caseRow) caseRow.style.display = 'none';
+
                 if (btnAll) btnAll.style.display = 'none';
-                if (btnCase1) btnCase1.style.display = '';
-                if (btnCase2) btnCase2.style.display = 'none';
-            } else if (summaryDetectedCase === 'Case2') {
-                if (caseRow) caseRow.style.display = 'none';
-                if (btnAll) btnAll.style.display = 'none';
-                if (btnCase1) btnCase1.style.display = 'none';
-                if (btnCase2) btnCase2.style.display = '';
+
+                if (btnCase1) btnCase1.style.display = summaryDetectedCase === 'Case1' ? '' : 'none';
+
+                if (btnCase2) btnCase2.style.display = summaryDetectedCase === 'Case2' ? '' : 'none';
+
+                if (btnCase3) btnCase3.style.display = summaryDetectedCase === 'Case3' ? '' : 'none';
+
             } else {
+
                 if (caseRow) caseRow.style.display = 'flex';
+
                 if (btnAll) btnAll.style.display = '';
+
                 if (btnCase1) btnCase1.style.display = '';
+
                 if (btnCase2) btnCase2.style.display = '';
+
+                if (btnCase3) btnCase3.style.display = '';
+
             }
 
+
+
             renderSummaryView();
+
             openModal('summary-modal');
+
         }
 
-        function filterSummaryData(type, value) {
+
+
+function filterSummaryData(type, value) {
+
             if (type === 'case') {
+
                 if (summaryDetectedCase === 'Case1') summaryFilterCase = 'Case1';
+
                 else if (summaryDetectedCase === 'Case2') summaryFilterCase = 'Case2';
+
+                else if (summaryDetectedCase === 'Case3') summaryFilterCase = 'Case3';
+
                 else summaryFilterCase = value;
+
             }
+
             if (type === 'freq') summaryFilterFreq = value;
+
             renderSummaryView();
+
         }
 
-        function formatFreqLabel(freq) {
+
+
+function formatFreqLabel(freq) {
+
             return freq === '2_4GHz' ? '2.4 GHz' : freq === '5GHz' ? '5 GHz' : freq;
+
         }
 
-        function case1SignalLabel(rssi) {
+
+
+function case1SignalLabel(rssi) {
+
             if (rssi >= -30) return 'Amazing';
+
             if (rssi >= -67) return 'Very Good';
+
             if (rssi >= -70) return 'Okay';
+
             if (rssi >= -80) return 'Not Good';
+
             return 'Unusable';
+
         }
 
-        function renderSummaryView() {
-            ['all', 'Case1', 'Case2'].forEach(c => {
-                const id = c === 'all' ? 'summary-case-all' : `summary-case-${c.toLowerCase()}`;
-                const btn = document.getElementById(id);
+
+
+function renderSummaryView() {
+
+            ['all', 'Case1', 'Case2', 'Case3'].forEach(c => {
+
+const id = c === 'all' ? 'summary-case-all' : `summary-case-${c.toLowerCase()}`;
+
+const btn = document.getElementById(id);
+
                 if (btn) btn.classList.toggle('active', summaryFilterCase === c);
+
             });
+
+
 
             [
+
                 ['all', 'summary-freq-all'],
+
                 ['2_4GHz', 'summary-freq-24'],
+
                 ['5GHz', 'summary-freq-5']
+
             ].forEach(([value, id]) => {
-                const btn = document.getElementById(id);
+
+const btn = document.getElementById(id);
+
                 if (btn) btn.classList.toggle('active', summaryFilterFreq === value);
+
             });
 
-            const filtered = activeSummaryPointsList
+
+
+const filtered = activeSummaryPointsList
+
                 .filter(p => summaryFilterCase === 'all' || p.caseId === summaryFilterCase)
+
                 .filter(p => summaryFilterFreq === 'all' || p.freq === summaryFilterFreq)
+
                 .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-            const tableBody = document.getElementById('summary-table-body');
+
+
+const tableBody = document.getElementById('summary-table-body');
+
             tableBody.innerHTML = '';
 
-            const total = filtered.length;
-            const countCase1 = filtered.filter(p => p.caseId === 'Case1').length;
-            const countCase2 = filtered.filter(p => p.caseId === 'Case2').length;
-            const count24 = filtered.filter(p => p.freq === '2_4GHz').length;
-            const count5 = filtered.filter(p => p.freq === '5GHz').length;
+
+
+const total = filtered.length;
+
+const countCase1 = filtered.filter(p => p.caseId === 'Case1').length;
+
+const countCase2 = filtered.filter(p => p.caseId === 'Case2').length;
+
+const countCase3 = filtered.filter(p => p.caseId === 'Case3').length;
+
+const count24 = filtered.filter(p => p.freq === '2_4GHz').length;
+
+const count5 = filtered.filter(p => p.freq === '5GHz').length;
+
+
 
             document.getElementById('stat-total').innerText = total;
+
             document.getElementById('stat-case1').innerText = countCase1;
+
             document.getElementById('stat-case2').innerText = countCase2;
+
+            document.getElementById('stat-case3').innerText = countCase3;
+
             document.getElementById('stat-24').innerText = count24;
+
             document.getElementById('stat-5').innerText = count5;
 
-            // โปรไฟล์ Case เดียว: ซ่อนกล่อง Case ที่ไม่เกี่ยวข้อง
-            const statCase1Box = document.getElementById('stat-case1')?.closest('.stat-box');
-            const statCase2Box = document.getElementById('stat-case2')?.closest('.stat-box');
 
-            if (summaryDetectedCase === 'Case1') {
-                if (statCase1Box) statCase1Box.style.display = '';
-                if (statCase2Box) statCase2Box.style.display = 'none';
-            } else if (summaryDetectedCase === 'Case2') {
-                if (statCase1Box) statCase1Box.style.display = 'none';
-                if (statCase2Box) statCase2Box.style.display = '';
+
+// โปรไฟล์ Case เดียว: ซ่อนกล่อง Case ที่ไม่เกี่ยวข้อง
+
+const statCase1Box = document.getElementById('stat-case1')?.closest('.stat-box');
+
+const statCase2Box = document.getElementById('stat-case2')?.closest('.stat-box');
+
+const statCase3Box = document.getElementById('stat-case3')?.closest('.stat-box');
+
+
+
+            if (summaryDetectedCase === 'Case1' || summaryDetectedCase === 'Case2' || summaryDetectedCase === 'Case3') {
+
+                if (statCase1Box) statCase1Box.style.display = summaryDetectedCase === 'Case1' ? '' : 'none';
+
+                if (statCase2Box) statCase2Box.style.display = summaryDetectedCase === 'Case2' ? '' : 'none';
+
+                if (statCase3Box) statCase3Box.style.display = summaryDetectedCase === 'Case3' ? '' : 'none';
+
             } else {
+
                 if (statCase1Box) statCase1Box.style.display = '';
+
                 if (statCase2Box) statCase2Box.style.display = '';
+
+                if (statCase3Box) statCase3Box.style.display = '';
+
             }
+
+
 
             filtered.forEach(p => {
-                let detail = '';
+
+let detail = '';
+
+
 
                 if (p.caseId === 'Case1') {
-                    const xy = (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
+
+const xy = (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
+
                         ? `(${Number(p.x).toFixed(2)}, ${Number(p.y).toFixed(2)})`
+
                         : '-';
+
                     detail = `${xy} · ${case1SignalLabel(p.rssi)}`;
+
                 } else if (p.caseId === 'Case2') {
-                    const parts = [];
+
+const parts = [];
+
                     if (p.ssid) parts.push(p.ssid);
+
                     if (p.bssid) parts.push(`BSSID ${p.bssid}`);
+
                     if (p.channel !== '') parts.push(`CH ${p.channel}`);
+
                     if (p.status) parts.push(p.status);
+
                     detail = parts.join(' · ') || '-';
+
+                } else if (p.caseId === 'Case3') {
+
+const parts = [];
+
+                    if (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y))) {
+
+                        parts.push(`(${Number(p.x).toFixed(2)}, ${Number(p.y).toFixed(2)})`);
+
+                    }
+
+                    if (p.bssid) parts.push(`BSSID ${p.bssid}`);
+
+                    if (p.channel !== '') parts.push(`CH ${p.channel}`);
+
+                    detail = parts.join(' · ') || 'AP-CAL';
+
                 } else {
+
                     detail = 'Legacy data';
+
                 }
 
-                const color = p.rssi >= -50 ? '#2ECC71'
+
+
+const color = p.rssi >= -50 ? '#2ECC71'
+
                     : p.rssi >= -70 ? '#F59F00'
+
                         : '#E74C3C';
 
-                const row = `<tr>
+
+
+const row = `<tr>
+
                     <td><b>${p.caseId}</b></td>
+
                     <td>${p.areaLabel}</td>
+
                     <td>${p.round}</td>
+
                     <td>${formatFreqLabel(p.freq)}</td>
+
                     <td>${p.pointId}</td>
+
                     <td style="font-weight:bold;color:${color}">${p.rssi} dBm</td>
+
                     <td style="font-size:11px;color:#64748B;text-align:left;">${detail}</td>
+
                 </tr>`;
+
                 tableBody.insertAdjacentHTML('beforeend', row);
+
             });
 
+
+
             if (total === 0) {
+
                 tableBody.innerHTML = `<tr><td colspan="7" style="color:#A0AEC0;padding:22px;">
-                    ไม่พบข้อมูล Case 1 / Case 2 ในโปรไฟล์นี้
+
+                    ไม่พบข้อมูล Case 1 / Case 2 / Case 3 ในโปรไฟล์นี้
+
                 </td></tr>`;
+
             }
+
         }
 
 
-        // Initialize Realtime Listener
+
+
+
+// Initialize Realtime Listener
+
         initProfilesListener();
+
     </script>
+
 </body>
+
+
 
 </html>
