@@ -2640,6 +2640,22 @@
                 style="font-size:10px;color:#555;font-weight:700;line-height:1.45;margin-top:7px;padding:6px 8px;background:#F8F9FA;border-radius:8px;">
                 การประเมินความครอบคลุมสัญญาณภายในห้องเรียน
             </div>
+            <!-- CASE3_DEVICE_STATUS_V23: Case 3 device status, read-only; Case 1/2 unchanged -->
+            <section id="c3-device-status-section" aria-label="สถานะอุปกรณ์ Case 3" aria-live="polite">
+                <div class="c3-ds-head">
+                    <span>สถานะอุปกรณ์ <small>· Case 3</small></span>
+                    <span id="c3-ds-state" class="c3-ds-state wait">รอข้อมูล</span>
+                </div>
+                <div class="c3-ds-sub" id="c3-ds-summary">กำลังตรวจ Firebase และข้อมูลจาก ESP32-C5…</div>
+                <div class="c3-ds-readings">
+                    <div class="c3-ds-reading"><span>2.4 GHz</span><strong id="c3-ds-rssi24">—</strong><small
+                            id="c3-ds-ch24">CH —</small></div>
+                    <div class="c3-ds-reading"><span>5 GHz</span><strong id="c3-ds-rssi5">—</strong><small
+                            id="c3-ds-ch5">CH —</small></div>
+                </div>
+                <div class="c3-ds-checks" id="c3-ds-checks">Firebase — · Scan — · BSSID — · Channel —</div>
+                <div class="c3-ds-meta" id="c3-ds-meta">ยังไม่มีข้อมูลสแกน</div>
+            </section>
             <div id="case-condition-controls" style="margin-top:8px;"></div>
         </div>
 
@@ -10034,7 +10050,7 @@
             };
 
             var ap = { x: null, y: null, z: AP_H_DEFAULT };
-            var C3_GEOMETRY_VERSION = 'C3-CORRIDOR-CABINETS-ZRANGE-v8';
+            var C3_GEOMETRY_VERSION = 'C3-CORRIDOR-AP-STICKER-v21';
             var legacyGeometryBlocked = false;
             var storedGeometryVersion = '';
 
@@ -10049,11 +10065,69 @@
             var apCalPlacementConfirmed = false;
             var apCalConfirmedAt = null;
             var apCalAutoMigrationSaved = true;
+            // v21: Physical sticker is aligned with the BOTTOM END ON THE 2D PLAN
+            // of the measured 214-cm tall upper cabinet. This is NOT the cabinet Z-bottom.
+            // Read the SAVED rectangle, never derive placement from the old door datum.
+            var c3ApFieldPreview = null;
+            // v22 diagnostic geometry resolver. The measured high cabinet may have
+            // been re-added via Editor with a different Firebase furniture ID.
+            // Resolve ONLY an unambiguous, dimension- and Z-verified rectangle.
+            // Never extrapolate the cabinet position from the old door datum.
+            function c3TallCabinetScan() {
+                var rw = Number(layout.roomWidth), cw = Number(layout.corridorWidth);
+                var corridorEnd = Math.max(Number(layout.roomDepth) || 0, Number(layout.corridorTestLength) || 0);
+                var candidates = [], evidence = [];
+                (layout.furniture || []).forEach(function (f) {
+                    if (!f || typeof f !== 'object') return;
+                    var name = String(f.name || ''), fid = String(f.id || '');
+                    var x = Number(f.x), y = Number(f.y), w = Number(f.width), len = Number(f.depth);
+                    var z = f.zTop === null || f.zTop === undefined || f.zTop === '' ? NaN : Number(f.zTop);
+                    var isNearCorridor = [rw, cw, x, w].every(Number.isFinite) &&
+                        cw > 0 && x >= rw - .12 && x <= rw + cw && x + w <= rw + cw + .20;
+                    var reason = [];
+                    if (!isNearCorridor) reason.push('ตำแหน่งไม่ใช่ข้างผนัง Corridor');
+                    if (!Number.isFinite(len) || Math.abs(len - .765) > .045) reason.push('ความยาวตามผนังไม่ใช่ 76.5 ซม.');
+                    if (!Number.isFinite(w) || Math.abs(w - .46) > .09) reason.push('ความลึกจากผนังไม่ใช่ 46 ซม.');
+                    if (!Number.isFinite(z) || Math.abs(z - 2.14) > .055) reason.push('ไม่มีระดับยอด Z=2.14 ม.');
+                    if (!Number.isFinite(y) || y < -.03 || y + len <= 0 || y + len > corridorEnd + .04)
+                        reason.push('ตำแหน่ง Y เกินช่วง Corridor/ขอบห้อง');
+                    var looksRelevant = fid === 'C3CAB_20261022_T' ||
+                        (/ตู้|cabinet|steel/i.test(name) && (isNearCorridor || f.area === 'corridor')) ||
+                        (isNearCorridor && Math.abs(z - 2.14) < .15);
+                    if (looksRelevant) evidence.push({
+                        id: fid, name: name, area: String(f.area || ''),
+                        depth: len, zTop: z, y: y, valid: reason.length === 0, reasons: reason
+                    });
+                    if (!reason.length) {
+                        candidates.push({
+                            id: fid, name: name || 'ตู้สูง 214 ซม.', top: y,
+                            bottom: Number((y + len).toFixed(3)), depth: len, zTop: z, x: x, width: w,
+                            source: fid === 'C3CAB_20261022_T' ? 'survey-id' : 'verified-geometry'
+                        });
+                    }
+                });
+                var exact = candidates.filter(function (c) { return c.id === 'C3CAB_20261022_T'; });
+                var selected = null, reason = '';
+                if (exact.length === 1 && candidates.length === 1) selected = exact[0];
+                else if (exact.length === 0 && candidates.length === 1) selected = candidates[0];
+                else if (candidates.length > 1) reason = 'พบตู้ที่ผ่านเกณฑ์หลายชิ้น (' + candidates.length + ') จึงไม่เลือกแทนคุณอัตโนมัติ';
+                else reason = 'ยังไม่มีตู้สูง 214 ซม. ที่มีขนาด, ระดับ Z และพิกัดในโปรไฟล์ครบ';
+                return { selected: selected, reason: reason, evidence: evidence, candidates: candidates };
+            }
+            function c3TallCabinetDatum() {
+                return c3TallCabinetScan().selected;
+            }
+            function c3RefreshApPlanFromTallCabinet() {
+                var tall = c3TallCabinetDatum();
+                if (tall) DRAFT_AP_POSITION.y = tall.bottom;
+                return tall;
+            }
             function apCalMatchesPlan() {
-                return [ap.x, ap.y, ap.z].every(function (v) { return v !== null && Number.isFinite(Number(v)); }) &&
-                    Math.abs(Number(ap.x) - DRAFT_AP_POSITION.x) <= .05 &&
-                    Math.abs(Number(ap.y) - DRAFT_AP_POSITION.y) <= .05 &&
-                    Math.abs(Number(ap.z) - DRAFT_AP_POSITION.z) <= .05;
+                var tall = c3TallCabinetDatum();
+                return !!tall && [ap.x, ap.y, ap.z].every(function (v) { return v !== null && Number.isFinite(Number(v)); }) &&
+                    Math.abs(Number(ap.x) - DRAFT_AP_POSITION.x) <= .025 &&
+                    Math.abs(Number(ap.y) - tall.bottom) <= .025 &&
+                    Math.abs(Number(ap.z) - DRAFT_AP_POSITION.z) <= .025;
             }
             function unconfirmApCal() { apCalPlacementConfirmed = false; apCalConfirmedAt = null; }
             function apCalFieldGate() { return apCalMatchesPlan() && apCalPlacementConfirmed && apCalAutoMigrationSaved; }
@@ -11031,7 +11105,7 @@
                     return { ok: true, label: 'ตัดผนังขวา 1 ครั้ง / Kw=1', kw: 1, los: 'NLOS' };
                 }
 
-                if (!apCalMatchesPlan()) return { ok: false, label: 'AP-CAL ไม่ตรงพิกัดแผน (9.15, 0.50, 2.60) m — ห้ามวัดก่อนย้าย AP จริง', kw: null, los: '' };
+                if (!apCalMatchesPlan()) return { ok: false, label: 'AP-CAL ไม่ตรงแนวสติกเกอร์ขอบล่างของตู้สูง 214 ซม. — ตรวจและยืนยันพิกัดใหม่ก่อนวัด', kw: null, los: '' };
                 if (!apCalAutoMigrationSaved) return { ok: false, label: 'ยังบันทึกตำแหน่ง AP-CAL ใหม่ลง Firebase ไม่สำเร็จ — ห้ามวัด', kw: null, los: '' };
                 if (!apCalPlacementConfirmed) return { ok: false, label: 'หมุด AP-CAL อยู่ตามแผน แต่ยังไม่ได้ยืนยันว่าติดตั้ง AP ตัวจริงแล้ว', kw: null, los: '' };
                 var apCorrCal = a.x >= rw && a.x <= rw + cw && a.y >= 0 && a.y <= corridorLen;
@@ -12122,24 +12196,12 @@
                         });
                     });
                     materialMergeSnapshots(sn[11], sn[12]);
-                    // Clean profiles only: correct the SAVED old AP (9.36,4.09) to the approved
-                    // Case 3 plan. Never rewrite AP when any calibration/validation/final/material capture exists.
-                    // In all cases, physical AP confirmation remains a separate field step.
-                    if (!anyMeasurementExists() && !legacyGeometryBlocked && (!apCalMatchesPlan() || !sn[1].exists())) {
-                        ap.x = DRAFT_AP_POSITION.x;
-                        ap.y = DRAFT_AP_POSITION.y;
-                        ap.z = DRAFT_AP_POSITION.z;
-                        unconfirmApCal();
-                        apCalAutoMigrationSaved = false;
-                        saveAp(false).then(function (ok) {
-                            apCalAutoMigrationSaved = ok;
-                            if (ok) toast('📍 ย้ายหมุด AP-CAL ในเว็บและบันทึก Firebase แล้ว · ต้องย้ายเครื่องจริงก่อนกดยืนยัน', 'info');
-                            else toast('⛔ ย้ายหมุดบนเว็บแล้ว แต่บันทึก Firebase ไม่สำเร็จ — ห้ามเริ่มวัด', 'warning');
-                            renderAll();
-                        });
-                    } else if (apCalPlacementConfirmed && !apCalMatchesPlan()) {
-                        unconfirmApCal();
-                    }
+                    // v21: read the measured 214-cm cabinet and require explicit user approval.
+                    // Never auto-overwrite Firebase AP or measuring points on reload.
+                    c3RefreshApPlanFromTallCabinet();
+                    c3ApFieldPreview = null;
+                    apCalAutoMigrationSaved = !!sn[1].exists() && apCalMatchesPlan();
+                    if (apCalPlacementConfirmed && !apCalMatchesPlan()) unconfirmApCal();
                     selectedRound = firstOpenRound(points[selectedPoint], selectedStage === 'E' ? selectedEvalAp : null);
                     renderAll();
                 }).catch(function (e) { console.error(e); toast('⚠️ อ่านข้อมูล Case 3 จาก Firebase ไม่สำเร็จ', 'warning'); renderAll(); });
@@ -12286,13 +12348,160 @@
             }
 
             var C3 = {};
+            // ============================================================
+            // v21 — AP-CAL real sticker at 2D lower end of 214-cm cabinet.
+            // The field plan/furniture/door and independent W/VC/VW positions do not move.
+            // ============================================================
+            function c3ApFieldFingerprint() {
+                var tall = c3TallCabinetDatum();
+                return JSON.stringify({
+                    cab: tall, room: [layout.roomWidth, layout.roomDepth, layout.corridorWidth, layout.corridorTestLength],
+                    ap: [ap.x, ap.y, ap.z], los: Array.from({ length: 10 }, function (_, i) {
+                        var p = points['L' + String(i + 1).padStart(2, '0')]; return [p.x, p.y, p.z];
+                    })
+                });
+            }
+            function c3ApFieldPlan() {
+                var tall = c3TallCabinetDatum();
+                if (!tall) return { ok: false, error: 'ไม่สามารถยืนยันขอบตู้สูงได้: ' + c3TallCabinetScan().reason + ' — ยังไม่ย้าย AP หรือจุดวัด' };
+                if (!layoutReady()) return { ok: false, error: 'ยังไม่ยืนยัน Layout ห้อง/ประตู กรุณาตรวจการตั้งค่าก่อน' };
+                if (anyMeasurementExists() || legacyGeometryBlocked) return { ok: false, error: 'มีข้อมูลวัดแล้วหรือ Geometry เก่า — ห้ามย้าย AP หรือจุด L' };
+                var newAp = { x: 9.15, y: tall.bottom, z: 2.60 };
+                if (ap.y !== null && Number.isFinite(Number(ap.y)) &&
+                    newAp.y < Number(ap.y) - .025)
+                    return { ok: false, error: 'ปลายล่างตู้ตาม Geometry อยู่เหนือหมุด AP เดิม ซึ่งขัดกับสติกเกอร์หน้างาน — กรุณาตรวจแนวตู้สูงใน Editor ก่อน ไม่ย้าย AP ขึ้นโดยอัตโนมัติ' };
+                var rw = Number(layout.roomWidth), cw = Number(layout.corridorWidth), rd = Number(layout.roomDepth), cl = Number(layout.corridorTestLength) || rd;
+                if (!(newAp.x >= rw && newAp.x <= rw + cw && newAp.y >= 0 && newAp.y <= Math.max(rd, cl)))
+                    return { ok: false, error: 'พิกัดสติกเกอร์ไม่อยู่ใน Corridor กรุณาตรวจข้อมูลตู้และขนาดห้อง' };
+                var ls = Array.from({ length: 10 }, function (_, i) { return points['L' + String(i + 1).padStart(2, '0')]; });
+                if (ls.some(function (p) { return !p || !Number.isFinite(Number(p.x)) || !Number.isFinite(Number(p.y)) }))
+                    return { ok: false, error: 'จุด L01–L10 ไม่ครบ ต้องตรวจพิกัดในโปรไฟล์ก่อน' };
+                // Move LOS only if the nearest point has <0.75m 2D clearance to the NEW AP.
+                var shift = ls.some(function (p) { return Math.hypot(Number(p.x) - newAp.x, Number(p.y) - newAp.y) < .75 || Number(p.y) <= newAp.y; });
+                var end = Math.min(6.80, cl - .30, rd - .20);
+                var first = newAp.y + .80;
+                if (shift && end - first < 3.0) return { ok: false, error: 'Corridor ไม่ยาวพอให้จัดจุด LOS หลัง AP อย่างปลอดภัย ห้ามย่อระยะโดยอัตโนมัติ' };
+                var los = ls.map(function (p, i) {
+                    return {
+                        id: p.pointId, oldX: Number(p.x), oldY: Number(p.y), x: Number(p.x),
+                        y: shift ? Number((first + (end - first) * i / 9).toFixed(3)) : Number(p.y), z: Number(p.z)
+                    };
+                });
+                if (los.some(function (p) { return p.x < rw || p.x > rw + cw || p.y < 0 || p.y > cl }))
+                    return { ok: false, error: 'จุด LOS ใหม่อยู่นอก Corridor' };
+                var rx = POINT_DEFS.filter(function (p) { return /^W|^VC|^VW/.test(p.id); }).map(function (p) {
+                    var q = points[p.id], oldD = q && q.x !== null && q.y !== null && ap.x !== null && ap.y !== null ?
+                        Math.hypot(Number(q.x) - Number(ap.x), Number(q.y) - Number(ap.y), Number(q.z) - Number(ap.z)) : null;
+                    var d2 = q && q.x !== null && q.y !== null ? Math.hypot(Number(q.x) - newAp.x, Number(q.y) - newAp.y) : null;
+                    var d3 = d2 === null ? null : Math.hypot(d2, Number(q.z) - newAp.z);
+                    return { id: p.id, from3D: oldD, to2D: d2, to3D: d3, x: q.x, y: q.y };
+                });
+                return { ok: true, tall: tall, ap: newAp, los: los, rx: rx, shiftLos: shift, fingerprint: c3ApFieldFingerprint() };
+            }
+            C3.previewApSticker = function () {
+                c3ApFieldPreview = c3ApFieldPlan();
+                if (!c3ApFieldPreview.ok) toast('⚠️ ' + c3ApFieldPreview.error, 'warning');
+                renderAll();
+            };
+            C3.clearApStickerPreview = function () { c3ApFieldPreview = null; renderAll(); };
+            function c3ApStickerHtml() {
+                var tall = c3TallCabinetDatum(), h = '<div style="margin:8px 0;padding:9px;border:1px solid #99d5d0;border-radius:10px;background:#f4faf9;font-size:10px;line-height:1.55;text-align:left;">';
+                h += '<b>📍 ปรับ AP-CAL ตามสติกเกอร์จริง · v22</b><div style="color:#475569;margin:4px 0;">ย้ายเฉพาะ AP-CAL และปรับ L01–L10 หากชิด AP เกินไป; W/VC/VW คงที่แต่คำนวณระยะใหม่</div>';
+                h += '<div>ขอบล่างของตู้สูง 214 ซม. (บนแปลน): <b>' + (tall ? ('Y=' + tall.bottom.toFixed(3) + ' m') : 'ยังอ่านไม่ได้จาก Layout') + '</b></div>';
+                if (tall && tall.source === 'verified-geometry')
+                    h += '<div style="color:#0f766e;margin:4px 0;">✅ พบตู้ตามขนาดและ Z ที่บันทึกจริง แม้ ID ไม่ใช่ C3CAB_20261022_T · ' + esc(tall.name) + ' · Y=' + tall.top.toFixed(3) + '..' + tall.bottom.toFixed(3) + ' m</div>';
+                if (!tall) {
+                    var scan = c3TallCabinetScan();
+                    h += '<div style="color:#9a3412;margin:5px 0;">⚠️ ' + esc(scan.reason) + '. ห้ามเลื่อน AP จากภาพอย่างเดียว</div>';
+                    if (scan.evidence.length) {
+                        h += '<details style="margin:5px 0;"><summary>ตรวจรายการตู้ใน Layout และสาเหตุไม่ผ่าน (' + scan.evidence.length + ' ชิ้น)</summary><div style="max-height:200px;overflow:auto">';
+                        scan.evidence.slice(0, 12).forEach(function (f) {
+                            h += '<div style="padding:5px;border-bottom:1px solid #ddd;"><b>' + esc(f.name || f.id) + '</b> · ' + esc(f.id) +
+                                ' · Y=' + (Number.isFinite(f.y) ? f.y.toFixed(3) : '-') +
+                                ', ยาว=' + (Number.isFinite(f.depth) ? f.depth.toFixed(3) : '-') +
+                                ', Z Top=' + (Number.isFinite(f.zTop) ? f.zTop.toFixed(3) : '-') +
+                                '<div style="color:' + (f.valid ? '#047857' : '#b45309') + '">' + (f.valid ? 'ผ่านเกณฑ์' : esc(f.reasons.join(' / '))) + '</div></div>';
+                        });
+                        h += '</div></details>';
+                    } else h += '<div style="color:#64748b">ไม่พบวัตถุ Corridor ที่เข้าข่ายตู้สูงใน Layout ที่โหลดจากโปรไฟล์ กรุณาตรวจว่าได้บันทึกเฟอร์นิเจอร์ใน Editor แล้ว</div>';
+                }
+
+                h += '<button class="c3-secondary-btn" style="width:100%;margin-top:6px;" onclick="C3.previewApSticker()" ' + (anyMeasurementExists() ? 'disabled' : '') + '>ดูตัวอย่างพิกัด AP + ระยะใหม่ (ไม่บันทึก)</button>';
+                var p = c3ApFieldPreview;
+                if (p) {
+                    if (!p.ok) { h += '<div style="color:#b91c1c;margin-top:6px">' + esc(p.error) + '</div>'; }
+                    else {
+                        h += '<div style="margin-top:6px;">AP เดิม (' + Number(ap.x).toFixed(2) + ', ' + Number(ap.y).toFixed(2) + ') → <b>ใหม่ (' + p.ap.x.toFixed(2) + ', ' + p.ap.y.toFixed(3) + ')</b>, Z 2.60 m</div>';
+                        h += '<div>LOS: ' + (p.shiftLos ? 'จัด L01–L10 ให้มีระยะจาก AP เพิ่มขึ้น' : 'คง L01–L10 เพราะไม่มีจุดใกล้ AP เกิน 0.75 m') + '</div>';
+                        h += '<details style="margin-top:5px;"><summary>ตรวจพิกัด LOS ทั้ง 10 จุด</summary><div style="max-height:180px;overflow:auto"><table style="width:100%;font-size:9px;box-shadow:none;margin:3px 0;"><tr><th>จุด</th><th>Y เดิม</th><th>Y ใหม่</th></tr>';
+                        p.los.forEach(function (v) { h += '<tr><td>' + v.id + '</td><td>' + v.oldY.toFixed(2) + '</td><td>' + v.y.toFixed(3) + '</td></tr>'; });
+                        h += '</table></div></details>';
+                        h += '<details style="margin-top:5px;"><summary>ระยะ AP→W/VC/VW ใหม่ ' + p.rx.length + ' จุด (3D)</summary><div style="max-height:250px;overflow:auto"><table style="width:100%;font-size:9px;box-shadow:none;margin:3px 0;"><tr><th>จุด</th><th>ก่อน 3D</th><th>หลัง 3D</th></tr>';
+                        p.rx.forEach(function (v) { h += '<tr><td>' + v.id + '</td><td>' + (v.from3D === null ? '-' : v.from3D.toFixed(2)) + '</td><td>' + (v.to3D === null ? '-' : v.to3D.toFixed(2)) + '</td></tr>'; });
+                        h += '</table></div></details>';
+                        h += '<div style="color:#92400e;margin:6px 0">ตำแหน่งสติกเกอร์อ้างแนวปลายตู้ในภาพ 2D ไม่ใช่ระดับความสูง Z ของตู้ ตรวจตำแหน่งจริงก่อนกดยืนยัน และตรวจเส้นทางผ่านโลหะใหม่หลังปรับ AP</div>';
+                        h += '<button class="c3-secondary-btn" style="width:100%;" onclick="C3.applyApSticker()" ' + (anyMeasurementExists() || !firebaseConnected ? 'disabled' : '') + '>✅ ยืนยันและบันทึก AP + LOS + ระยะลง Firebase</button>';
+                    }
+                    h += '<button class="c3-secondary-btn" style="width:100%;margin-top:4px" onclick="C3.clearApStickerPreview()">ยกเลิกตัวอย่าง</button>';
+                }
+                h += '<button class="c3-secondary-btn" style="width:100%;margin-top:5px" onclick="C3.downloadApDistanceCsv()">📄 ส่งออกระยะ AP→W/VC/VW CSV</button>';
+                return h + '</div>';
+            }
+            C3.downloadApDistanceCsv = function () {
+                var a = ap, rows = POINT_DEFS.filter(function (d) { return /^W|^VC|^VW/.test(d.id); }).map(function (d) {
+                    var p = points[d.id], valid = p && a.x !== null && a.y !== null && p.x !== null && p.y !== null;
+                    var d2 = valid ? Math.hypot(Number(p.x) - Number(a.x), Number(p.y) - Number(a.y)) : null;
+                    var d3 = valid ? Math.hypot(d2, Number(p.z) - Number(a.z)) : null;
+                    return [d.id, a.x, a.y, a.z, p.x, p.y, p.z, d2 === null ? '' : d2.toFixed(4), d3 === null ? '' : d3.toFixed(4)].join(',');
+                });
+                var csv = 'pointId,apX,apY,apZ,rxX,rxY,rxZ,distance2D_m,distance3D_m\n' + rows.join('\n');
+                var b = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }), url = URL.createObjectURL(b), link = document.createElement('a');
+                link.href = url; link.download = 'Case3_APCAL_W_VC_VW_distances_v21.csv'; document.body.appendChild(link); link.click(); link.remove();
+                setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+            };
+            C3.applyApSticker = async function () {
+                var p = c3ApFieldPreview;
+                if (!p || !p.ok) { toast('⚠️ ต้องดูตัวอย่างก่อน', 'warning'); return; }
+                if (anyMeasurementExists() || legacyGeometryBlocked) { toast('🔒 มีผลวัดแล้ว ห้ามปรับ AP/LOS', 'warning'); return; }
+                if (!firebaseConnected || typeof db === 'undefined') { toast('⛔ Firebase ไม่พร้อม', 'warning'); return; }
+                if (p.fingerprint !== c3ApFieldFingerprint()) { c3ApFieldPreview = null; toast('⚠️ Geometry เปลี่ยนแล้ว กรุณาคำนวณตัวอย่างใหม่', 'warning'); renderAll(); return; }
+                if (!confirm('ยืนยันว่าจุดสติกเกอร์ AP จริงอยู่ตรงปลายล่าง (บนแปลน) ของตู้สูง 214 ซม.?\n\nAP → (' + p.ap.x.toFixed(2) + ', ' + p.ap.y.toFixed(3) + ', 2.60) m\n' + (p.shiftLos ? 'จะจัด L01–L10 ใหม่ตามลำดับ' : 'L01–L10 คงเดิม') + '\nW/VC/VW และ Layout จะไม่เปลี่ยน\n\nการบันทึกจะยังไม่ยืนยันว่าติดตั้ง AP ที่เครื่องจริง ต้องยืนยันแยกอีกครั้ง')) return;
+                // One atomic path-scoped multi-location update, no writes outside Case3/TestbedFloor2.
+                var updates = {}, now = Date.now();
+                Object.assign(updates, {
+                    'AP/AP-CAL/xMeters': p.ap.x, 'AP/AP-CAL/yMeters': p.ap.y, 'AP/AP-CAL/zMeters': p.ap.z,
+                    'AP/AP-CAL/planX': p.ap.x, 'AP/AP-CAL/planY': p.ap.y, 'AP/AP-CAL/planZ': p.ap.z,
+                    'AP/AP-CAL/placementConfirmed': false, 'AP/AP-CAL/confirmedAt': null,
+                    'AP/AP-CAL/fieldDatum': 'lower_edge_of_measured_214cm_tall_cabinet_in_2D',
+                    'AP/AP-CAL/fieldCabinetId': p.tall.id, 'AP/AP-CAL/updatedAt': now
+                });
+                POINT_DEFS.forEach(function (d) {
+                    var q = points[d.id], replacement = p.los.find(function (v) { return v.id === d.id; });
+                    var px = replacement ? replacement.x : Number(q.x), py = replacement ? replacement.y : Number(q.y), pz = Number(q.z);
+                    if (![px, py, pz].every(Number.isFinite)) return;
+                    var base = (d.set === 'Validation' ? 'Validation/' : 'Calibration/') + d.id + '/';
+                    var d2 = Math.hypot(px - p.ap.x, py - p.ap.y), d3 = Math.hypot(d2, pz - p.ap.z);
+                    updates[base + 'pointId'] = d.id; updates[base + 'xMeters'] = px; updates[base + 'yMeters'] = py; updates[base + 'zMeters'] = pz;
+                    updates[base + 'apX'] = p.ap.x; updates[base + 'apY'] = p.ap.y; updates[base + 'apZ'] = p.ap.z;
+                    updates[base + 'distance2D'] = Number(d2.toFixed(5)); updates[base + 'distance3D'] = Number(d3.toFixed(5));
+                    updates[base + 'geometryVersion'] = C3_GEOMETRY_VERSION; updates[base + 'updatedAt'] = now;
+                });
+                try {
+                    await db.ref(basePath()).update(updates);
+                    ap.x = p.ap.x; ap.y = p.ap.y; ap.z = p.ap.z;
+                    p.los.forEach(function (v) { var q = points[v.id]; q.x = v.x; q.y = v.y; q.z = v.z; });
+                    DRAFT_AP_POSITION.y = p.ap.y; unconfirmApCal(); apCalAutoMigrationSaved = true; c3ApFieldPreview = null;
+                    syncEvaluationCoordinates(); toast('✅ บันทึก AP-CAL และระยะ/จุด LOS แล้ว · ต้องยืนยันตำแหน่ง AP จริงก่อนวัด', 'success'); renderAll();
+                } catch (e) { console.error(e); toast('⛔ บันทึก Firebase ไม่สำเร็จ — ข้อมูลในเว็บยังไม่เปลี่ยน', 'error'); }
+            };
+
             C3.confirmApCalPhysical = async function () {
                 if (legacyGeometryBlocked || anyMeasurementExists()) { toast('⛔ มีข้อมูลวัดหรือ Geometry รุ่นเก่าแล้ว จึงไม่อนุญาตให้ยืนยัน AP ใหม่', 'warning'); return; }
                 if (!apCalMatchesPlan() || !apCalAutoMigrationSaved || !layoutReady()) { toast('⛔ ตรวจพิกัด AP-CAL และ Layout ก่อนยืนยัน', 'warning'); return; }
                 if (typeof db === 'undefined' || !firebaseConnected) { toast('⛔ Firebase ยังไม่พร้อมบันทึกการยืนยัน', 'warning'); return; }
                 var msg = 'ยืนยันว่าได้ย้าย AP-CAL ตัวจริงไปติดตั้งตามตำแหน่งนี้แล้วหรือไม่?\n\n' +
-                    'พิกัด X = 9.15 m, Y = 0.50 m (จากมุมซ้ายบนห้อง)\n' +
-                    'ห่างผนังขวาของห้องเข้า Corridor = 0.69 m\n' +
+                    'พิกัด X = ' + Number(ap.x).toFixed(3) + ' m, Y = ' + Number(ap.y).toFixed(3) + ' m (จากมุมซ้ายบนห้อง)\n' +
+                    'แนวสติกเกอร์ = ปลายล่างบนแปลนของตู้เหล็กสูง 214 ซม.\n' +
                     'ความสูงศูนย์กลาง AP = 2.60 m\n\n' +
                     'อย่ายืนยันถ้าเพียงย้ายหมุดบนเว็บไซต์ แต่ยังไม่ได้ย้ายอุปกรณ์จริง';
                 if (!confirm(msg)) return;
@@ -12624,7 +12833,7 @@
                 if (!deviceConfigReady()) { toast('⛔ ESP32 Case 3 Config ยังไม่พร้อม ตรวจ firmware/config', 'warning'); return; }
                 if (!layoutReady()) { toast('⛔ ยังไม่ล็อกขนาด Testbed จริง', 'warning'); return; }
                 if (!isEvaluationPoint(pt) && !apCalFieldGate()) {
-                    toast('⛔ ต้องให้ AP-CAL อยู่ที่ (9.15, 0.50, 2.60) m ในเว็บและหน้างาน แล้วกดยืนยันตำแหน่งจริงก่อนวัด', 'warning'); return;
+                    toast('⛔ ต้องให้ AP-CAL ตรงสติกเกอร์ปลายล่างของตู้สูง 214 ซม. และยืนยันตำแหน่งจริงก่อนวัด', 'warning'); return;
                 }
                 if (isEvaluationPoint(pt) && !calValidationComplete()) { toast('⛔ ต้องเก็บ Calibration + Validation ให้ครบ 42/42 ก่อน Final Evaluation', 'warning'); return; }
                 if (isEvaluationPoint(pt) && !finalModelLocked()) { toast('⛔ ต้องเลือกและล็อก Final Model ก่อน Final Evaluation', 'warning'); return; }
@@ -13312,7 +13521,7 @@
                 if (legacyGeometryBlocked) html += '<div class="c3-v7-sub" style="color:#b91c1c;font-weight:800;">⛔ พบข้อมูล Case 3 คนละ Geometry Version ในโปรไฟล์นี้ — ต้องสร้างโปรไฟล์ใหม่ก่อนวัดแผน 30+12</div>';
                 if (selectedStage !== 'E') {
                     html += '<div style="margin:6px 0;padding:9px;border:1px solid ' + (apCalFieldGate() ? '#99d5b3' : '#fbbf24') + ';background:' + (apCalFieldGate() ? '#f0fdf4' : '#fffbeb') + ';border-radius:10px;font-size:11px;line-height:1.6;text-align:left;color:#334155">';
-                    html += '<b>📍 AP-CAL ตามแผน: X 9.15 · Y 0.50 · Z 2.60 เมตร</b><br>ติดตั้งใน Corridor ห่างผนังห้องขวา 0.69 m และห่างแนวผนังบนลงมา 0.50 m';
+                    html += '<b>📍 AP-CAL ตามสติกเกอร์: X ' + DRAFT_AP_POSITION.x.toFixed(2) + ' · Y ' + (c3TallCabinetDatum() ? c3TallCabinetDatum().bottom.toFixed(3) : 'ยังไม่พบตู้') + ' · Z 2.60 เมตร</b><br>Y อ้างอิงปลายล่างบนแปลนของตู้เหล็กสูง 214 ซม. · ระยะจากผนังขวา = ' + (Number(DRAFT_AP_POSITION.x) - Number(layout.roomWidth)).toFixed(2) + ' m';
                     if (!apCalAutoMigrationSaved) html += '<br>⛔ ยังไม่ได้บันทึกตำแหน่งใหม่ลง Firebase';
                     if (!apCalMatchesPlan()) html += '<br>⛔ หมุด AP ในโปรไฟล์ไม่ตรงพิกัดแผน และห้ามวัด';
                     else if (!apCalPlacementConfirmed) html += '<br>⚠️ หมุดอยู่ตามแผนแล้ว แต่ยังไม่ได้ยืนยันว่าติดตั้ง AP เครื่องจริง';
@@ -13321,8 +13530,9 @@
                         html += '<div style="margin-top:8px"><button class="c3-secondary-btn" onclick="C3.confirmApCalPhysical()" style="width:100%" ' + ((!apCalMatchesPlan() || !firebaseConnected || !apCalAutoMigrationSaved) ? 'disabled' : '') + '>✅ ยืนยันว่าติดตั้ง AP-CAL ตัวจริงแล้ว</button></div>';
                     html += '</div>';
                 }
+                if (selectedStage === 'L' || selectedStage === 'W' || selectedStage === 'V') html += c3ApStickerHtml();
                 if (ap.x !== null && ap.y !== null && Math.hypot(Number(ap.x) - DRAFT_AP_POSITION.x, Number(ap.y) - DRAFT_AP_POSITION.y) > .25)
-                    html += '<div class="c3-v7-sub" style="color:#92400e;background:#fffbeb;padding:8px;border:1px solid #fbbf24;border-radius:8px;margin:5px 0;">⚠️ AP-CAL ปัจจุบัน (' + Number(ap.x).toFixed(2) + ', ' + Number(ap.y).toFixed(2) + ') ไม่ใช่พิกัดแผน (9.15, 0.50) m · จุด W/VW จะไม่ถูกต้องหากยังใช้ AP นี้ และห้ามเก็บ Calibration/Validation ก่อนย้าย AP จริง</div>';
+                    html += '<div class="c3-v7-sub" style="color:#92400e;background:#fffbeb;padding:8px;border:1px solid #fbbf24;border-radius:8px;margin:5px 0;">⚠️ AP-CAL ปัจจุบัน (' + Number(ap.x).toFixed(2) + ', ' + Number(ap.y).toFixed(2) + ') ไม่ใช่พิกัดสติกเกอร์ (' + DRAFT_AP_POSITION.x.toFixed(2) + ', ' + (c3TallCabinetDatum() ? c3TallCabinetDatum().bottom.toFixed(3) : '-') + ') m · ตรวจแนวตู้และห้ามเก็บข้อมูลก่อนยืนยัน AP จริง</div>';
                 html += '<div class="c3-stage-row">' +
                     '<button class="c3-stage-btn ' + (selectedStage === 'L' ? 'active' : '') + '" onclick="C3.setStage(\'L\')">Calibration LOS</button>' +
                     '<button class="c3-stage-btn ' + (selectedStage === 'W' ? 'active' : '') + '" onclick="C3.setStage(\'W\')">Calibration Wall</button>' +
@@ -13446,6 +13656,83 @@
                 box.innerHTML = html;
             };
 
+            // CASE3_DEVICE_STATUS_V23: a live, read-only Case3 status panel in the sidebar.
+            // Strict timestamp check: saved Firebase data must not masquerade as live ESP32 data.
+            function renderCase3DeviceStatus() {
+                if (!isCase3()) return;
+                var section = document.getElementById('c3-device-status-section');
+                if (!section) return;
+                var scan = liveScan || {};
+                var conf = deviceConfig || {};
+                var hasSample = !!scanId(scan);
+                var ts = Number(scan.timestamp);
+                var scanMs = ts > 1000000000 && ts < 100000000000 ? ts * 1000 : ts;
+                var timestampValid = Number.isFinite(scanMs) && scanMs > 1577836800000 && scanMs <= Date.now() + 3000;
+                var age = timestampValid ? Math.max(0, (Date.now() - scanMs) / 1000) : null;
+                var fresh = hasSample && age !== null && age <= C3_STALE_SEC;
+                var correctCase = String(scan.case_id || '') === 'Case3' && String(conf.case_id || '') === 'Case3';
+                var configOk = correctCase && deviceConfigReady();
+                var b24 = observedBssid(scan, '24'), b5 = observedBssid(scan, '5');
+                var expected24 = target24(), expected5 = target5();
+                var c24 = numberOrNull(scan.channel_24g), c5 = numberOrNull(scan.channel_5g);
+                var b24ok = !!b24 && !!expected24 && b24 === expected24;
+                var b5ok = !!b5 && !!expected5 && b5 === expected5;
+                var c24ok = c24 !== null && expectedCh24() !== null && c24 === expectedCh24();
+                var c5ok = c5 !== null && expectedCh5() !== null && c5 === expectedCh5();
+                var r24 = numberOrNull(scan.rssi_24g), r5 = numberOrNull(scan.rssi_5g);
+                var value24ok = r24 !== null && r24 > -127 && r24 <= 0 && r24 >= -120;
+                var value5ok = r5 !== null && r5 > -127 && r5 <= 0 && r5 >= -120;
+                var band24ok = configOk && b24ok && c24ok && value24ok && scan.found_24g !== false;
+                var band5ok = configOk && b5ok && c5ok && value5ok && scan.found_5g !== false;
+                var allOk = firebaseConnected && fresh && configOk && band24ok && band5ok;
+                var label, detail, state;
+                if (!firebaseConnected) { label = 'ไม่เชื่อมต่อ'; detail = 'เว็บไม่ได้เชื่อมต่อ Firebase'; state = 'bad'; }
+                else if (!configOk) { label = 'ตรวจ Config'; detail = 'ยังไม่พบการตั้งค่า ESP32 สำหรับ Case 3 ที่ครบถ้วน'; state = 'warn'; }
+                else if (!hasSample) { label = 'รอ Scan'; detail = 'ยังไม่มีข้อมูลสแกนจาก ESP32-C5'; state = 'wait'; }
+                else if (!timestampValid) { label = 'ตรวจเวลา'; detail = 'เวลาใน Scan ไม่ถูกต้องหรือยังไม่มี Timestamp'; state = 'warn'; }
+                else if (!fresh) { label = 'ข้อมูลเก่า'; detail = 'Scan ล่าสุดเกิน ' + C3_STALE_SEC + ' วินาที — ยังไม่ยืนยันว่า ESP32 ทำงานสด'; state = 'bad'; }
+                else if (!band24ok || !band5ok) { label = 'ตรวจสัญญาณ'; detail = 'ได้รับ Scan ล่าสุดแล้ว แต่ BSSID / Channel / RSSI ยังไม่ผ่านทั้งสองย่าน'; state = 'warn'; }
+                else { label = 'พร้อมวัด'; detail = 'ESP32-C5 ส่งข้อมูลใหม่และตรวจ AP-CAL ผ่านทั้งสองย่าน'; state = 'ok'; }
+                var labelEl = document.getElementById('c3-ds-state');
+                if (labelEl) { labelEl.className = 'c3-ds-state ' + state; labelEl.textContent = label; }
+                var summaryEl = document.getElementById('c3-ds-summary');
+                if (summaryEl) summaryEl.textContent = detail;
+                var rss24 = document.getElementById('c3-ds-rssi24'), rss5 = document.getElementById('c3-ds-rssi5');
+                if (rss24) rss24.textContent = firebaseConnected && fresh && band24ok ? Math.round(r24) + ' dBm' : 'N/A';
+                if (rss5) rss5.textContent = firebaseConnected && fresh && band5ok ? Math.round(r5) + ' dBm' : 'N/A';
+                var ch24 = document.getElementById('c3-ds-ch24'), ch5 = document.getElementById('c3-ds-ch5');
+                if (ch24) ch24.textContent = 'CH ' + (c24 === null ? '—' : c24) + ' / ' + (expectedCh24() === null ? '—' : expectedCh24());
+                if (ch5) ch5.textContent = 'CH ' + (c5 === null ? '—' : c5) + ' / ' + (expectedCh5() === null ? '—' : expectedCh5());
+                var checks = document.getElementById('c3-ds-checks');
+                if (checks) {
+                    var parts = [
+                        ['Firebase', firebaseConnected],
+                        ['Config', configOk],
+                        ['Fresh scan', fresh],
+                        ['BSSID', b24ok && b5ok],
+                        ['Channel', c24ok && c5ok]
+                    ];
+                    checks.innerHTML = parts.map(function (p) {
+                        return '<span class="c3-ds-check ' + (p[1] ? 'ok' : 'bad') + '">' + esc(p[0]) + ' ' + (p[1] ? '✓' : '✕') + '</span>';
+                    }).join('');
+                }
+                var meta = document.getElementById('c3-ds-meta');
+                if (meta) {
+                    var bits = [];
+                    bits.push('Scan: ' + (scan.scan_sequence === undefined || scan.scan_sequence === null ? '—' : String(scan.scan_sequence)));
+                    bits.push('อายุ: ' + (age === null ? '—' : age.toFixed(1) + ' วิ'));
+                    bits.push('BSSID 2.4G: ' + (b24 || '—'));
+                    bits.push('BSSID 5G: ' + (b5 || '—'));
+                    meta.textContent = bits.join(' · ');
+                }
+                section.dataset.ready = allOk ? 'true' : 'false';
+            }
+            // Update when live data changes via the existing Firebase listeners,
+            // and also with time alone so a stalled receiver becomes STALE automatically.
+            setInterval(function () {
+                if (isCase3()) renderCase3DeviceStatus();
+            }, 1500);
+
             renderStatus = function () {
                 var box = document.getElementById('c3-map-status'); if (!box) return;
                 var pills = [
@@ -13455,6 +13742,7 @@
                 ];
                 var progress = selectedStage === 'M' ? (materialCompleteCount() + '/52 Material Study') : (selectedStage === 'E' ? (totalEvaluationComplete(selectedEvalAp) + '/' + TOTAL_EVAL_POINTS + ' AP-' + selectedEvalAp) : (totalComplete() + '/' + TOTAL_POINTS));
                 box.innerHTML = pills.map(function (p) { return '<span class="c3-status-pill ' + (p[1] ? 'ok' : 'bad') + '">' + p[0] + ' ' + (p[1] ? '✅' : '❌') + '</span>'; }).join('') + '<span class="c3-status-pill">' + progress + '</span>';
+                renderCase3DeviceStatus();
             };
 
             function svgClientPoint(svg, ev) {
@@ -13833,6 +14121,16 @@
                         ag.addEventListener('click', function (ev) { ev.stopPropagation(); selectedEditorObject = 'AP'; updateEditorSelectionInfo(); renderTestbed(); });
                     }
                     svg.appendChild(ag);
+                }
+
+                // v21: non-persistent proposed AP marker and LOS positions for visual checking.
+                if (!editorMode && (selectedStage === 'L' || selectedStage === 'W' || selectedStage === 'V') && c3ApFieldPreview && c3ApFieldPreview.ok) {
+                    var proposedAp = c3ApFieldPreview.ap;
+                    svg.appendChild(svgEl('circle', { cx: proposedAp.x, cy: proposedAp.y, r: '.31', fill: 'none', stroke: '#059669', 'stroke-width': '.055', 'stroke-dasharray': '.09 .06' }));
+                    addSvgText(svg, proposedAp.x + .27, proposedAp.y - .24, 'AP สติกเกอร์ (ตัวอย่าง)', '.135', '#047857', '800', 'start');
+                    if (selectedStage === 'L' && c3ApFieldPreview.shiftLos) c3ApFieldPreview.los.forEach(function (q) {
+                        svg.appendChild(svgEl('circle', { cx: q.x, cy: q.y, r: '.19', fill: 'none', stroke: '#059669', 'stroke-width': '.04', 'stroke-dasharray': '.06 .045' }));
+                    });
                 }
 
                 // Measurement points use the same simple interaction pattern as Case 2.
@@ -18089,6 +18387,145 @@
 
         #c3-editor-selected-info:empty {
             display: none !important;
+        }
+    </style>
+
+    <!-- CASE3_DEVICE_STATUS_V23: isolated sidebar styling -->
+    <style id="c3-device-status-v23-style">
+        #c3-device-status-section {
+            display: none;
+        }
+
+        body.c3-active #c3-device-status-section {
+            display: block !important;
+            margin: 9px 0 11px;
+            padding: 10px 11px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 11px;
+            color: #334155;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, .035);
+        }
+
+        #c3-device-status-section .c3-ds-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        #c3-device-status-section .c3-ds-head small {
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        #c3-device-status-section .c3-ds-state {
+            flex-shrink: 0;
+            padding: 4px 7px;
+            font-size: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 7px;
+            background: #f8fafc;
+            color: #64748b;
+        }
+
+        #c3-device-status-section .c3-ds-state.ok {
+            color: #166534;
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+        }
+
+        #c3-device-status-section .c3-ds-state.bad {
+            color: #991b1b;
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        #c3-device-status-section .c3-ds-state.warn {
+            color: #92400e;
+            border-color: #fde68a;
+            background: #fffbeb;
+        }
+
+        #c3-device-status-section .c3-ds-sub {
+            margin: 6px 0 8px;
+            font-size: 10px;
+            line-height: 1.5;
+            color: #64748b;
+        }
+
+        #c3-device-status-section .c3-ds-readings {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 7px;
+        }
+
+        #c3-device-status-section .c3-ds-reading {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 7px 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        #c3-device-status-section .c3-ds-reading span {
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        #c3-device-status-section .c3-ds-reading strong {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0f766e;
+            line-height: 1.4;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #c3-device-status-section .c3-ds-reading small {
+            font-size: 9px;
+            color: #64748b;
+        }
+
+        #c3-device-status-section .c3-ds-checks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        #c3-device-status-section .c3-ds-check {
+            display: inline-block;
+            padding: 3px 5px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 650;
+        }
+
+        #c3-device-status-section .c3-ds-check.ok {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+
+        #c3-device-status-section .c3-ds-check.bad {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #9a3412;
+        }
+
+        #c3-device-status-section .c3-ds-meta {
+            margin-top: 7px;
+            font-size: 9px;
+            line-height: 1.6;
+            color: #64748b;
+            overflow-wrap: anywhere;
         }
     </style>
 
