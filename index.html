@@ -10777,11 +10777,38 @@
                 return '';
             }
 
+            // Case 3 v25: scan_sequence restarts from 1 when ESP32 reboots.
+            // A sequence number alone is NOT a globally unique scan identity.
+            // Use its real epoch timestamp + sequence for stable de-duplication.
             function scanId(data) {
                 if (!data) return '';
-                if (data.scan_sequence !== undefined && data.scan_sequence !== null && data.scan_sequence !== '') return 'SEQ:' + String(data.scan_sequence);
-                if (data.timestamp !== undefined && data.timestamp !== null && data.timestamp !== '') return 'TS:' + String(data.timestamp);
-                return '';
+                var seq = (data.scan_sequence !== undefined && data.scan_sequence !== null && data.scan_sequence !== '')
+                    ? String(data.scan_sequence) : '';
+                var ts = Number(data.timestamp);
+                // Firmware emits Unix milliseconds after NTP sync. Also accept seconds.
+                if (Number.isFinite(ts) && ts >= 1000000000 && ts < 100000000000) ts *= 1000;
+                if (Number.isFinite(ts) && ts >= 1577836800000 && ts < Date.now() + 86400000) {
+                    return 'TS:' + String(Math.trunc(ts)) + (seq ? '|SEQ:' + seq : '');
+                }
+                // Legacy fallback: the existing freshness guard will reject stale
+                // snapshots. Avoid treating an invalid clock as a valid timestamp.
+                return seq ? 'SEQ:' + seq : '';
+            }
+
+            // Backward compatibility with R1 records saved by v24 ('SEQ:2').
+            // Block the SAME historical timestamp without blocking a genuine
+            // new scan after a reboot, even if the sequence counter repeats.
+            function sameRecordedScan(record, currentId) {
+                if (!record || !currentId) return false;
+                if (String(record.sourceScanId || '') === String(currentId)) return true;
+                var savedTs = Number(record.sourceScanTimestamp);
+                var idTsMatch = /^TS:(\d+)(?:\|SEQ:.*)?$/.exec(String(currentId));
+                var candidateTs = idTsMatch ? Number(idTsMatch[1]) : NaN;
+                // Never compare a candidate against global liveScan: while waiting,
+                // liveScan may still be the previously used scan.
+                if (Number.isFinite(savedTs) && Number.isFinite(candidateTs) &&
+                    savedTs >= 1577836800000 && savedTs === candidateTs) return true;
+                return false;
             }
 
             function scanAgeSeconds(data) {
@@ -11878,7 +11905,7 @@
                     ['R1', 'R2', 'R3'].forEach(function (r) {
                         if (d.id === excludePoint && r === excludeRound && !excludeCandidate) return;
                         var m = measurementBucket(points[d.id])[r] || {};
-                        if (String(m.sourceScanId || '') === String(id)) used = true;
+                        if (sameRecordedScan(m, id)) used = true;
                     });
                 });
                 ['A', 'B', 'C'].forEach(function (c) {
@@ -11886,7 +11913,7 @@
                         ['R1', 'R2', 'R3'].forEach(function (r) {
                             if (d.id === excludePoint && r === excludeRound && c === excludeCandidate) return;
                             var m = measurementBucket(points[d.id], c)[r] || {};
-                            if (String(m.sourceScanId || '') === String(id)) used = true;
+                            if (sameRecordedScan(m, id)) used = true;
                         });
                     });
                 });
@@ -12813,12 +12840,60 @@
                 toast('ℹ️ Final workflow ไม่ให้เลือก A/B/C แบบสุ่ม — กด “สร้าง Candidate จาก Final Model” แล้วตั้งขาตามพิกัดที่ระบบให้', 'info');
             };
 
+            // CASE3 V26: do not force the operator to keep clicking a used scan.
+            // Listen for a genuinely NEW Firebase snapshot; NEVER recycle the old one.
+            var c3MeasurementPending = false;
+            function waitForNextCase3Scan(oldId, pointId, roundId, candidateId, timeoutMs) {
+                return new Promise(function (resolve, reject) {
+                    var ref = db.ref('WiFi_Scan/current');
+                    var finished = false;
+                    var timer = null;
+                    var lastSeen = oldId || '(none)';
+                    var seenCount = 0;
+                    function cleanup() {
+                        if (timer !== null) clearTimeout(timer);
+                        ref.off('value', onValue);
+                    }
+                    function end(err, data) {
+                        if (finished) return;
+                        finished = true;
+                        cleanup();
+                        if (err) reject(err); else resolve(data);
+                    }
+                    function onValue(snapshot) {
+                        if (finished) return;
+                        var next = snapshot.exists() ? snapshot.val() : null;
+                        if (!next || typeof next !== 'object') return;
+                        seenCount++;
+                        var nextId = scanId(next);
+                        lastSeen = nextId || '(invalid scan ID)';
+                        if (!nextId || nextId === oldId) return;
+                        // Use the source timestamp, not merely when the page received data.
+                        var ts = Number(next.timestamp);
+                        if (ts > 1000000000 && ts < 100000000000) ts *= 1000;
+                        if (!Number.isFinite(ts) || ts < 1577836800000 || ts > Date.now() + 86400000) return;
+                        if (Date.now() - ts > C3_STALE_SEC * 1000) return;
+                        if (scanAlreadyUsed(nextId, pointId, roundId, candidateId)) return;
+                        liveScan = next;
+                        liveScanReceivedAt = Date.now();
+                        end(null, next);
+                    }
+                    timer = setTimeout(function () {
+                        end(new Error('รอ ' + Math.round((timeoutMs || 15000) / 1000) + ' วินาทีแล้วไม่มี Scan ID ใหม่ที่ใช้ได้; ID ล่าสุด=' + lastSeen +
+                            ' (Firebase events=' + seenCount + '). ตรวจ WiFi_Scan/current → timestamp และ scan_sequence ว่าเพิ่มจริงหรือไม่'));
+                    }, timeoutMs || 15000);
+                    ref.on('value', onValue, function (error) { end(error || new Error('Firebase listener disconnected')); });
+                });
+            }
+
             C3.measure = async function () {
                 if (legacyGeometryBlocked) { toast('⛔ ข้อมูล Case 3 รุ่นพิกัดเดิมอยู่ในโปรไฟล์นี้ กรุณาสร้างโปรไฟล์ใหม่ ห้ามรวมชุดวัด', 'warning'); return; }
                 if (c3AverageMode) { toast('โหมดเฉลี่ยใช้ดูผลจาก R1–R3 และไม่บันทึกข้อมูลใหม่', 'info'); return; }
                 syncEvaluationCoordinates();
                 var pt = points[selectedPoint], candidate = isEvaluationPoint(pt) ? selectedEvalAp : null, a = isEvaluationPoint(pt) ? candidateAps[candidate] : ap;
-                var gs = geometryState(pt, candidate), id = scanId(liveScan), age = scanAgeSeconds(liveScan);
+                var gs = geometryState(pt, candidate), sample = liveScan;
+                var id = scanId(sample), age = scanAgeSeconds(sample);
+                if (c3MeasurementPending) { toast('⏳ กำลังรอสแกนใหม่/บันทึกจุดก่อนหน้า กรุณาอย่ากดซ้ำ', 'info'); return; }
                 if (!deviceConfigReady()) { toast('⛔ ESP32 Case 3 Config ยังไม่พร้อม ตรวจ firmware/config', 'warning'); return; }
                 if (!layoutReady()) { toast('⛔ ยังไม่ล็อกขนาด Testbed จริง', 'warning'); return; }
                 if (!isEvaluationPoint(pt) && !apCalFieldGate()) {
@@ -12833,20 +12908,57 @@
                 }
                 if (!a || a.x === null || a.y === null || pt.x === null || pt.y === null || !gs.ok) { toast('⛔ ตำแหน่ง/Geometry ยังไม่พร้อม: ' + gs.label, 'warning'); return; }
                 if (typeof db === 'undefined' || !firebaseConnected) { toast('⛔ Firebase ยังไม่เชื่อมต่อ', 'warning'); return; }
-                if (!id) { toast('⛔ ESP32 payload ไม่มี scan_sequence/timestamp', 'warning'); return; }
-                if (age > C3_STALE_SEC) { toast('⏳ Scan เก่า ' + age.toFixed(1) + ' s — รอ scan ใหม่', 'warning'); return; }
-                if (scanAlreadyUsed(id, selectedPoint, selectedRound, candidate || '')) { toast('⏳ Scan นี้ถูกใช้แล้ว — รอ ESP32 scan รอบใหม่ก่อน ' + selectedRound, 'warning'); return; }
-                if (!bssidMatch(liveScan)) { toast('⛔ BSSID ไม่ตรงกับ Controlled AP ที่กำหนดใน ESP32', 'warning'); return; }
-                if (!channelMatch(liveScan)) { toast('⛔ Channel ไม่ตรงกับค่าที่ล็อกไว้ใน ESP32/AP', 'warning'); return; }
-                var r24 = numberOrNull(liveScan.rssi_24g), r5 = numberOrNull(liveScan.rssi_5g); if (r24 === null || r5 === null) { toast('⛔ RSSI ไม่ครบทั้ง 2 band', 'warning'); return; }
-                if (pointRoundDone(pt, selectedRound, candidate) && !confirm((candidate ? ('AP-' + candidate + ' ') : '') + selectedPoint + ' ' + selectedRound + ' มีข้อมูลแล้ว ต้องการแทนด้วย Scan ใหม่หรือไม่?')) return;
-                var bucket = measurementBucket(pt, candidate);
-                bucket[selectedRound] = { timestamp: Date.now(), sourceScanId: id, sourceScanTimestamp: liveScan.timestamp || '', scanSequence: liveScan.scan_sequence || '', sourceScanAgeSeconds: Number(age.toFixed(3)), sourceSsid: targetSsid(), rssi24: r24, rssi5: r5, observedBssid24: observedBssid(liveScan, '24'), observedBssid5: observedBssid(liveScan, '5'), channel24: numberOrNull(liveScan.channel_24g), channel5: numberOrNull(liveScan.channel_5g) };
-                recalc(pt, candidate); var saved = await savePoint(pt, false, candidate); if (!saved) return;
-                lastAcceptedScanId = id; var doneRound = selectedRound;
-                toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + selectedPoint + ' ' + doneRound + ' = 2.4 ' + r24 + ' dBm / 5G ' + r5 + ' dBm', 'success');
-                if (pointStatus(pt, candidate) === 'COMPLETE') toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + selectedPoint + ' ครบ R1/R2/R3 แล้ว', 'success');
-                renderAll();
+                // Keep selected measurement identity fixed while waiting for fresh data.
+                var pointAtClick = selectedPoint, roundAtClick = selectedRound;
+                var candidateAtClick = candidate || '';
+                c3MeasurementPending = true;
+                try {
+                    // Old v25 showed "Scan used" forever. V26 subscribes to a NEW RTDB value.
+                    if (!id || age > C3_STALE_SEC || scanAlreadyUsed(id, pointAtClick, roundAtClick, candidateAtClick)) {
+                        var oldId = id;
+                        toast('⏳ Scan ล่าสุดถูกใช้แล้วหรือไม่สด — รอ ESP32 ส่ง Scan ใหม่ให้อัตโนมัติ (ไม่ต้องกดซ้ำ)', 'info');
+                        try {
+                            sample = await waitForNextCase3Scan(oldId, pointAtClick, roundAtClick, candidateAtClick, 15000);
+                        } catch (err) {
+                            toast('⛔ ' + (err && err.message ? err.message : String(err)), 'warning');
+                            return;
+                        }
+                        if (selectedPoint !== pointAtClick || selectedRound !== roundAtClick ||
+                            (isEvaluationPoint(pt) && selectedEvalAp !== candidateAtClick) || !isCase3()) {
+                            toast('ℹ️ จุด/รอบเปลี่ยนระหว่างรอสแกน ระบบไม่ได้บันทึกข้อมูลผิดจุด', 'warning');
+                            return;
+                        }
+                        id = scanId(sample);
+                        age = scanAgeSeconds(sample);
+                    }
+                    // A valid, unused scan is required. Never bypass this safeguard.
+                    if (!id || age > C3_STALE_SEC || scanAlreadyUsed(id, pointAtClick, roundAtClick, candidateAtClick)) {
+                        toast('⛔ ยังไม่มีสแกนใหม่ที่ใช้ได้ ตรวจ WiFi_Scan/current: timestamp / scan_sequence', 'warning'); return;
+                    }
+                    if (!bssidMatch(sample)) { toast('⛔ BSSID ไม่ตรงกับ Controlled AP ที่กำหนดใน ESP32', 'warning'); return; }
+                    if (!channelMatch(sample)) { toast('⛔ Channel ไม่ตรงกับค่าที่ล็อกไว้ใน ESP32/AP', 'warning'); return; }
+                    var r24 = numberOrNull(sample.rssi_24g), r5 = numberOrNull(sample.rssi_5g);
+                    if (r24 === null || r5 === null || r24 <= -127 || r5 <= -127) { toast('⛔ RSSI ไม่ครบทั้งสอง band', 'warning'); return; }
+                    if (pointRoundDone(pt, roundAtClick, candidate) && !confirm((candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ' + roundAtClick + ' มีข้อมูลแล้ว ต้องการแทนด้วย Scan ใหม่หรือไม่?')) return;
+                    var bucket = measurementBucket(pt, candidate);
+                    var oldSample = bucket[roundAtClick];
+                    bucket[roundAtClick] = {
+                        timestamp: Date.now(), sourceScanId: id, sourceScanTimestamp: sample.timestamp || '',
+                        scanSequence: sample.scan_sequence || '', sourceScanAgeSeconds: Number(age.toFixed(3)),
+                        sourceSsid: targetSsid(), rssi24: r24, rssi5: r5,
+                        observedBssid24: observedBssid(sample, '24'), observedBssid5: observedBssid(sample, '5'),
+                        channel24: numberOrNull(sample.channel_24g), channel5: numberOrNull(sample.channel_5g)
+                    };
+                    recalc(pt, candidate);
+                    var saved = await savePoint(pt, false, candidate);
+                    if (!saved) { bucket[roundAtClick] = oldSample; recalc(pt, candidate); return; }
+                    lastAcceptedScanId = id;
+                    toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ' + roundAtClick + ' = 2.4 ' + r24 + ' dBm / 5G ' + r5 + ' dBm', 'success');
+                    if (pointStatus(pt, candidate) === 'COMPLETE') toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ครบ R1/R2/R3 แล้ว', 'success');
+                    renderAll();
+                } finally {
+                    c3MeasurementPending = false;
+                }
             };
 
             C3.clearRound = async function () {
@@ -13640,6 +13752,7 @@
                 var progressTotal = selectedStage === 'E' ? TOTAL_EVAL_POINTS : TOTAL_POINTS;
                 html += '<div class="c3-progress-line"><div style="width:' + (progressDone / progressTotal * 100) + '%"></div></div><div class="c3-v9-progress">ครบ ' + progressDone + '/' + progressTotal + ' จุด · RSSI records ' + completedRssiRecordCount() + '/' + EXPECTED_CASE3_RSSI_RECORDS + '</div>';
                 html += '<div class="c3-action-row c3-v9-tools"><button class="c3-secondary-btn" onclick="C3.openModal(\'config\')">Config</button><button class="c3-secondary-btn" onclick="C3.openModal(\'data\')">Data</button></div>';
+                html += '<div class="c3-v7-sub" style="font-size:10px;margin-top:6px;overflow-wrap:anywhere;">Scan ล่าสุด: ' + esc(id || 'ไม่มี ID') + ' · อายุ ' + (Number.isFinite(age) ? age.toFixed(1) : '—') + 's · ' + (unique ? 'ยังไม่ถูกใช้' : 'ใช้แล้ว/รอใหม่') + '</div>';
                 html += '<button class="c3-open-editor-btn" onclick="C3.toggleEditor()">เปิด Editor</button>';
                 html += '</div></div>';
                 box.innerHTML = html;
@@ -14459,7 +14572,7 @@
                     var all = materialPoints[key].samples || {};
                     return Object.keys(all).some(function (o) {
                         return Object.keys(all[o] || {}).some(function (r) {
-                            return String((all[o][r] || {}).sourceScanId || '') === String(id);
+                            return sameRecordedScan(all[o][r] || {}, id);
                         });
                     });
                 });
