@@ -10923,6 +10923,18 @@
                 var state = c3RayCabinetState(apPos, pt);
                 if (state.blocked.length) {
                     var names = Array.from(new Set(state.blocked));
+                    // Steel-obstructed Room10 Calibration / Validation points are
+                    // recordable after explicit field confirmation. Other failures
+                    // (door crossing, invalid AP/location, etc.) remain blocked.
+                    if (pt.environment === 'Room10' && !isEvaluationPoint(pt)) {
+                        return Object.assign({}, base, {
+                            ok: true, warning: true, cabinetBlocked: true,
+                            cabinetNames: names, requiresCabinetAck: true,
+                            oneWallCalibrationEligible: false,
+                            label: base.label + ' · AP→RX ตัดตู้เหล็ก 3D (' + names.join(', ') + ')' +
+                                ' — เก็บ RSSI ได้เมื่อยืนยันหน้างาน; ตัดออกจาก One-Wall Fit'
+                        });
+                    }
                     return { ok: false, label: 'เส้น AP→RX ผ่านปริมาตรตู้เหล็ก 3D: ' + names.join(', ') + ' — ต้องตรวจ/ย้ายจุด', kw: null, los: '', cabinetBlocked: true };
                 }
                 if (state.unknown.length) {
@@ -10939,6 +10951,16 @@
                 return base;
             }
 
+            // Explicit acknowledgement belongs to one point + one measurement round.
+            // Selection changes and successful captures cannot silently reuse consent.
+            var c3SteelCaptureAck = null;
+            function c3SteelAckKey(pt, candidate) {
+                return pt ? pt.pointId + '|' + selectedRound + '|' + (candidate || '') : '';
+            }
+            function c3SteelAckValid(pt, candidate) {
+                return !!pt && !!c3SteelCaptureAck &&
+                    c3SteelCaptureAck.key === c3SteelAckKey(pt, candidate);
+            }
             function c3SingleWallPath(apPos, px, py, includeFurniture) {
                 var rw = Number(layout.roomWidth), rd = Number(layout.roomDepth);
                 if (!apPos || ![apPos.x, apPos.y, rw, rd, px, py].every(function (v) { return v !== null && Number.isFinite(Number(v)); })) return { ok: false, label: 'พิกัด AP/RX ไม่พร้อม' };
@@ -11270,7 +11292,13 @@
                     var avg = recalc(pt);
                     var y = band === '24' ? numberOrNull(avg.rssi24) : numberOrNull(avg.rssi5);
                     var dst = distance(pt), gs = geometryState(pt);
-                    if (y === null || dst.d3 === null || !(Number(dst.d3) > 0) || !gs.ok) return;
+                    // Steel-obstructed observations remain in Firebase / exports but
+                    // are not confused with clean one-wall path samples during fit
+                    // or baseline validation model-comparison metrics.
+                    var recordedSteel = ['R1', 'R2', 'R3'].some(function (round) {
+                        return measurementBucket(pt)[round] && measurementBucket(pt)[round].cabinetBlocked === true;
+                    });
+                    if (y === null || dst.d3 === null || !(Number(dst.d3) > 0) || !gs.ok || gs.cabinetBlocked || recordedSteel) return;
                     out.push({
                         pointId: d.id,
                         y: Number(y),
@@ -11967,13 +11995,13 @@
             function renderDataTable() {
                 var box = document.getElementById('c3-data-table-wrap'); if (!box) return;
                 syncEvaluationCoordinates();
-                var headers = ['Point', 'Set', 'AP', 'Source', 'Kw', 'X', 'Y', 'Z', '2D', '3D', '2.4 R1', 'R2', 'R3', 'Avg', '5G R1', 'R2', 'R3', 'Avg', 'Status'];
+                var headers = ['Point', 'Set', 'AP', 'Source', 'Kw', 'X', 'Y', 'Z', '2D', '3D', '2.4 R1', 'R2', 'R3', 'Avg', '5G R1', 'R2', 'R3', 'Avg', 'Obstruction', 'Status'];
                 var html = '<table><thead><tr>' + headers.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>';
                 var defs = selectedStage === 'E' ? EVAL_POINT_DEFS : POINT_DEFS;
                 defs.forEach(function (d) {
                     var pt = points[d.id], candidate = isEvaluationPoint(pt) ? selectedEvalAp : null, dst = distance(pt, candidate), gs = geometryState(pt, candidate), avg = recalc(pt, candidate), bucket = measurementBucket(pt, candidate);
                     function rr(r, k) { var m = bucket[r] || {}; return Number.isFinite(Number(m[k])) ? Number(m[k]).toFixed(1) : '-'; }
-                    html += '<tr><td><b>' + pt.pointId + '</b></td><td>' + pt.setType + '</td><td>' + (isEvaluationPoint(pt) ? ('AP-' + candidate) : 'AP-CAL') + '</td><td>' + (pt.sourcePoint || '-') + '</td><td>' + (gs.kw === null || gs.kw === undefined ? pt.wallCount : gs.kw) + '</td><td>' + (pt.x === null ? '-' : Number(pt.x).toFixed(2)) + '</td><td>' + (pt.y === null ? '-' : Number(pt.y).toFixed(2)) + '</td><td>' + Number(pt.z).toFixed(2) + '</td><td>' + (dst.d2 === null ? '-' : dst.d2.toFixed(2)) + '</td><td>' + (dst.d3 === null ? '-' : dst.d3.toFixed(2)) + '</td><td>' + rr('R1', 'rssi24') + '</td><td>' + rr('R2', 'rssi24') + '</td><td>' + rr('R3', 'rssi24') + '</td><td>' + (avg.rssi24 === null ? '-' : avg.rssi24.toFixed(1)) + '</td><td>' + rr('R1', 'rssi5') + '</td><td>' + rr('R2', 'rssi5') + '</td><td>' + rr('R3', 'rssi5') + '</td><td>' + (avg.rssi5 === null ? '-' : avg.rssi5.toFixed(1)) + '</td><td>' + pointStatus(pt, candidate) + '</td></tr>';
+                    html += '<tr><td><b>' + pt.pointId + '</b></td><td>' + pt.setType + '</td><td>' + (isEvaluationPoint(pt) ? ('AP-' + candidate) : 'AP-CAL') + '</td><td>' + (pt.sourcePoint || '-') + '</td><td>' + (gs.kw === null || gs.kw === undefined ? pt.wallCount : gs.kw) + '</td><td>' + (pt.x === null ? '-' : Number(pt.x).toFixed(2)) + '</td><td>' + (pt.y === null ? '-' : Number(pt.y).toFixed(2)) + '</td><td>' + Number(pt.z).toFixed(2) + '</td><td>' + (dst.d2 === null ? '-' : dst.d2.toFixed(2)) + '</td><td>' + (dst.d3 === null ? '-' : dst.d3.toFixed(2)) + '</td><td>' + rr('R1', 'rssi24') + '</td><td>' + rr('R2', 'rssi24') + '</td><td>' + rr('R3', 'rssi24') + '</td><td>' + (avg.rssi24 === null ? '-' : avg.rssi24.toFixed(1)) + '</td><td>' + rr('R1', 'rssi5') + '</td><td>' + rr('R2', 'rssi5') + '</td><td>' + rr('R3', 'rssi5') + '</td><td>' + (avg.rssi5 === null ? '-' : avg.rssi5.toFixed(1)) + '</td><td>' + (gs.cabinetBlocked ? 'STEEL 3D' : (gs.furniturePotential ? 'Furniture? 2D' : 'Clear')) + '</td><td>' + pointStatus(pt, candidate) + '</td></tr>';
                 });
                 html += '</tbody></table>';
                 if (selectedStage === 'E') html = '<div style="font-size:10px;color:#475569;margin-bottom:7px;text-align:left;"><b>Final Evaluation AP-' + selectedEvalAp + '</b> · E01–E12 ใช้พิกัด Validation เดิม · Final Model 2.4=' + esc(evaluationSetup.model24 || '-') + ' · 5G=' + esc(evaluationSetup.model5 || '-') + '</div>' + html;
@@ -12056,6 +12084,9 @@
                     geometryVersion: C3_GEOMETRY_VERSION, pointId: pt.pointId, projectCase: 'Case3', experiment: isEvaluationPoint(pt) ? 'Controlled AP Final Evaluation' : 'Controlled AP Testbed Calibration',
                     setType: pt.setType, environment: pt.environment, wallCount: (gs.kw === null || gs.kw === undefined ? pt.wallCount : gs.kw), losType: gs.los || pt.losType,
                     referenceP: pt.referenceP || '', sourceValidationPoint: pt.sourcePoint || '', fieldNote: pt.fieldNote || '', geometryAutoCheck: gs.label, geometryAutoValid: !!gs.ok, furnitureFootprintOnRay2D: !!gs.furniturePotential,
+                    cabinetBlocked: !!gs.cabinetBlocked, cabinetObstacleNames: (gs.cabinetNames || []),
+                    oneWallCalibrationEligible: !!gs.ok && !gs.cabinetBlocked,
+                    obstructionType: gs.cabinetBlocked ? 'steel_direct_3d' : (gs.furniturePotential ? 'furniture_2d_possible' : 'none'),
                     xMeters: pt.x, yMeters: pt.y, zMeters: pt.z, apPosition: isEvaluationPoint(pt) ? candidate : 'AP-CAL',
                     apX: a ? a.x : null, apY: a ? a.y : null, apZ: a ? a.z : null, distance2D: dst.d2, distance3D: dst.d3,
                     deviceConfigSnapshot: { targetSsid: targetSsid(), targetBssid24: target24(), targetBssid5: target5(), channel24: expectedCh24(), channel5: expectedCh5(), width24: cfgValue(['channel_width_24g'], '-'), width5: cfgValue(['channel_width_5g'], '-'), txPower: cfgValue(['tx_power_label'], '-'), orientation: cfgValue(['ap_orientation'], '-'), firmwareVersion: cfgValue(['firmware_version'], '-') },
@@ -12369,6 +12400,16 @@
             }
 
             var C3 = {};
+            C3.setSteelCaptureAck = function (checked) {
+                var pt = points[selectedPoint];
+                var gs = pt ? geometryState(pt, selectedStage === 'E' ? selectedEvalAp : null) : null;
+                if (!checked || !gs || !gs.cabinetBlocked || !gs.ok) {
+                    c3SteelCaptureAck = null;
+                } else {
+                    c3SteelCaptureAck = { key: c3SteelAckKey(pt, ''), confirmedAt: Date.now() };
+                }
+                renderAll();
+            };
             // ============================================================
             // v21 — AP-CAL real sticker at 2D lower end of 214-cm cabinet.
             // The field plan/furniture/door and independent W/VC/VW positions do not move.
@@ -12907,6 +12948,9 @@
                     return;
                 }
                 if (!a || a.x === null || a.y === null || pt.x === null || pt.y === null || !gs.ok) { toast('⛔ ตำแหน่ง/Geometry ยังไม่พร้อม: ' + gs.label, 'warning'); return; }
+                if (gs.cabinetBlocked && !c3SteelAckValid(pt, candidate)) {
+                    toast('⚠️ เส้นผ่านตู้เหล็ก: กรุณาตรวจจุดจริงและติ๊กยืนยันก่อนบันทึก ' + pt.pointId + ' ' + selectedRound, 'warning'); return;
+                }
                 if (typeof db === 'undefined' || !firebaseConnected) { toast('⛔ Firebase ยังไม่เชื่อมต่อ', 'warning'); return; }
                 // Keep selected measurement identity fixed while waiting for fresh data.
                 var pointAtClick = selectedPoint, roundAtClick = selectedRound;
@@ -12947,13 +12991,20 @@
                         scanSequence: sample.scan_sequence || '', sourceScanAgeSeconds: Number(age.toFixed(3)),
                         sourceSsid: targetSsid(), rssi24: r24, rssi5: r5,
                         observedBssid24: observedBssid(sample, '24'), observedBssid5: observedBssid(sample, '5'),
-                        channel24: numberOrNull(sample.channel_24g), channel5: numberOrNull(sample.channel_5g)
+                        channel24: numberOrNull(sample.channel_24g), channel5: numberOrNull(sample.channel_5g),
+                        cabinetBlocked: !!gs.cabinetBlocked,
+                        cabinetObstacleNames: (gs.cabinetNames || []).slice(),
+                        obstructionType: gs.cabinetBlocked ? 'steel_direct_3d' : (gs.furniturePotential ? 'furniture_2d_possible' : 'none'),
+                        oneWallCalibrationEligible: !!gs.ok && !gs.cabinetBlocked,
+                        cabinetFieldConfirmedAt: gs.cabinetBlocked && c3SteelAckValid(pt, candidate) ? c3SteelCaptureAck.confirmedAt : null,
+                        geometryCheckedAtCapture: gs.label
                     };
                     recalc(pt, candidate);
                     var saved = await savePoint(pt, false, candidate);
                     if (!saved) { bucket[roundAtClick] = oldSample; recalc(pt, candidate); return; }
                     lastAcceptedScanId = id;
-                    toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ' + roundAtClick + ' = 2.4 ' + r24 + ' dBm / 5G ' + r5 + ' dBm', 'success');
+                    if (gs.cabinetBlocked) c3SteelCaptureAck = null; // require fresh confirmation for a new capture
+                    toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ' + roundAtClick + ' = 2.4 ' + r24 + ' dBm / 5G ' + r5 + ' dBm' + (gs.cabinetBlocked ? ' · STEEL OBSTRUCTED (ไม่ใช้ One-Wall Fit)' : ''), 'success');
                     if (pointStatus(pt, candidate) === 'COMPLETE') toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ครบ R1/R2/R3 แล้ว', 'success');
                     renderAll();
                 } finally {
@@ -12983,7 +13034,7 @@
             C3.exportJson = function () { var blob = new Blob([JSON.stringify(backupObject(), null, 2)], { type: 'application/json;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = 'Case3_Hybrid_468MainRSSI_Backup_' + profile() + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); };
             C3.exportCsv = function () {
                 syncEvaluationCoordinates();
-                var rows = [['Stage', 'APPosition', 'CandidateSource', 'PointID', 'SourcePoint', 'SetType', 'Environment', 'Kw', 'LOS_NLOS', 'X_m', 'Y_m', 'Z_m', 'AP_X_m', 'AP_Y_m', 'AP_Z_m', 'Distance2D_m', 'Distance3D_m', 'Geometry', 'FinalModel24', 'FinalModel5', 'PredictedRSSI24_dBm', 'PredictedRSSI5_dBm', 'MeasuredAvg24_dBm', 'MeasuredAvg5_dBm', 'Error24_PredMinusMeasured_dB', 'Error5_PredMinusMeasured_dB', 'TargetSSID', 'TargetBSSID24', 'TargetBSSID5', 'ExpectedCh24', 'ExpectedCh5', 'Width24', 'Width5', 'TXPower', 'Orientation', 'RSSI24_R1', 'RSSI24_R2', 'RSSI24_R3', 'RSSI24_Avg', 'RSSI5_R1', 'RSSI5_R2', 'RSSI5_R3', 'RSSI5_Avg', 'R1_ScanId', 'R2_ScanId', 'R3_ScanId', 'Status']];
+                var rows = [['Stage', 'APPosition', 'CandidateSource', 'PointID', 'SourcePoint', 'SetType', 'Environment', 'Kw', 'LOS_NLOS', 'X_m', 'Y_m', 'Z_m', 'AP_X_m', 'AP_Y_m', 'AP_Z_m', 'Distance2D_m', 'Distance3D_m', 'Geometry', 'FinalModel24', 'FinalModel5', 'PredictedRSSI24_dBm', 'PredictedRSSI5_dBm', 'MeasuredAvg24_dBm', 'MeasuredAvg5_dBm', 'Error24_PredMinusMeasured_dB', 'Error5_PredMinusMeasured_dB', 'TargetSSID', 'TargetBSSID24', 'TargetBSSID5', 'ExpectedCh24', 'ExpectedCh5', 'Width24', 'Width5', 'TXPower', 'Orientation', 'RSSI24_R1', 'RSSI24_R2', 'RSSI24_R3', 'RSSI24_Avg', 'RSSI5_R1', 'RSSI5_R2', 'RSSI5_R3', 'RSSI5_Avg', 'R1_ScanId', 'R2_ScanId', 'R3_ScanId', 'CabinetBlocked3D', 'CabinetNames', 'ObstructionType', 'OneWallCalibrationEligible', 'R1_SteelConfirmedAt', 'R2_SteelConfirmedAt', 'R3_SteelConfirmedAt', 'Status']];
                 function appendRow(pt, candidate) {
                     var isEval = isEvaluationPoint(pt), a = isEval ? candidateAps[candidate] : ap, dst = distance(pt, candidate), gs = geometryState(pt, candidate), avg = recalc(pt, candidate), bucket = measurementBucket(pt, candidate);
                     function rr(r, k) { var m = bucket[r] || {}; return m[k] === undefined || m[k] === null ? '' : m[k]; }
@@ -13021,6 +13072,10 @@
                         rr('R1', 'rssi24'), rr('R2', 'rssi24'), rr('R3', 'rssi24'), avg.rssi24 === null ? '' : avg.rssi24,
                         rr('R1', 'rssi5'), rr('R2', 'rssi5'), rr('R3', 'rssi5'), avg.rssi5 === null ? '' : avg.rssi5,
                         rr('R1', 'sourceScanId'), rr('R2', 'sourceScanId'), rr('R3', 'sourceScanId'),
+                        !!gs.cabinetBlocked, (gs.cabinetNames || []).join(' | '),
+                        gs.cabinetBlocked ? 'steel_direct_3d' : (gs.furniturePotential ? 'furniture_2d_possible' : 'none'),
+                        !!gs.ok && !gs.cabinetBlocked,
+                        rr('R1', 'cabinetFieldConfirmedAt'), rr('R2', 'cabinetFieldConfirmedAt'), rr('R3', 'cabinetFieldConfirmedAt'),
                         pointStatus(pt, candidate)
                     ]);
                 }
@@ -13613,7 +13668,8 @@
                     candidateAps[selectedEvalAp].placementConfirmed
                 );
                 var evalGate = selectedStage !== 'E' || (evaluationReady() && evaluationSetup.candidateGenerated && physicalOk);
-                var measureReady = cfgOk && firebaseConnected && fresh && unique && bOk && cOk && posOk && evalGate && physicalOk && !legacyGeometryBlocked;
+                var steelNeedsAck = !!(gs.cabinetBlocked && gs.ok && !c3SteelAckValid(pt, selectedStage === 'E' ? selectedEvalAp : null));
+                var measureReady = cfgOk && firebaseConnected && fresh && unique && bOk && cOk && posOk && evalGate && physicalOk && !legacyGeometryBlocked && !steelNeedsAck;
                 var d3 = dst.d3 === null ? '-' : dst.d3.toFixed(2) + ' m';
 
                 var html = '<div id="c3-control-root">';
@@ -13735,6 +13791,16 @@
                 html += '<div class="c3-v9-current"><b>' + activeApLabel() + ' · ' + selectedPoint + ' · ' + roundLabel + '</b><span>d3D ' + d3 + ' · RSSI ' + rssi(selectedDisplay) + '</span></div>';
                 html += '<div class="c3-utility-row"><button type="button" class="c3-secondary-btn" onclick="C3.openFieldGuide()">จุดจริง 42 จุด</button><button type="button" class="c3-secondary-btn" onclick="C3.togglePlanGrid()">Grid 1 m · ' + (c3ShowGrid ? 'เปิด' : 'ปิด') + '</button></div>';
 
+                if (gs.cabinetBlocked && gs.ok && selectedStage !== 'E') {
+                    html += '<div style="margin:9px 0;padding:10px;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:10px;font-size:12px;line-height:1.5;text-align:left;">' +
+                        '<b>⚠️ ' + esc(selectedPoint) + ': พบแนวตู้เหล็กบังสัญญาณ</b><br>' +
+                        'แนว AP-CAL→RX ตัดตู้เหล็ก 3D: ' + esc((gs.cabinetNames || []).join(', ')) +
+                        '<br>เก็บ RSSI จริงได้ แต่จุดนี้จะไม่ถูกรวมใน One-Wall Model Fit / baseline Validation metrics.' +
+                        '<label style="display:flex;align-items:flex-start;gap:9px;margin-top:9px;cursor:pointer;font-weight:700;">' +
+                        '<input type="checkbox" onchange="C3.setSteelCaptureAck(this.checked)" ' + (c3SteelAckValid(pt, null) ? 'checked ' : '') +
+                        'style="width:20px;height:20px;min-width:20px;accent-color:#b45309;">' +
+                        '<span>ตรวจสอบจุดจริงแล้ว และยืนยันเก็บ RSSI ที่ตำแหน่งนี้ในรอบ ' + esc(selectedRound) + '</span></label></div>';
+                }
                 if (c3AverageMode) {
                     html += '<div class="c3-average-note">เฉลี่ย RSSI จาก R1–R3 ของ ' + activeApLabel() + ' · ครบ ' + roundCount(pt, selectedStage === 'E' ? selectedEvalAp : null) + '/3 รอบ</div>';
                     html += '<button class="c3-main-measure" disabled>โหมดเฉลี่ย — ดูผลเท่านั้น</button>';
