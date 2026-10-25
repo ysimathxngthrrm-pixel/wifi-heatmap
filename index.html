@@ -2648,10 +2648,8 @@
                 </div>
                 <div class="c3-ds-sub" id="c3-ds-summary">กำลังตรวจ Firebase และข้อมูลจาก ESP32-C5…</div>
                 <div class="c3-ds-readings">
-                    <div class="c3-ds-reading"><span>2.4 GHz</span><strong id="c3-ds-rssi24">—</strong><small
-                            id="c3-ds-ch24">CH —</small></div>
-                    <div class="c3-ds-reading"><span>5 GHz</span><strong id="c3-ds-rssi5">—</strong><small
-                            id="c3-ds-ch5">CH —</small></div>
+                    <div class="c3-ds-reading"><span>2.4 GHz</span><strong id="c3-ds-rssi24">—</strong><small id="c3-ds-ch24">CH —</small></div>
+                    <div class="c3-ds-reading"><span>5 GHz</span><strong id="c3-ds-rssi5">—</strong><small id="c3-ds-ch5">CH —</small></div>
                 </div>
                 <div class="c3-ds-checks" id="c3-ds-checks">Firebase — · Scan — · BSSID — · Channel —</div>
                 <div class="c3-ds-meta" id="c3-ds-meta">ยังไม่มีข้อมูลสแกน</div>
@@ -10094,25 +10092,21 @@
                     var looksRelevant = fid === 'C3CAB_20261022_T' ||
                         (/ตู้|cabinet|steel/i.test(name) && (isNearCorridor || f.area === 'corridor')) ||
                         (isNearCorridor && Math.abs(z - 2.14) < .15);
-                    if (looksRelevant) evidence.push({
-                        id: fid, name: name, area: String(f.area || ''),
-                        depth: len, zTop: z, y: y, valid: reason.length === 0, reasons: reason
-                    });
+                    if (looksRelevant) evidence.push({id:fid,name:name,area:String(f.area || ''),
+                        depth:len,zTop:z,y:y,valid:reason.length===0,reasons:reason});
                     if (!reason.length) {
-                        candidates.push({
-                            id: fid, name: name || 'ตู้สูง 214 ซม.', top: y,
-                            bottom: Number((y + len).toFixed(3)), depth: len, zTop: z, x: x, width: w,
-                            source: fid === 'C3CAB_20261022_T' ? 'survey-id' : 'verified-geometry'
-                        });
+                        candidates.push({id:fid,name:name || 'ตู้สูง 214 ซม.',top:y,
+                            bottom:Number((y+len).toFixed(3)),depth:len,zTop:z,x:x,width:w,
+                            source:fid === 'C3CAB_20261022_T' ? 'survey-id' : 'verified-geometry'});
                     }
                 });
                 var exact = candidates.filter(function (c) { return c.id === 'C3CAB_20261022_T'; });
                 var selected = null, reason = '';
                 if (exact.length === 1 && candidates.length === 1) selected = exact[0];
                 else if (exact.length === 0 && candidates.length === 1) selected = candidates[0];
-                else if (candidates.length > 1) reason = 'พบตู้ที่ผ่านเกณฑ์หลายชิ้น (' + candidates.length + ') จึงไม่เลือกแทนคุณอัตโนมัติ';
+                else if (candidates.length > 1) reason = 'พบตู้ที่ผ่านเกณฑ์หลายชิ้น ('+candidates.length+') จึงไม่เลือกแทนคุณอัตโนมัติ';
                 else reason = 'ยังไม่มีตู้สูง 214 ซม. ที่มีขนาด, ระดับ Z และพิกัดในโปรไฟล์ครบ';
-                return { selected: selected, reason: reason, evidence: evidence, candidates: candidates };
+                return {selected:selected,reason:reason,evidence:evidence,candidates:candidates};
             }
             function c3TallCabinetDatum() {
                 return c3TallCabinetScan().selected;
@@ -12202,7 +12196,7 @@
                     c3ApFieldPreview = null;
                     apCalAutoMigrationSaved = !!sn[1].exists() && apCalMatchesPlan();
                     if (apCalPlacementConfirmed && !apCalMatchesPlan()) unconfirmApCal();
-                    selectedRound = firstOpenRound(points[selectedPoint], selectedStage === 'E' ? selectedEvalAp : null);
+                    // Keep the manually selected R1/R2/R3 when Firebase refreshes.
                     renderAll();
                 }).catch(function (e) { console.error(e); toast('⚠️ อ่านข้อมูล Case 3 จาก Firebase ไม่สำเร็จ', 'warning'); renderAll(); });
             }
@@ -12354,145 +12348,139 @@
             // ============================================================
             function c3ApFieldFingerprint() {
                 var tall = c3TallCabinetDatum();
-                return JSON.stringify({
-                    cab: tall, room: [layout.roomWidth, layout.roomDepth, layout.corridorWidth, layout.corridorTestLength],
-                    ap: [ap.x, ap.y, ap.z], los: Array.from({ length: 10 }, function (_, i) {
-                        var p = points['L' + String(i + 1).padStart(2, '0')]; return [p.x, p.y, p.z];
-                    })
-                });
+                return JSON.stringify({ cab: tall, room: [layout.roomWidth, layout.roomDepth, layout.corridorWidth, layout.corridorTestLength],
+                    ap: [ap.x, ap.y, ap.z], los: Array.from({length:10}, function (_,i) {
+                        var p=points['L'+String(i+1).padStart(2,'0')]; return [p.x,p.y,p.z];
+                    }) });
             }
             function c3ApFieldPlan() {
                 var tall = c3TallCabinetDatum();
-                if (!tall) return { ok: false, error: 'ไม่สามารถยืนยันขอบตู้สูงได้: ' + c3TallCabinetScan().reason + ' — ยังไม่ย้าย AP หรือจุดวัด' };
-                if (!layoutReady()) return { ok: false, error: 'ยังไม่ยืนยัน Layout ห้อง/ประตู กรุณาตรวจการตั้งค่าก่อน' };
-                if (anyMeasurementExists() || legacyGeometryBlocked) return { ok: false, error: 'มีข้อมูลวัดแล้วหรือ Geometry เก่า — ห้ามย้าย AP หรือจุด L' };
-                var newAp = { x: 9.15, y: tall.bottom, z: 2.60 };
-                if (ap.y !== null && Number.isFinite(Number(ap.y)) &&
+                if (!tall) return { ok:false, error:'ไม่สามารถยืนยันขอบตู้สูงได้: ' + c3TallCabinetScan().reason + ' — ยังไม่ย้าย AP หรือจุดวัด' };
+                if (!layoutReady()) return { ok:false, error:'ยังไม่ยืนยัน Layout ห้อง/ประตู กรุณาตรวจการตั้งค่าก่อน' };
+                if (anyMeasurementExists() || legacyGeometryBlocked) return { ok:false, error:'มีข้อมูลวัดแล้วหรือ Geometry เก่า — ห้ามย้าย AP หรือจุด L' };
+                var newAp={x:9.15,y:tall.bottom,z:2.60};
+                if(ap.y !== null && Number.isFinite(Number(ap.y)) &&
                     newAp.y < Number(ap.y) - .025)
-                    return { ok: false, error: 'ปลายล่างตู้ตาม Geometry อยู่เหนือหมุด AP เดิม ซึ่งขัดกับสติกเกอร์หน้างาน — กรุณาตรวจแนวตู้สูงใน Editor ก่อน ไม่ย้าย AP ขึ้นโดยอัตโนมัติ' };
-                var rw = Number(layout.roomWidth), cw = Number(layout.corridorWidth), rd = Number(layout.roomDepth), cl = Number(layout.corridorTestLength) || rd;
-                if (!(newAp.x >= rw && newAp.x <= rw + cw && newAp.y >= 0 && newAp.y <= Math.max(rd, cl)))
-                    return { ok: false, error: 'พิกัดสติกเกอร์ไม่อยู่ใน Corridor กรุณาตรวจข้อมูลตู้และขนาดห้อง' };
-                var ls = Array.from({ length: 10 }, function (_, i) { return points['L' + String(i + 1).padStart(2, '0')]; });
-                if (ls.some(function (p) { return !p || !Number.isFinite(Number(p.x)) || !Number.isFinite(Number(p.y)) }))
-                    return { ok: false, error: 'จุด L01–L10 ไม่ครบ ต้องตรวจพิกัดในโปรไฟล์ก่อน' };
+                    return {ok:false,error:'ปลายล่างตู้ตาม Geometry อยู่เหนือหมุด AP เดิม ซึ่งขัดกับสติกเกอร์หน้างาน — กรุณาตรวจแนวตู้สูงใน Editor ก่อน ไม่ย้าย AP ขึ้นโดยอัตโนมัติ'};
+                var rw=Number(layout.roomWidth), cw=Number(layout.corridorWidth), rd=Number(layout.roomDepth), cl=Number(layout.corridorTestLength)||rd;
+                if (!(newAp.x>=rw && newAp.x<=rw+cw && newAp.y>=0 && newAp.y<=Math.max(rd,cl)))
+                    return {ok:false,error:'พิกัดสติกเกอร์ไม่อยู่ใน Corridor กรุณาตรวจข้อมูลตู้และขนาดห้อง'};
+                var ls=Array.from({length:10},function(_,i){return points['L'+String(i+1).padStart(2,'0')];});
+                if(ls.some(function(p){return !p || !Number.isFinite(Number(p.x)) || !Number.isFinite(Number(p.y))}))
+                    return {ok:false,error:'จุด L01–L10 ไม่ครบ ต้องตรวจพิกัดในโปรไฟล์ก่อน'};
                 // Move LOS only if the nearest point has <0.75m 2D clearance to the NEW AP.
-                var shift = ls.some(function (p) { return Math.hypot(Number(p.x) - newAp.x, Number(p.y) - newAp.y) < .75 || Number(p.y) <= newAp.y; });
-                var end = Math.min(6.80, cl - .30, rd - .20);
-                var first = newAp.y + .80;
-                if (shift && end - first < 3.0) return { ok: false, error: 'Corridor ไม่ยาวพอให้จัดจุด LOS หลัง AP อย่างปลอดภัย ห้ามย่อระยะโดยอัตโนมัติ' };
-                var los = ls.map(function (p, i) {
-                    return {
-                        id: p.pointId, oldX: Number(p.x), oldY: Number(p.y), x: Number(p.x),
-                        y: shift ? Number((first + (end - first) * i / 9).toFixed(3)) : Number(p.y), z: Number(p.z)
-                    };
+                var shift=ls.some(function(p){return Math.hypot(Number(p.x)-newAp.x, Number(p.y)-newAp.y)<.75 || Number(p.y)<=newAp.y;});
+                var end=Math.min(6.80,cl-.30,rd-.20);
+                var first=newAp.y+.80;
+                if(shift && end-first<3.0) return {ok:false,error:'Corridor ไม่ยาวพอให้จัดจุด LOS หลัง AP อย่างปลอดภัย ห้ามย่อระยะโดยอัตโนมัติ'};
+                var los=ls.map(function(p,i){return {id:p.pointId,oldX:Number(p.x),oldY:Number(p.y),x:Number(p.x),
+                    y:shift ? Number((first + (end-first)*i/9).toFixed(3)) : Number(p.y),z:Number(p.z)};});
+                if (los.some(function(p){return p.x<rw || p.x>rw+cw || p.y<0 || p.y>cl}))
+                    return {ok:false,error:'จุด LOS ใหม่อยู่นอก Corridor'};
+                var rx=POINT_DEFS.filter(function(p){return /^W|^VC|^VW/.test(p.id);}).map(function(p){
+                    var q=points[p.id],oldD=q && q.x!==null && q.y!==null && ap.x!==null && ap.y!==null ?
+                        Math.hypot(Number(q.x)-Number(ap.x),Number(q.y)-Number(ap.y),Number(q.z)-Number(ap.z)) : null;
+                    var d2=q && q.x!==null && q.y!==null ? Math.hypot(Number(q.x)-newAp.x,Number(q.y)-newAp.y) : null;
+                    var d3=d2===null ? null : Math.hypot(d2,Number(q.z)-newAp.z);
+                    return {id:p.id,from3D:oldD,to2D:d2,to3D:d3,x:q.x,y:q.y};
                 });
-                if (los.some(function (p) { return p.x < rw || p.x > rw + cw || p.y < 0 || p.y > cl }))
-                    return { ok: false, error: 'จุด LOS ใหม่อยู่นอก Corridor' };
-                var rx = POINT_DEFS.filter(function (p) { return /^W|^VC|^VW/.test(p.id); }).map(function (p) {
-                    var q = points[p.id], oldD = q && q.x !== null && q.y !== null && ap.x !== null && ap.y !== null ?
-                        Math.hypot(Number(q.x) - Number(ap.x), Number(q.y) - Number(ap.y), Number(q.z) - Number(ap.z)) : null;
-                    var d2 = q && q.x !== null && q.y !== null ? Math.hypot(Number(q.x) - newAp.x, Number(q.y) - newAp.y) : null;
-                    var d3 = d2 === null ? null : Math.hypot(d2, Number(q.z) - newAp.z);
-                    return { id: p.id, from3D: oldD, to2D: d2, to3D: d3, x: q.x, y: q.y };
-                });
-                return { ok: true, tall: tall, ap: newAp, los: los, rx: rx, shiftLos: shift, fingerprint: c3ApFieldFingerprint() };
+                return {ok:true,tall:tall,ap:newAp,los:los,rx:rx,shiftLos:shift,fingerprint:c3ApFieldFingerprint()};
             }
             C3.previewApSticker = function () {
-                c3ApFieldPreview = c3ApFieldPlan();
-                if (!c3ApFieldPreview.ok) toast('⚠️ ' + c3ApFieldPreview.error, 'warning');
+                c3ApFieldPreview=c3ApFieldPlan();
+                if(!c3ApFieldPreview.ok) toast('⚠️ '+c3ApFieldPreview.error,'warning');
                 renderAll();
             };
-            C3.clearApStickerPreview = function () { c3ApFieldPreview = null; renderAll(); };
+            C3.clearApStickerPreview = function () { c3ApFieldPreview=null;renderAll(); };
             function c3ApStickerHtml() {
-                var tall = c3TallCabinetDatum(), h = '<div style="margin:8px 0;padding:9px;border:1px solid #99d5d0;border-radius:10px;background:#f4faf9;font-size:10px;line-height:1.55;text-align:left;">';
-                h += '<b>📍 ปรับ AP-CAL ตามสติกเกอร์จริง · v22</b><div style="color:#475569;margin:4px 0;">ย้ายเฉพาะ AP-CAL และปรับ L01–L10 หากชิด AP เกินไป; W/VC/VW คงที่แต่คำนวณระยะใหม่</div>';
-                h += '<div>ขอบล่างของตู้สูง 214 ซม. (บนแปลน): <b>' + (tall ? ('Y=' + tall.bottom.toFixed(3) + ' m') : 'ยังอ่านไม่ได้จาก Layout') + '</b></div>';
+                var tall=c3TallCabinetDatum(), h='<div style="margin:8px 0;padding:9px;border:1px solid #99d5d0;border-radius:10px;background:#f4faf9;font-size:10px;line-height:1.55;text-align:left;">';
+                h+='<b>📍 ปรับ AP-CAL ตามสติกเกอร์จริง · v22</b><div style="color:#475569;margin:4px 0;">ย้ายเฉพาะ AP-CAL และปรับ L01–L10 หากชิด AP เกินไป; W/VC/VW คงที่แต่คำนวณระยะใหม่</div>';
+                h+='<div>ขอบล่างของตู้สูง 214 ซม. (บนแปลน): <b>'+(tall ? ('Y='+tall.bottom.toFixed(3)+' m') : 'ยังอ่านไม่ได้จาก Layout')+'</b></div>';
                 if (tall && tall.source === 'verified-geometry')
-                    h += '<div style="color:#0f766e;margin:4px 0;">✅ พบตู้ตามขนาดและ Z ที่บันทึกจริง แม้ ID ไม่ใช่ C3CAB_20261022_T · ' + esc(tall.name) + ' · Y=' + tall.top.toFixed(3) + '..' + tall.bottom.toFixed(3) + ' m</div>';
+                    h+='<div style="color:#0f766e;margin:4px 0;">✅ พบตู้ตามขนาดและ Z ที่บันทึกจริง แม้ ID ไม่ใช่ C3CAB_20261022_T · '+esc(tall.name)+' · Y=' + tall.top.toFixed(3) + '..'+tall.bottom.toFixed(3)+' m</div>';
                 if (!tall) {
-                    var scan = c3TallCabinetScan();
-                    h += '<div style="color:#9a3412;margin:5px 0;">⚠️ ' + esc(scan.reason) + '. ห้ามเลื่อน AP จากภาพอย่างเดียว</div>';
+                    var scan=c3TallCabinetScan();
+                    h+='<div style="color:#9a3412;margin:5px 0;">⚠️ '+esc(scan.reason)+'. ห้ามเลื่อน AP จากภาพอย่างเดียว</div>';
                     if (scan.evidence.length) {
-                        h += '<details style="margin:5px 0;"><summary>ตรวจรายการตู้ใน Layout และสาเหตุไม่ผ่าน (' + scan.evidence.length + ' ชิ้น)</summary><div style="max-height:200px;overflow:auto">';
-                        scan.evidence.slice(0, 12).forEach(function (f) {
-                            h += '<div style="padding:5px;border-bottom:1px solid #ddd;"><b>' + esc(f.name || f.id) + '</b> · ' + esc(f.id) +
-                                ' · Y=' + (Number.isFinite(f.y) ? f.y.toFixed(3) : '-') +
-                                ', ยาว=' + (Number.isFinite(f.depth) ? f.depth.toFixed(3) : '-') +
-                                ', Z Top=' + (Number.isFinite(f.zTop) ? f.zTop.toFixed(3) : '-') +
-                                '<div style="color:' + (f.valid ? '#047857' : '#b45309') + '">' + (f.valid ? 'ผ่านเกณฑ์' : esc(f.reasons.join(' / '))) + '</div></div>';
+                        h+='<details style="margin:5px 0;"><summary>ตรวจรายการตู้ใน Layout และสาเหตุไม่ผ่าน ('+scan.evidence.length+' ชิ้น)</summary><div style="max-height:200px;overflow:auto">';
+                        scan.evidence.slice(0,12).forEach(function(f){
+                            h+='<div style="padding:5px;border-bottom:1px solid #ddd;"><b>'+esc(f.name || f.id)+'</b> · '+esc(f.id)+
+                            ' · Y='+ (Number.isFinite(f.y)?f.y.toFixed(3):'-')+
+                            ', ยาว='+ (Number.isFinite(f.depth)?f.depth.toFixed(3):'-')+
+                            ', Z Top='+ (Number.isFinite(f.zTop)?f.zTop.toFixed(3):'-')+
+                            '<div style="color:'+(f.valid?'#047857':'#b45309')+'">'+(f.valid?'ผ่านเกณฑ์':esc(f.reasons.join(' / ')))+'</div></div>';
                         });
-                        h += '</div></details>';
-                    } else h += '<div style="color:#64748b">ไม่พบวัตถุ Corridor ที่เข้าข่ายตู้สูงใน Layout ที่โหลดจากโปรไฟล์ กรุณาตรวจว่าได้บันทึกเฟอร์นิเจอร์ใน Editor แล้ว</div>';
+                        h+='</div></details>';
+                    } else h+='<div style="color:#64748b">ไม่พบวัตถุ Corridor ที่เข้าข่ายตู้สูงใน Layout ที่โหลดจากโปรไฟล์ กรุณาตรวจว่าได้บันทึกเฟอร์นิเจอร์ใน Editor แล้ว</div>';
                 }
 
-                h += '<button class="c3-secondary-btn" style="width:100%;margin-top:6px;" onclick="C3.previewApSticker()" ' + (anyMeasurementExists() ? 'disabled' : '') + '>ดูตัวอย่างพิกัด AP + ระยะใหม่ (ไม่บันทึก)</button>';
-                var p = c3ApFieldPreview;
-                if (p) {
-                    if (!p.ok) { h += '<div style="color:#b91c1c;margin-top:6px">' + esc(p.error) + '</div>'; }
-                    else {
-                        h += '<div style="margin-top:6px;">AP เดิม (' + Number(ap.x).toFixed(2) + ', ' + Number(ap.y).toFixed(2) + ') → <b>ใหม่ (' + p.ap.x.toFixed(2) + ', ' + p.ap.y.toFixed(3) + ')</b>, Z 2.60 m</div>';
-                        h += '<div>LOS: ' + (p.shiftLos ? 'จัด L01–L10 ให้มีระยะจาก AP เพิ่มขึ้น' : 'คง L01–L10 เพราะไม่มีจุดใกล้ AP เกิน 0.75 m') + '</div>';
-                        h += '<details style="margin-top:5px;"><summary>ตรวจพิกัด LOS ทั้ง 10 จุด</summary><div style="max-height:180px;overflow:auto"><table style="width:100%;font-size:9px;box-shadow:none;margin:3px 0;"><tr><th>จุด</th><th>Y เดิม</th><th>Y ใหม่</th></tr>';
-                        p.los.forEach(function (v) { h += '<tr><td>' + v.id + '</td><td>' + v.oldY.toFixed(2) + '</td><td>' + v.y.toFixed(3) + '</td></tr>'; });
-                        h += '</table></div></details>';
-                        h += '<details style="margin-top:5px;"><summary>ระยะ AP→W/VC/VW ใหม่ ' + p.rx.length + ' จุด (3D)</summary><div style="max-height:250px;overflow:auto"><table style="width:100%;font-size:9px;box-shadow:none;margin:3px 0;"><tr><th>จุด</th><th>ก่อน 3D</th><th>หลัง 3D</th></tr>';
-                        p.rx.forEach(function (v) { h += '<tr><td>' + v.id + '</td><td>' + (v.from3D === null ? '-' : v.from3D.toFixed(2)) + '</td><td>' + (v.to3D === null ? '-' : v.to3D.toFixed(2)) + '</td></tr>'; });
-                        h += '</table></div></details>';
-                        h += '<div style="color:#92400e;margin:6px 0">ตำแหน่งสติกเกอร์อ้างแนวปลายตู้ในภาพ 2D ไม่ใช่ระดับความสูง Z ของตู้ ตรวจตำแหน่งจริงก่อนกดยืนยัน และตรวจเส้นทางผ่านโลหะใหม่หลังปรับ AP</div>';
-                        h += '<button class="c3-secondary-btn" style="width:100%;" onclick="C3.applyApSticker()" ' + (anyMeasurementExists() || !firebaseConnected ? 'disabled' : '') + '>✅ ยืนยันและบันทึก AP + LOS + ระยะลง Firebase</button>';
+                h+='<button class="c3-secondary-btn" style="width:100%;margin-top:6px;" onclick="C3.previewApSticker()" '+(anyMeasurementExists()?'disabled':'')+'>ดูตัวอย่างพิกัด AP + ระยะใหม่ (ไม่บันทึก)</button>';
+                var p=c3ApFieldPreview;
+                if(p){
+                    if(!p.ok){h+='<div style="color:#b91c1c;margin-top:6px">'+esc(p.error)+'</div>';}
+                    else{
+                        h+='<div style="margin-top:6px;">AP เดิม ('+Number(ap.x).toFixed(2)+', '+Number(ap.y).toFixed(2)+') → <b>ใหม่ ('+p.ap.x.toFixed(2)+', '+p.ap.y.toFixed(3)+')</b>, Z 2.60 m</div>';
+                        h+='<div>LOS: '+(p.shiftLos?'จัด L01–L10 ให้มีระยะจาก AP เพิ่มขึ้น':'คง L01–L10 เพราะไม่มีจุดใกล้ AP เกิน 0.75 m')+'</div>';
+                        h+='<details style="margin-top:5px;"><summary>ตรวจพิกัด LOS ทั้ง 10 จุด</summary><div style="max-height:180px;overflow:auto"><table style="width:100%;font-size:9px;box-shadow:none;margin:3px 0;"><tr><th>จุด</th><th>Y เดิม</th><th>Y ใหม่</th></tr>';
+                        p.los.forEach(function(v){h+='<tr><td>'+v.id+'</td><td>'+v.oldY.toFixed(2)+'</td><td>'+v.y.toFixed(3)+'</td></tr>';});
+                        h+='</table></div></details>';
+                        h+='<details style="margin-top:5px;"><summary>ระยะ AP→W/VC/VW ใหม่ '+p.rx.length+' จุด (3D)</summary><div style="max-height:250px;overflow:auto"><table style="width:100%;font-size:9px;box-shadow:none;margin:3px 0;"><tr><th>จุด</th><th>ก่อน 3D</th><th>หลัง 3D</th></tr>';
+                        p.rx.forEach(function(v){h+='<tr><td>'+v.id+'</td><td>'+(v.from3D===null?'-':v.from3D.toFixed(2))+'</td><td>'+(v.to3D===null?'-':v.to3D.toFixed(2))+'</td></tr>';});
+                        h+='</table></div></details>';
+                        h+='<div style="color:#92400e;margin:6px 0">ตำแหน่งสติกเกอร์อ้างแนวปลายตู้ในภาพ 2D ไม่ใช่ระดับความสูง Z ของตู้ ตรวจตำแหน่งจริงก่อนกดยืนยัน และตรวจเส้นทางผ่านโลหะใหม่หลังปรับ AP</div>';
+                        h+='<button class="c3-secondary-btn" style="width:100%;" onclick="C3.applyApSticker()" '+(anyMeasurementExists()||!firebaseConnected?'disabled':'')+'>✅ ยืนยันและบันทึก AP + LOS + ระยะลง Firebase</button>';
                     }
-                    h += '<button class="c3-secondary-btn" style="width:100%;margin-top:4px" onclick="C3.clearApStickerPreview()">ยกเลิกตัวอย่าง</button>';
+                    h+='<button class="c3-secondary-btn" style="width:100%;margin-top:4px" onclick="C3.clearApStickerPreview()">ยกเลิกตัวอย่าง</button>';
                 }
-                h += '<button class="c3-secondary-btn" style="width:100%;margin-top:5px" onclick="C3.downloadApDistanceCsv()">📄 ส่งออกระยะ AP→W/VC/VW CSV</button>';
-                return h + '</div>';
+                h+='<button class="c3-secondary-btn" style="width:100%;margin-top:5px" onclick="C3.downloadApDistanceCsv()">📄 ส่งออกระยะ AP→W/VC/VW CSV</button>';
+                return h+'</div>';
             }
-            C3.downloadApDistanceCsv = function () {
-                var a = ap, rows = POINT_DEFS.filter(function (d) { return /^W|^VC|^VW/.test(d.id); }).map(function (d) {
-                    var p = points[d.id], valid = p && a.x !== null && a.y !== null && p.x !== null && p.y !== null;
-                    var d2 = valid ? Math.hypot(Number(p.x) - Number(a.x), Number(p.y) - Number(a.y)) : null;
-                    var d3 = valid ? Math.hypot(d2, Number(p.z) - Number(a.z)) : null;
-                    return [d.id, a.x, a.y, a.z, p.x, p.y, p.z, d2 === null ? '' : d2.toFixed(4), d3 === null ? '' : d3.toFixed(4)].join(',');
+            C3.downloadApDistanceCsv=function(){
+                var a=ap, rows=POINT_DEFS.filter(function(d){return /^W|^VC|^VW/.test(d.id);}).map(function(d){
+                    var p=points[d.id],valid=p && a.x!==null && a.y!==null && p.x!==null && p.y!==null;
+                    var d2=valid?Math.hypot(Number(p.x)-Number(a.x),Number(p.y)-Number(a.y)):null;
+                    var d3=valid?Math.hypot(d2,Number(p.z)-Number(a.z)):null;
+                    return [d.id,a.x,a.y,a.z,p.x,p.y,p.z,d2===null?'':d2.toFixed(4),d3===null?'':d3.toFixed(4)].join(',');
                 });
-                var csv = 'pointId,apX,apY,apZ,rxX,rxY,rxZ,distance2D_m,distance3D_m\n' + rows.join('\n');
-                var b = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }), url = URL.createObjectURL(b), link = document.createElement('a');
-                link.href = url; link.download = 'Case3_APCAL_W_VC_VW_distances_v21.csv'; document.body.appendChild(link); link.click(); link.remove();
-                setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+                var csv='pointId,apX,apY,apZ,rxX,rxY,rxZ,distance2D_m,distance3D_m\n'+rows.join('\n');
+                var b=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(b),link=document.createElement('a');
+                link.href=url;link.download='Case3_APCAL_W_VC_VW_distances_v21.csv';document.body.appendChild(link);link.click();link.remove();
+                setTimeout(function(){URL.revokeObjectURL(url);},5000);
             };
-            C3.applyApSticker = async function () {
-                var p = c3ApFieldPreview;
-                if (!p || !p.ok) { toast('⚠️ ต้องดูตัวอย่างก่อน', 'warning'); return; }
-                if (anyMeasurementExists() || legacyGeometryBlocked) { toast('🔒 มีผลวัดแล้ว ห้ามปรับ AP/LOS', 'warning'); return; }
-                if (!firebaseConnected || typeof db === 'undefined') { toast('⛔ Firebase ไม่พร้อม', 'warning'); return; }
-                if (p.fingerprint !== c3ApFieldFingerprint()) { c3ApFieldPreview = null; toast('⚠️ Geometry เปลี่ยนแล้ว กรุณาคำนวณตัวอย่างใหม่', 'warning'); renderAll(); return; }
-                if (!confirm('ยืนยันว่าจุดสติกเกอร์ AP จริงอยู่ตรงปลายล่าง (บนแปลน) ของตู้สูง 214 ซม.?\n\nAP → (' + p.ap.x.toFixed(2) + ', ' + p.ap.y.toFixed(3) + ', 2.60) m\n' + (p.shiftLos ? 'จะจัด L01–L10 ใหม่ตามลำดับ' : 'L01–L10 คงเดิม') + '\nW/VC/VW และ Layout จะไม่เปลี่ยน\n\nการบันทึกจะยังไม่ยืนยันว่าติดตั้ง AP ที่เครื่องจริง ต้องยืนยันแยกอีกครั้ง')) return;
+            C3.applyApSticker=async function(){
+                var p=c3ApFieldPreview;
+                if(!p || !p.ok){toast('⚠️ ต้องดูตัวอย่างก่อน','warning');return;}
+                if(anyMeasurementExists()||legacyGeometryBlocked){toast('🔒 มีผลวัดแล้ว ห้ามปรับ AP/LOS','warning');return;}
+                if(!firebaseConnected || typeof db==='undefined'){toast('⛔ Firebase ไม่พร้อม','warning');return;}
+                if(p.fingerprint!==c3ApFieldFingerprint()) {c3ApFieldPreview=null;toast('⚠️ Geometry เปลี่ยนแล้ว กรุณาคำนวณตัวอย่างใหม่','warning');renderAll();return;}
+                if(!confirm('ยืนยันว่าจุดสติกเกอร์ AP จริงอยู่ตรงปลายล่าง (บนแปลน) ของตู้สูง 214 ซม.?\n\nAP → ('+p.ap.x.toFixed(2)+', '+p.ap.y.toFixed(3)+', 2.60) m\n'+(p.shiftLos?'จะจัด L01–L10 ใหม่ตามลำดับ':'L01–L10 คงเดิม')+'\nW/VC/VW และ Layout จะไม่เปลี่ยน\n\nการบันทึกจะยังไม่ยืนยันว่าติดตั้ง AP ที่เครื่องจริง ต้องยืนยันแยกอีกครั้ง'))return;
                 // One atomic path-scoped multi-location update, no writes outside Case3/TestbedFloor2.
-                var updates = {}, now = Date.now();
-                Object.assign(updates, {
-                    'AP/AP-CAL/xMeters': p.ap.x, 'AP/AP-CAL/yMeters': p.ap.y, 'AP/AP-CAL/zMeters': p.ap.z,
-                    'AP/AP-CAL/planX': p.ap.x, 'AP/AP-CAL/planY': p.ap.y, 'AP/AP-CAL/planZ': p.ap.z,
-                    'AP/AP-CAL/placementConfirmed': false, 'AP/AP-CAL/confirmedAt': null,
-                    'AP/AP-CAL/fieldDatum': 'lower_edge_of_measured_214cm_tall_cabinet_in_2D',
-                    'AP/AP-CAL/fieldCabinetId': p.tall.id, 'AP/AP-CAL/updatedAt': now
+                var updates={}, now=Date.now();
+                Object.assign(updates,{
+                    'AP/AP-CAL/xMeters':p.ap.x,'AP/AP-CAL/yMeters':p.ap.y,'AP/AP-CAL/zMeters':p.ap.z,
+                    'AP/AP-CAL/planX':p.ap.x,'AP/AP-CAL/planY':p.ap.y,'AP/AP-CAL/planZ':p.ap.z,
+                    'AP/AP-CAL/placementConfirmed':false,'AP/AP-CAL/confirmedAt':null,
+                    'AP/AP-CAL/fieldDatum':'lower_edge_of_measured_214cm_tall_cabinet_in_2D',
+                    'AP/AP-CAL/fieldCabinetId':p.tall.id,'AP/AP-CAL/updatedAt':now
                 });
-                POINT_DEFS.forEach(function (d) {
-                    var q = points[d.id], replacement = p.los.find(function (v) { return v.id === d.id; });
-                    var px = replacement ? replacement.x : Number(q.x), py = replacement ? replacement.y : Number(q.y), pz = Number(q.z);
-                    if (![px, py, pz].every(Number.isFinite)) return;
-                    var base = (d.set === 'Validation' ? 'Validation/' : 'Calibration/') + d.id + '/';
-                    var d2 = Math.hypot(px - p.ap.x, py - p.ap.y), d3 = Math.hypot(d2, pz - p.ap.z);
-                    updates[base + 'pointId'] = d.id; updates[base + 'xMeters'] = px; updates[base + 'yMeters'] = py; updates[base + 'zMeters'] = pz;
-                    updates[base + 'apX'] = p.ap.x; updates[base + 'apY'] = p.ap.y; updates[base + 'apZ'] = p.ap.z;
-                    updates[base + 'distance2D'] = Number(d2.toFixed(5)); updates[base + 'distance3D'] = Number(d3.toFixed(5));
-                    updates[base + 'geometryVersion'] = C3_GEOMETRY_VERSION; updates[base + 'updatedAt'] = now;
+                POINT_DEFS.forEach(function(d){
+                    var q=points[d.id],replacement=p.los.find(function(v){return v.id===d.id;});
+                    var px=replacement?replacement.x:Number(q.x), py=replacement?replacement.y:Number(q.y), pz=Number(q.z);
+                    if(![px,py,pz].every(Number.isFinite))return;
+                    var base=(d.set==='Validation'?'Validation/':'Calibration/')+d.id+'/';
+                    var d2=Math.hypot(px-p.ap.x,py-p.ap.y), d3=Math.hypot(d2,pz-p.ap.z);
+                    updates[base+'pointId']=d.id;updates[base+'xMeters']=px;updates[base+'yMeters']=py;updates[base+'zMeters']=pz;
+                    updates[base+'apX']=p.ap.x;updates[base+'apY']=p.ap.y;updates[base+'apZ']=p.ap.z;
+                    updates[base+'distance2D']=Number(d2.toFixed(5));updates[base+'distance3D']=Number(d3.toFixed(5));
+                    updates[base+'geometryVersion']=C3_GEOMETRY_VERSION;updates[base+'updatedAt']=now;
                 });
-                try {
+                try{
                     await db.ref(basePath()).update(updates);
-                    ap.x = p.ap.x; ap.y = p.ap.y; ap.z = p.ap.z;
-                    p.los.forEach(function (v) { var q = points[v.id]; q.x = v.x; q.y = v.y; q.z = v.z; });
-                    DRAFT_AP_POSITION.y = p.ap.y; unconfirmApCal(); apCalAutoMigrationSaved = true; c3ApFieldPreview = null;
-                    syncEvaluationCoordinates(); toast('✅ บันทึก AP-CAL และระยะ/จุด LOS แล้ว · ต้องยืนยันตำแหน่ง AP จริงก่อนวัด', 'success'); renderAll();
-                } catch (e) { console.error(e); toast('⛔ บันทึก Firebase ไม่สำเร็จ — ข้อมูลในเว็บยังไม่เปลี่ยน', 'error'); }
+                    ap.x=p.ap.x;ap.y=p.ap.y;ap.z=p.ap.z;
+                    p.los.forEach(function(v){var q=points[v.id];q.x=v.x;q.y=v.y;q.z=v.z;});
+                    DRAFT_AP_POSITION.y=p.ap.y;unconfirmApCal();apCalAutoMigrationSaved=true;c3ApFieldPreview=null;
+                    syncEvaluationCoordinates();toast('✅ บันทึก AP-CAL และระยะ/จุด LOS แล้ว · ต้องยืนยันตำแหน่ง AP จริงก่อนวัด','success');renderAll();
+                }catch(e){console.error(e);toast('⛔ บันทึก Firebase ไม่สำเร็จ — ข้อมูลในเว็บยังไม่เปลี่ยน','error');}
             };
 
             C3.confirmApCalPhysical = async function () {
@@ -12517,7 +12505,7 @@
                 if (selectedStage === 'E') syncEvaluationCoordinates();
                 var ids = currentStageIds(); if (selectedStage === 'M') { placementMode = ''; renderAll(); return; }
                 if (ids.indexOf(selectedPoint) < 0) selectedPoint = ids[0];
-                selectedRound = firstOpenRound(points[selectedPoint], selectedStage === 'E' ? selectedEvalAp : null);
+                // Keep the manually selected round across stages (LOS / Wall / Validation).
                 placementMode = ''; renderAll();
             };
             C3.selectPoint = function (id) { if (!points[id]) return; selectedPoint = id; selectedStage = stageOf(id); if (selectedStage === 'E') syncEvaluationCoordinates(); placementMode = ''; renderAll(); };
@@ -12525,7 +12513,8 @@
                 if (['A', 'B', 'C'].indexOf(candidate) < 0) return;
                 selectedEvalAp = candidate; selectedStage = 'E'; syncEvaluationCoordinates();
                 if (currentStageIds().indexOf(selectedPoint) < 0) selectedPoint = 'E01';
-                selectedRound = firstOpenRound(points[selectedPoint], selectedEvalAp); placementMode = ''; renderAll();
+                // Keep the manually selected round when switching Final Evaluation APs.
+                placementMode = ''; renderAll();
             };
             C3.setRound = function (r) { if (r === 'AVG') { c3AverageMode = true; renderAll(); return; } if (['R1', 'R2', 'R3'].indexOf(r) < 0) return; c3AverageMode = false; selectedRound = r; renderAll(); };
             C3.setBand = function (freq) {
@@ -14127,7 +14116,7 @@
                 if (!editorMode && (selectedStage === 'L' || selectedStage === 'W' || selectedStage === 'V') && c3ApFieldPreview && c3ApFieldPreview.ok) {
                     var proposedAp = c3ApFieldPreview.ap;
                     svg.appendChild(svgEl('circle', { cx: proposedAp.x, cy: proposedAp.y, r: '.31', fill: 'none', stroke: '#059669', 'stroke-width': '.055', 'stroke-dasharray': '.09 .06' }));
-                    addSvgText(svg, proposedAp.x + .27, proposedAp.y - .24, 'AP สติกเกอร์ (ตัวอย่าง)', '.135', '#047857', '800', 'start');
+                    addSvgText(svg, proposedAp.x+.27, proposedAp.y-.24, 'AP สติกเกอร์ (ตัวอย่าง)', '.135', '#047857', '800', 'start');
                     if (selectedStage === 'L' && c3ApFieldPreview.shiftLos) c3ApFieldPreview.los.forEach(function (q) {
                         svg.appendChild(svgEl('circle', { cx: q.x, cy: q.y, r: '.19', fill: 'none', stroke: '#059669', 'stroke-width': '.04', 'stroke-dasharray': '.06 .045' }));
                     });
@@ -18392,10 +18381,7 @@
 
     <!-- CASE3_DEVICE_STATUS_V23: isolated sidebar styling -->
     <style id="c3-device-status-v23-style">
-        #c3-device-status-section {
-            display: none;
-        }
-
+        #c3-device-status-section { display: none; }
         body.c3-active #c3-device-status-section {
             display: block !important;
             margin: 9px 0 11px;
@@ -18404,129 +18390,25 @@
             border: 1px solid #e2e8f0;
             border-radius: 11px;
             color: #334155;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, .035);
+            box-shadow: 0 1px 3px rgba(15,23,42,.035);
         }
-
-        #c3-device-status-section .c3-ds-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            font-size: 11px;
-            font-weight: 800;
-        }
-
-        #c3-device-status-section .c3-ds-head small {
-            color: #64748b;
-            font-size: 10px;
-            font-weight: 500;
-        }
-
-        #c3-device-status-section .c3-ds-state {
-            flex-shrink: 0;
-            padding: 4px 7px;
-            font-size: 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 7px;
-            background: #f8fafc;
-            color: #64748b;
-        }
-
-        #c3-device-status-section .c3-ds-state.ok {
-            color: #166534;
-            border-color: #bbf7d0;
-            background: #f0fdf4;
-        }
-
-        #c3-device-status-section .c3-ds-state.bad {
-            color: #991b1b;
-            border-color: #fecaca;
-            background: #fef2f2;
-        }
-
-        #c3-device-status-section .c3-ds-state.warn {
-            color: #92400e;
-            border-color: #fde68a;
-            background: #fffbeb;
-        }
-
-        #c3-device-status-section .c3-ds-sub {
-            margin: 6px 0 8px;
-            font-size: 10px;
-            line-height: 1.5;
-            color: #64748b;
-        }
-
-        #c3-device-status-section .c3-ds-readings {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 7px;
-        }
-
-        #c3-device-status-section .c3-ds-reading {
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            padding: 7px 8px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-        }
-
-        #c3-device-status-section .c3-ds-reading span {
-            font-size: 10px;
-            color: #64748b;
-        }
-
-        #c3-device-status-section .c3-ds-reading strong {
-            font-size: 15px;
-            font-weight: 800;
-            color: #0f766e;
-            line-height: 1.4;
-            font-variant-numeric: tabular-nums;
-        }
-
-        #c3-device-status-section .c3-ds-reading small {
-            font-size: 9px;
-            color: #64748b;
-        }
-
-        #c3-device-status-section .c3-ds-checks {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 8px;
-        }
-
-        #c3-device-status-section .c3-ds-check {
-            display: inline-block;
-            padding: 3px 5px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 9px;
-            font-weight: 650;
-        }
-
-        #c3-device-status-section .c3-ds-check.ok {
-            background: #f0fdf4;
-            border-color: #bbf7d0;
-            color: #166534;
-        }
-
-        #c3-device-status-section .c3-ds-check.bad {
-            background: #fff7ed;
-            border-color: #fed7aa;
-            color: #9a3412;
-        }
-
-        #c3-device-status-section .c3-ds-meta {
-            margin-top: 7px;
-            font-size: 9px;
-            line-height: 1.6;
-            color: #64748b;
-            overflow-wrap: anywhere;
-        }
+        #c3-device-status-section .c3-ds-head { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11px; font-weight:800; }
+        #c3-device-status-section .c3-ds-head small { color:#64748b; font-size:10px; font-weight:500; }
+        #c3-device-status-section .c3-ds-state { flex-shrink:0; padding:4px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:7px; background:#f8fafc; color:#64748b; }
+        #c3-device-status-section .c3-ds-state.ok { color:#166534; border-color:#bbf7d0; background:#f0fdf4; }
+        #c3-device-status-section .c3-ds-state.bad { color:#991b1b; border-color:#fecaca; background:#fef2f2; }
+        #c3-device-status-section .c3-ds-state.warn { color:#92400e; border-color:#fde68a; background:#fffbeb; }
+        #c3-device-status-section .c3-ds-sub { margin:6px 0 8px; font-size:10px; line-height:1.5; color:#64748b; }
+        #c3-device-status-section .c3-ds-readings { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+        #c3-device-status-section .c3-ds-reading { min-width:0; display:flex; flex-direction:column; gap:2px; padding:7px 8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; }
+        #c3-device-status-section .c3-ds-reading span { font-size:10px; color:#64748b; }
+        #c3-device-status-section .c3-ds-reading strong { font-size:15px; font-weight:800; color:#0f766e; line-height:1.4; font-variant-numeric:tabular-nums; }
+        #c3-device-status-section .c3-ds-reading small { font-size:9px; color:#64748b; }
+        #c3-device-status-section .c3-ds-checks { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+        #c3-device-status-section .c3-ds-check { display:inline-block; padding:3px 5px; border:1px solid #e2e8f0; border-radius:6px; font-size:9px; font-weight:650; }
+        #c3-device-status-section .c3-ds-check.ok { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+        #c3-device-status-section .c3-ds-check.bad { background:#fff7ed; border-color:#fed7aa; color:#9a3412; }
+        #c3-device-status-section .c3-ds-meta { margin-top:7px; font-size:9px; line-height:1.6; color:#64748b; overflow-wrap:anywhere; }
     </style>
 
 </body>
