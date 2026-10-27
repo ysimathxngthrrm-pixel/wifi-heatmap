@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wi-Fi Measurement &amp; Analysis Dashboard — Case3 10-Scan v27</title>
+    <title>Wi-Fi Measurement &amp; Analysis Dashboard — Case3 1-Scan v28</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap"
@@ -9735,7 +9735,7 @@
                     onclick="C3.closeModal('data')">ปิด</button></div>
             <div class="c3-action-row">
                 <button class="c3-secondary-btn" onclick="C3.exportCsv()">CSV สรุป</button>
-                <button class="c3-secondary-btn" onclick="C3.exportRawCsv()">CSV Scan ดิบ (10 ครั้ง)</button>
+                <button class="c3-secondary-btn" onclick="C3.exportRawCsv()">CSV Scan ดิบ (1 Scan/รอบ)</button>
                 <button class="c3-secondary-btn" onclick="C3.exportJson()">JSON Backup</button>
                 <button class="c3-secondary-btn c3-warn" onclick="C3.clearRound()">ล้างรอบปัจจุบัน</button>
                 <button class="c3-secondary-btn c3-danger" onclick="C3.clearPoint()">ล้างจุดปัจจุบัน</button>
@@ -9978,11 +9978,12 @@
             var AP_H_DEFAULT = 2.60;
             var RX_H_DEFAULT = 1.00;
             var C3_STALE_SEC = 12;
-            // V27: Collect 10 genuinely new dual-band Wi-Fi scans per point AND round.
-            // Each R1/R2/R3 record stores a paired set of 10 raw scans and its summary.
-            var C3_SCANS_PER_ROUND = 10;
-            var C3_BATCH_TIMEOUT_MS = 120000; // maximum total wait per point/round
-            var C3_NEXT_SCAN_TIMEOUT_MS = 20000;
+            // V28: One fresh dual-band scan per point AND measurement round.
+            // R1/R2/R3 stay separate and each stores one independent scan ID.
+            // Firmware continuously publishes fresh scan snapshots to WiFi_Scan/current.
+            var C3_SCANS_PER_ROUND = 1;
+            var C3_BATCH_TIMEOUT_MS = 30000; // maximum wait for one new valid scan
+            var C3_NEXT_SCAN_TIMEOUT_MS = 25000;
             var selectedStage = 'L';
             var selectedPoint = 'L01';
             var selectedRound = 'R1';
@@ -11088,15 +11089,16 @@
             function candidateMeasurementExists(candidate) { candidate = evalCandidate(candidate); return EVAL_POINT_DEFS.some(function (d) { return roundCount(points[d.id], candidate) > 0; }); }
             function anyEvaluationMeasurementExists() { return ['A', 'B', 'C'].some(function (c) { return candidateMeasurementExists(c); }); }
             function anyMeasurementExists() { return POINT_DEFS.some(function (d) { return roundCount(points[d.id]) > 0; }) || anyEvaluationMeasurementExists() || materialAnyCaptured(); }
-            function c3V27CompletedBatches(candidate) {
+            function c3V28CompletedRounds(candidate) {
                 var finished = 0;
                 var defs = candidate ? EVAL_POINT_DEFS : POINT_DEFS;
                 defs.forEach(function (d) {
                     var pt = points[d.id], bucket = measurementBucket(pt, candidate || null);
                     ['R1', 'R2', 'R3'].forEach(function (r) {
                         var m = bucket[r] || {};
-                        if (m.scanCount === C3_SCANS_PER_ROUND && Array.isArray(m.rawScans) &&
-                            m.rawScans.length === C3_SCANS_PER_ROUND && pointRoundDone(pt, r, candidate || null)) finished++;
+                        if (m.captureMethod === 'V28_ONE_FRESH_SCAN_PER_ROUND' && m.scanCount === 1 &&
+                            Array.isArray(m.rawScans) && m.rawScans.length === 1 &&
+                            pointRoundDone(pt, r, candidate || null)) finished++;
                     });
                 });
                 return finished;
@@ -12615,7 +12617,7 @@
             };
             C3.setView = function (v) { viewMode = v === 'floor2' ? 'floor2' : 'testbed'; renderAll(); };
             C3.setStage = function (s) {
-                if (c3MeasurementPending) { toast('⏳ กำลังเก็บ 10 Scan — เปลี่ยนขั้นตอนยังไม่ได้', 'info'); return; }
+                if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยนขั้นตอนยังไม่ได้', 'info'); return; }
                 selectedStage = ['L', 'W', 'V', 'E', 'M'].indexOf(s) >= 0 ? s : 'L';
                 if (selectedStage === 'E') syncEvaluationCoordinates();
                 var ids = currentStageIds(); if (selectedStage === 'M') { placementMode = ''; renderAll(); return; }
@@ -12623,23 +12625,23 @@
                 // Keep the manually selected round across stages (LOS / Wall / Validation).
                 placementMode = ''; renderAll();
             };
-            C3.selectPoint = function (id) { if (c3MeasurementPending) { toast('⏳ กำลังเก็บ 10 Scan — เปลี่ยนจุดยังไม่ได้', 'info'); return; } if (!points[id]) return; selectedPoint = id; selectedStage = stageOf(id); if (selectedStage === 'E') syncEvaluationCoordinates(); placementMode = ''; renderAll(); };
+            C3.selectPoint = function (id) { if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยนจุดยังไม่ได้', 'info'); return; } if (!points[id]) return; selectedPoint = id; selectedStage = stageOf(id); if (selectedStage === 'E') syncEvaluationCoordinates(); placementMode = ''; renderAll(); };
             C3.setEvalAp = function (candidate) {
-                if (c3MeasurementPending) { toast('⏳ กำลังเก็บ 10 Scan — เปลี่ยน AP ยังไม่ได้', 'info'); return; }
+                if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยน AP ยังไม่ได้', 'info'); return; }
                 if (['A', 'B', 'C'].indexOf(candidate) < 0) return;
                 selectedEvalAp = candidate; selectedStage = 'E'; syncEvaluationCoordinates();
                 if (currentStageIds().indexOf(selectedPoint) < 0) selectedPoint = 'E01';
                 // Keep the manually selected round when switching Final Evaluation APs.
                 placementMode = ''; renderAll();
             };
-            C3.setRound = function (r) { if (c3MeasurementPending) { toast('⏳ กำลังเก็บ 10 Scan — เปลี่ยนรอบยังไม่ได้', 'info'); return; } if (r === 'AVG') { c3AverageMode = true; renderAll(); return; } if (['R1', 'R2', 'R3'].indexOf(r) < 0) return; c3AverageMode = false; selectedRound = r; renderAll(); };
+            C3.setRound = function (r) { if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยนรอบยังไม่ได้', 'info'); return; } if (r === 'AVG') { c3AverageMode = true; renderAll(); return; } if (['R1', 'R2', 'R3'].indexOf(r) < 0) return; c3AverageMode = false; selectedRound = r; renderAll(); };
             C3.setBand = function (freq) {
                 currentFreq = (freq === '5GHz') ? '5GHz' : '2.4GHz';
                 try { localStorage.setItem('case3SelectedBand', currentFreq); } catch (e) { }
                 renderAll();
             };
             C3.toggleEditor = function () {
-                if (c3MeasurementPending) { toast('⏳ กำลังเก็บ 10 Scan — เปิด Editor ยังไม่ได้', 'info'); return; }
+                if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปิด Editor ยังไม่ได้', 'info'); return; }
                 if (anyMeasurementExists() && !editorMode) {
                     toast('🔒 เริ่มวัดแล้ว Layout ถูกล็อก หากต้องแก้ Layout ต้องล้างข้อมูล Case 3 ก่อน', 'warning');
                     return;
@@ -12930,10 +12932,10 @@
                 toast('ℹ️ Final workflow ไม่ให้เลือก A/B/C แบบสุ่ม — กด “สร้าง Candidate จาก Final Model” แล้วตั้งขาตามพิกัดที่ระบบให้', 'info');
             };
 
-            // V27: One-button collection of 10 independently timestamped, NEW scans.
-            // The existing RTDB scan stream publishes one complete dual-band observation
-            // per scan. Read exactly ten distinct *new* observations after button click.
-            // Only commit the R1/R2/R3 record once the complete batch passes QC.
+            // V28: One button press accepts exactly ONE new, independently timestamped
+            // dual-band scan from the current RTDB stream, never a cached prior result.
+            // Only commit the R1/R2/R3 record if scan ID, time, BSSID, channel,
+            // geometry, Firebase and device checks pass. Existing rounds are preserved on failure.
             var c3MeasurementPending = false;
             var c3CaptureProgress = null;
             function c3ScanEpochMs(data) {
@@ -12950,7 +12952,7 @@
                 var variance = n > 1 ? arr.reduce(function (acc, v) { return acc + Math.pow(v - mean, 2); }, 0) / (n - 1) : 0;
                 return {
                     count: n, mean: Number(mean.toFixed(4)), median: Number(median.toFixed(4)),
-                    sd: Number(Math.sqrt(variance).toFixed(4)), min: arr[0], max: arr[n - 1]
+                    sd: n > 1 ? Number(Math.sqrt(variance).toFixed(4)) : null, min: arr[0], max: arr[n - 1]
                 };
             }
             function c3BatchRawRow(data, id, timestampMs) {
@@ -13004,7 +13006,7 @@
             }
 
             C3.measure = async function () {
-                if (c3MeasurementPending) { toast('⏳ ระบบกำลังเก็บ 10 Scan ของจุดก่อนหน้าอยู่', 'info'); return; }
+                if (c3MeasurementPending) { toast('⏳ ระบบกำลังรับ Scan ใหม่ของจุดก่อนหน้าอยู่', 'info'); return; }
                 if (legacyGeometryBlocked) { toast('⛔ ข้อมูล Case 3 รุ่นพิกัดเดิมอยู่ในโปรไฟล์นี้ กรุณาสร้างโปรไฟล์ใหม่ ห้ามรวมชุดวัด', 'warning'); return; }
                 if (c3AverageMode) { toast('โหมดเฉลี่ยใช้ดูผลจาก R1–R3 และไม่บันทึกข้อมูลใหม่', 'info'); return; }
                 syncEvaluationCoordinates();
@@ -13033,7 +13035,7 @@
                 var bucket = measurementBucket(pt, candidate), oldSample = bucket[roundAtClick];
                 if (pointRoundDone(pt, roundAtClick, candidate) &&
                     !confirm((candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ' + roundAtClick +
-                        ' มีข้อมูลแล้ว! ต้องการเก็บ 10 Scan ใหม่เพื่อแทนรอบนี้หรือไม่?\n\nโปรดสำรอง JSON ก่อนกดยืนยัน')) return;
+                        ' มีข้อมูลแล้ว! ต้องการเก็บ 1 Scan ใหม่เพื่อแทนรอบนี้หรือไม่?\n\nโปรดสำรอง JSON ก่อนกดยืนยัน')) return;
 
                 c3MeasurementPending = true;
                 c3CaptureProgress = {
@@ -13055,7 +13057,7 @@
                             return;
                         }
                         var remaining = deadline - Date.now();
-                        if (remaining < 1000) { toast('⛔ หมดเวลาเก็บ Scan 10 ครั้ง ระบบไม่เขียนทับข้อมูลเดิม', 'warning'); return; }
+                        if (remaining < 1000) { toast('⛔ หมดเวลารอ Scan ใหม่ ระบบไม่เขียนทับข้อมูลเดิม', 'warning'); return; }
                         var sample;
                         try {
                             sample = await waitForNextCase3Scan(previousId, pointAtClick, roundAtClick, candidateAtClick,
@@ -13101,7 +13103,7 @@
                     var stats5 = c3ScanStatistics(accepted.map(function (x) { return x.rssi5; }));
                     var last = accepted[accepted.length - 1];
                     bucket[roundAtClick] = {
-                        captureMethod: 'V27_10_FRESH_SCANS_PER_ROUND',
+                        captureMethod: 'V28_ONE_FRESH_SCAN_PER_ROUND',
                         scanCount: C3_SCANS_PER_ROUND, expectedScanCount: C3_SCANS_PER_ROUND,
                         captureStartedAt: startedAt, captureCompletedAt: Date.now(), timestamp: Date.now(),
                         rawScans: accepted, rssi24Stats: stats24, rssi5Stats: stats5,
@@ -13125,15 +13127,15 @@
                         geometryCheckedAtCapture: gs.label
                     };
                     recalc(pt, candidate);
-                    c3CaptureProgress.status = 'ครบ 10 Scan · กำลังบันทึก Firebase';
+                    c3CaptureProgress.status = 'ได้ Scan ใหม่ 1 ครั้ง · กำลังบันทึก Firebase';
                     renderControls();
                     var saved = await savePoint(pt, false, candidate);
                     if (!saved) { bucket[roundAtClick] = oldSample; recalc(pt, candidate); return; }
                     lastAcceptedScanId = last.sourceScanId;
                     if (gs.cabinetBlocked) c3SteelCaptureAck = null;
                     toast('✅ ' + (candidate ? ('AP-' + candidate + ' ') : '') + pointAtClick + ' ' + roundAtClick +
-                        ' ครบ 10 Scan · 2.4G เฉลี่ย ' + stats24.mean.toFixed(2) + ' ±' + stats24.sd.toFixed(2) +
-                        ' dB · 5G เฉลี่ย ' + stats5.mean.toFixed(2) + ' ±' + stats5.sd.toFixed(2) + ' dB', 'success');
+                        ' บันทึก 1 Scan ใหม่ · 2.4G ' + stats24.mean.toFixed(0) +
+                        ' dBm · 5G ' + stats5.mean.toFixed(0) + ' dBm', 'success');
                     if (pointStatus(pt, candidate) === 'COMPLETE') toast('✅ ' + pointAtClick + ' ครบ R1/R2/R3 แล้ว', 'success');
                 } finally {
                     c3MeasurementPending = false;
@@ -13143,14 +13145,14 @@
             };
 
             C3.clearRound = async function () {
-                if (c3MeasurementPending) { toast('⏳ กำลังรับ 10 Scan — ล้างไม่ได้', 'warning'); return; }
+                if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — ล้างไม่ได้', 'warning'); return; }
                 if (c3AverageMode) { toast('โหมดเฉลี่ยไม่มีข้อมูลต้นฉบับให้ลบ', 'info'); return; }
                 var pt = points[selectedPoint], candidate = isEvaluationPoint(pt) ? selectedEvalAp : null;
                 if (!confirm('ล้าง ' + (candidate ? ('AP-' + candidate + ' ') : '') + selectedPoint + ' ' + selectedRound + ' หรือไม่?')) return;
                 measurementBucket(pt, candidate)[selectedRound] = {}; recalc(pt, candidate); await savePoint(pt, false, candidate); renderDataTable(); renderAll();
             };
             C3.clearPoint = async function () {
-                if (c3MeasurementPending) { toast('⏳ กำลังรับ 10 Scan — ล้างไม่ได้', 'warning'); return; }
+                if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — ล้างไม่ได้', 'warning'); return; }
                 var pt = points[selectedPoint], candidate = isEvaluationPoint(pt) ? selectedEvalAp : null;
                 if (!confirm('ล้าง R1/R2/R3 ของ ' + (candidate ? ('AP-' + candidate + ' ') : '') + selectedPoint + ' หรือไม่?')) return;
                 var b = measurementBucket(pt, candidate); b.R1 = {}; b.R2 = {}; b.R3 = {}; recalc(pt, candidate); selectedRound = 'R1'; await savePoint(pt, false, candidate); renderDataTable(); renderAll();
@@ -13197,7 +13199,7 @@
                 }).join('\n');
                 var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
                 var url = URL.createObjectURL(blob), a = document.createElement('a');
-                a.href = url; a.download = 'Case3_RawScans_10PerRound_' + profile() + '.csv';
+                a.href = url; a.download = 'Case3_RawScans_1PerRound_' + profile() + '.csv';
                 document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
             };
             C3.exportCsv = function () {
@@ -13257,7 +13259,7 @@
             // Geometry, AP, point coordinates, equipment configuration, candidates and material-study data remain unchanged.
             C3.clearAllCalibrationValidationMeasurements = async function () {
                 if (!isCase3()) { toast('⛔ ต้องอยู่ในหน้า Case 3', 'warning'); return; }
-                if (c3MeasurementPending) { toast('⏳ มีการรับ 10 Scan อยู่ กรุณาให้จบก่อน', 'warning'); return; }
+                if (c3MeasurementPending) { toast('⏳ มีการรับ 1 Scan ใหม่ อยู่ กรุณาให้จบก่อน', 'warning'); return; }
                 if (typeof db === 'undefined' || !firebaseConnected) { toast('⛔ Firebase ไม่พร้อม ห้ามล้างข้อมูล', 'warning'); return; }
                 var path = basePath(), prof = profile();
                 if (!Array.isArray(POINT_DEFS) || POINT_DEFS.length !== 42) {
@@ -13319,7 +13321,7 @@
             };
 
             C3.resetAll = async function () {
-                if (c3MeasurementPending) { toast('⏳ กำลังรับ 10 Scan — รีเซ็ตไม่ได้', 'warning'); return; }
+                if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — รีเซ็ตไม่ได้', 'warning'); return; }
                 if (typeof db === 'undefined') return;
                 if (!confirm('⚠️ จะล้าง Layout / AP-CAL / Calibration / Validation / Final Model / AP-A/B/C / Evaluation ของ Case 3 ทั้งหมด ใช่หรือไม่?')) return;
                 var code = prompt('พิมพ์ RESET เพื่อยืนยัน'); if (code !== 'RESET') return; await db.ref(basePath()).remove(); location.reload();
@@ -14048,26 +14050,26 @@
                     html += '<button class="c3-main-measure" onclick="C3.measure()" ' + (activeBatch ? 'disabled ' : '') +
                         (measureReady ? '' : 'title="' + esc(blockReason || 'รอ Scan ใหม่ — ตรวจ Config / Geometry') + '"') + '>' +
                         (activeBatch ? ('⏳ กำลังเก็บ Scan ' + c3CaptureProgress.count + '/' + c3CaptureProgress.target) :
-                            ('วัด ' + selectedPoint + ' ' + selectedRound + ' · 10 Scan')) + '</button>';
+                            ('วัด ' + selectedPoint + ' ' + selectedRound + ' · 1 Scan ใหม่')) + '</button>';
                     if (activeBatch) html += '<div class="c3-v7-sub" style="padding:8px;background:#e6fffa;border-radius:8px;margin-top:6px;">' +
-                        '<b>' + esc(c3CaptureProgress.pointId) + ' ' + esc(c3CaptureProgress.round) + ' · ' + c3CaptureProgress.count + '/10 Scan</b><br>' +
-                        esc(c3CaptureProgress.status) + '<br>อย่าย้ายขาตั้งหรือปิดหน้านี้จนกว่าจะครบ</div>';
+                        '<b>' + esc(c3CaptureProgress.pointId) + ' ' + esc(c3CaptureProgress.round) + ' · ' + c3CaptureProgress.count + '/1 Scan</b><br>' +
+                        esc(c3CaptureProgress.status) + '<br>อย่าย้ายขาตั้งจนกว่าจะบันทึกสำเร็จ</div>';
                     var savedRound = measurementBucket(pt, selectedStage === 'E' ? selectedEvalAp : null)[selectedRound] || {};
-                    if (savedRound.scanCount === C3_SCANS_PER_ROUND && savedRound.rssi24Stats && savedRound.rssi5Stats)
-                        html += '<div class="c3-v7-sub" style="margin-top:6px;">บันทึกแล้ว ' + C3_SCANS_PER_ROUND + ' Scan · 2.4G Mean ' +
-                            esc(savedRound.rssi24) + ' (Median ' + esc(savedRound.median24) + ', SD ' + esc(savedRound.sd24) + ') · 5G Mean ' +
-                            esc(savedRound.rssi5) + ' (Median ' + esc(savedRound.median5) + ', SD ' + esc(savedRound.sd5) + ') dBm</div>';
+                    if (savedRound.captureMethod === 'V28_ONE_FRESH_SCAN_PER_ROUND' &&
+                        savedRound.scanCount === 1 && savedRound.rssi24Stats && savedRound.rssi5Stats)
+                        html += '<div class="c3-v7-sub" style="margin-top:6px;">บันทึกแล้ว 1 Scan · 2.4G ' +
+                            esc(savedRound.rssi24) + ' dBm · 5G ' + esc(savedRound.rssi5) + ' dBm</div>';
                     else if (pointRoundDone(pt, selectedRound, selectedStage === 'E' ? selectedEvalAp : null))
-                        html += '<div class="c3-v7-sub" style="margin-top:6px;color:#b45309;">รอบนี้เป็นข้อมูลเก่าจากการเก็บครั้งเดียว (Legacy) — ยังไม่ใช่ชุด 10 Scan</div>';
+                        html += '<div class="c3-v7-sub" style="margin-top:6px;color:#b45309;">รอบนี้เป็นข้อมูลรูปแบบเก่า · หากต้องการชุดข้อมูลแบบ 1 Scan ให้กดวัดใหม่เพื่อแทนรอบนี้</div>';
                 }
 
                 var progressDone = selectedStage === 'E' ? totalEvaluationComplete(selectedEvalAp) : totalComplete();
                 var progressTotal = selectedStage === 'E' ? TOTAL_EVAL_POINTS : TOTAL_POINTS;
                 html += '<div class="c3-progress-line"><div style="width:' + (progressDone / progressTotal * 100) + '%"></div></div><div class="c3-v9-progress">ครบ ' + progressDone + '/' + progressTotal + ' จุด · RSSI records ' + completedRssiRecordCount() + '/' + EXPECTED_CASE3_RSSI_RECORDS + '</div>';
-                html += '<div class="c3-v7-sub" style="color:#0f766e;font-weight:700;margin:7px 0;">ชุดวัดใหม่ 10 Scan/รอบ: ' +
-                    c3V27CompletedBatches(selectedStage === 'E' ? selectedEvalAp : null) + '/' +
+                html += '<div class="c3-v7-sub" style="color:#0f766e;font-weight:700;margin:7px 0;">ชุดวัดใหม่ 1 Scan/รอบ: ' +
+                    c3V28CompletedRounds(selectedStage === 'E' ? selectedEvalAp : null) + '/' +
                     ((selectedStage === 'E' ? TOTAL_EVAL_POINTS : TOTAL_POINTS) * 3) +
-                    ' รอบ · ค่าที่มีเพียง 1 Scan เดิมไม่ถูกนับในบรรทัดนี้</div>';
+                    ' รอบ · ชุดข้อมูลแบบเก่าจะไม่ถูกนับเป็นการวัดแบบใหม่</div>';
                 html += '<div class="c3-action-row c3-v9-tools"><button class="c3-secondary-btn" onclick="C3.openModal(\'config\')">Config</button><button class="c3-secondary-btn" onclick="C3.openModal(\'data\')">Data</button></div>';
                 html += '<div class="c3-v7-sub" style="font-size:10px;margin-top:6px;overflow-wrap:anywhere;">Scan ล่าสุด: ' + esc(id || 'ไม่มี ID') + ' · อายุ ' + (Number.isFinite(age) ? age.toFixed(1) : '—') + 's · ' + (unique ? 'ยังไม่ถูกใช้' : 'ใช้แล้ว/รอใหม่') + '</div>';
                 html += '<button class="c3-open-editor-btn" onclick="C3.toggleEditor()">เปิด Editor</button>';
@@ -14630,7 +14632,7 @@
             };
 
             C3.toggleEditor = function () {
-                if (c3MeasurementPending) { toast('⏳ กำลังเก็บ 10 Scan — เปิด Editor ยังไม่ได้', 'info'); return; }
+                if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปิด Editor ยังไม่ได้', 'info'); return; }
                 if (anyMeasurementExists() && !editorMode) { toast('🔒 เริ่มวัดแล้ว Layout ถูกล็อก หากต้องแก้ Layout ให้ล้างข้อมูล Case 3 ก่อน', 'warning'); return; }
                 editorMode = !editorMode; selectedEditorObject = null; editorDrag = null; placementMode = ''; viewMode = 'testbed'; renderAll();
             };
