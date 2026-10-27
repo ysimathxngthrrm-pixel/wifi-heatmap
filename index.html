@@ -9741,8 +9741,11 @@
                 <button class="c3-secondary-btn c3-danger" onclick="C3.clearPoint()">ล้างจุดปัจจุบัน</button>
             </div>
             <div id="c3-data-table-wrap" style="margin-top:8px;"></div>
-            <button class="c3-save c3-warn" onclick="C3.clearAllCalibrationValidationMeasurements()">🧹 ล้างเฉพาะ RSSI ทั้ง 42 จุด (เก็บพิกัดและ Layout)</button>
-            <div style="font-size:11px;color:#92400e;margin:6px 0 0;line-height:1.5;text-align:left;">ล้างเฉพาะ R1–R3/ค่าเฉลี่ยของ Calibration 30 และ Validation 12 จุดเท่านั้น · เก็บ AP-CAL, ห้อง, ตู้, ประตู, พิกัด และอุปกรณ์ · โมเดลเดิมที่ Fit ไว้ต้องคำนวณใหม่หลังวัดเสร็จ</div>
+            <button class="c3-save c3-warn" onclick="C3.clearAllCalibrationValidationMeasurements()">🧹 ล้างเฉพาะ RSSI
+                ทั้ง 42 จุด (เก็บพิกัดและ Layout)</button>
+            <div style="font-size:11px;color:#92400e;margin:6px 0 0;line-height:1.5;text-align:left;">ล้างเฉพาะ
+                R1–R3/ค่าเฉลี่ยของ Calibration 30 และ Validation 12 จุดเท่านั้น · เก็บ AP-CAL, ห้อง, ตู้, ประตู, พิกัด
+                และอุปกรณ์ · โมเดลเดิมที่ Fit ไว้ต้องคำนวณใหม่หลังวัดเสร็จ</div>
         </div>
     </div>
 
@@ -13270,7 +13273,7 @@
                         var stage = d.set === 'Validation' ? 'Validation' : 'Calibration';
                         var entry = snapshot.child(stage + '/' + d.id).val() || {};
                         var rounds = entry.measurements || {};
-                        var n = ['R1','R2','R3'].filter(function (round) {
+                        var n = ['R1', 'R2', 'R3'].filter(function (round) {
                             var row = rounds[round] || {};
                             return Number.isFinite(Number(row.rssi24)) && Number.isFinite(Number(row.rssi5));
                         }).length;
@@ -13278,9 +13281,9 @@
                         existingBatches += n;
                     });
                     if (!existingBatches) { toast('ไม่มี RSSI R1–R3 เดิมที่ต้องล้าง', 'info'); return; }
-                    var message = 'ล้างค่า RSSI R1/R2/R3 และค่าเฉลี่ยของ Calibration 30 + Validation 12 จุดเฉพาะโปรไฟล์ '+prof+' ใช่หรือไม่?\n\n'+
-                        'พบ '+existingBatches+' รอบใน '+affectedPoints+' จุด\n\n'+
-                        'ไม่ลบพิกัดจุด, Layout, AP-CAL, Device Config หรือ MaterialStudy\n'+
+                    var message = 'ล้างค่า RSSI R1/R2/R3 และค่าเฉลี่ยของ Calibration 30 + Validation 12 จุดเฉพาะโปรไฟล์ ' + prof + ' ใช่หรือไม่?\n\n' +
+                        'พบ ' + existingBatches + ' รอบใน ' + affectedPoints + ' จุด\n\n' +
+                        'ไม่ลบพิกัดจุด, Layout, AP-CAL, Device Config หรือ MaterialStudy\n' +
                         'ผล Model Fitting เดิมต้องคำนวณใหม่หลังวัดใหม่';
                     if (!confirm(message)) return;
                     if (prompt('พิมพ์ CLEAR42 เพื่อยืนยันการล้างเฉพาะ RSSI 42 จุด') !== 'CLEAR42') return;
@@ -13290,8 +13293,8 @@
                     var updates = {};
                     POINT_DEFS.forEach(function (d) {
                         var prefix = (d.set === 'Validation' ? 'Validation/' : 'Calibration/') + d.id + '/';
-                        updates[prefix+'measurements'] = null;
-                        updates[prefix+'average'] = null;
+                        updates[prefix + 'measurements'] = null;
+                        updates[prefix + 'average'] = null;
                     });
                     // One atomic, path-scoped multi-location Firebase update; never delete the parent point object.
                     await ref.update(updates);
@@ -13311,7 +13314,7 @@
                     location.reload();
                 } catch (err) {
                     console.error('Case3 measurement-only reset failed', err);
-                    toast('❌ ล้างผลวัดไม่สำเร็จ: '+(err && err.message ? err.message : String(err)), 'error');
+                    toast('❌ ล้างผลวัดไม่สำเร็จ: ' + (err && err.message ? err.message : String(err)), 'error');
                 }
             };
 
