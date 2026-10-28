@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wi-Fi Measurement &amp; Analysis Dashboard — Case3 1-Scan v28</title>
+    <title>Wi-Fi Measurement &amp; Analysis Dashboard — Case3 v31 · Four-Orientation Study (0/90/180/270)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap"
@@ -9729,6 +9729,16 @@
         </div>
     </div>
 
+    <style id="c3-v31-orientation-style">
+        .c3-orient-box { margin:10px 0; padding:10px; border:1px solid #b6d7df; border-radius:12px; background:#f0fdfa; text-align:left; }
+        .c3-orient-head { font-size:12px; font-weight:800; color:#115e59; margin-bottom:7px; }
+        .c3-orient-buttons { display:flex; flex-wrap:wrap; gap:6px; }
+        .c3-orient-btn { padding:8px 10px; font:700 12px Sarabun,sans-serif; border:1px solid #99c9c5; border-radius:9px; background:white; color:#134e4a; cursor:pointer; flex:1; min-width:64px; }
+        .c3-orient-btn.active { background:#0f766e; border-color:#0f766e; color:white; }
+        .c3-orient-btn:disabled { opacity:.5; cursor:not-allowed; }
+        .c3-orient-note { font-size:11px; line-height:1.5; margin-top:7px; color:#115e59; }
+        .c3-orient-warn { color:#92400e; background:#fffbeb; border:1px solid #fcd34d; padding:7px; border-radius:8px; margin-top:6px; }
+    </style>
     <style id="c3-v30-per-round-delete-style">
         .c3-per-round-help {
             margin-top: 10px;
@@ -9778,17 +9788,17 @@
             <div class="c3-modal-head"><b>📋 Case 3 Data / Export</b><button class="c3-close"
                     onclick="C3.closeModal('data')">ปิด</button></div>
             <div class="c3-action-row">
-                <button class="c3-secondary-btn" onclick="C3.exportCsv()">CSV สรุป</button>
-                <button class="c3-secondary-btn" onclick="C3.exportRawCsv()">CSV Scan ดิบ (1 Scan/รอบ)</button>
-                <button class="c3-secondary-btn" onclick="C3.exportJson()">JSON Backup</button>
+                <button class="c3-secondary-btn" onclick="C3.exportCsv()">CSV หลัก (0° + Evaluation)</button>
+                <button class="c3-secondary-btn" onclick="C3.exportOrientationCsv()">📐 CSV เปรียบเทียบ 4 มุม</button>
+                <button class="c3-secondary-btn" onclick="C3.exportRawCsv()">CSV Scan ดิบ 0° + Evaluation</button>
+                <button class="c3-secondary-btn" onclick="C3.exportJson()">JSON Backup (ทุกมุม)</button>
             </div>
-            <div class="c3-per-round-help">เลือกแถวของจุดที่ต้องการ แล้วกด <b>ลบ R1</b>, <b>ลบ R2</b> หรือ <b>ลบ R3</b>
-                ถัดจากชื่อจุด · ลบเฉพาะรอบนั้นของจุดนั้น (ทั้ง 2.4/5 GHz) ไม่กระทบรอบอื่นหรือพิกัด</div>
+            <div class="c3-per-round-help">ตารางนี้แสดง <b>มุมที่เลือกบน Sidebar</b> สำหรับ Calibration/Validation · กดลบ R1/R2/R3 ทีละจุดและมุมได้โดยไม่แตะมุมอื่น · Final Evaluation ยังคงแยกจากการทดลองหมุน</div>
             <div id="c3-data-table-wrap" style="margin-top:8px;"></div>
-            <button class="c3-save c3-warn" onclick="C3.clearAllCalibrationValidationMeasurements()">🧹 ล้างเฉพาะ RSSI
+            <button class="c3-save c3-warn" onclick="C3.clearAllCalibrationValidationMeasurements()">🧹 ล้างเฉพาะ RSSI มุม 0°
                 ทั้ง 42 จุด (เก็บพิกัดและ Layout)</button>
             <div style="font-size:11px;color:#92400e;margin:6px 0 0;line-height:1.5;text-align:left;">ล้างเฉพาะ
-                R1–R3/ค่าเฉลี่ยของ Calibration 30 และ Validation 12 จุดเท่านั้น · เก็บ AP-CAL, ห้อง, ตู้, ประตู, พิกัด
+                R1–R3/ค่าเฉลี่ยชุดมุม 0° ของ Calibration 30 และ Validation 12 จุดเท่านั้น · เก็บ AP-CAL, ห้อง, ตู้, ประตู, พิกัด
                 และอุปกรณ์ · โมเดลเดิมที่ Fit ไว้ต้องคำนวณใหม่หลังวัดเสร็จ</div>
         </div>
     </div>
@@ -10030,6 +10040,17 @@
             var selectedStage = 'L';
             var selectedPoint = 'L01';
             var selectedRound = 'R1';
+            // v31: 0° is the EXISTING Cal/Val dataset. Other angles are independent.
+            var selectedOrientation = '0';
+            var C3_ORIENTATIONS = ['0', '90', '180', '270'];
+            var c3OrientationData = { '90': {}, '180': {}, '270': {} };
+            var c3OrientLoaded = false;
+            var c3OrientProfile = '';
+            // When switching angle/point, reject the previous snapshot until ESP32 publishes a new one.
+            var c3OrientArmScanId = '';
+            var c3OrientBusy = false;
+            var c3OrientationListenerRef = null;
+            var c3OrientationListenerCallback = null;
             var c3AverageMode = false;
             try {
                 var savedC3Band = localStorage.getItem('case3SelectedBand');
@@ -10813,6 +10834,67 @@
             function isCase3() { return typeof currentCase !== 'undefined' && currentCase === 'Case3'; }
             function profile() { return (typeof currentProfile !== 'undefined' && currentProfile) ? String(currentProfile) : 'Default'; }
             function basePath() { return 'HeatmapData/' + profile() + '/Case3/TestbedFloor2'; }
+            function c3OrientEnabled() { return selectedStage !== 'E' && selectedStage !== 'M'; }
+            function c3ActiveAngle() { return c3OrientEnabled() ? selectedOrientation : '0'; }
+            function c3OrientPath(angle, pointId) {
+                if (['90','180','270'].indexOf(String(angle)) < 0 || !POINT_DEFS.some(function(d){return d.id===pointId;})) throw Error('Invalid orientation point');
+                return basePath() + '/OrientationStudy/angles/' + angle + '/points/' + pointId;
+            }
+            function c3OrientBucket(pt, angle) {
+                angle = String(angle === undefined ? c3ActiveAngle() : angle);
+                if (!pt || isEvaluationPoint(pt) || angle === '0') return measurementBucket(pt, null);
+                var node = (c3OrientationData[angle] || {})[pt.pointId] || {};
+                return node.measurements || {};
+            }
+            function c3OrientDone(pt, r, angle) {
+                var m = c3OrientBucket(pt, angle)[r] || {};
+                return numberOrNull(m.rssi24) !== null && numberOrNull(m.rssi5) !== null;
+            }
+            function c3OrientCount(pt, angle) {
+                return ['R1','R2','R3'].filter(function(r){return c3OrientDone(pt,r,angle);}).length;
+            }
+            function c3OrientAverage(pt, angle) {
+                var bucket=c3OrientBucket(pt,angle), a24=[],a5=[];
+                ['R1','R2','R3'].forEach(function(r){ var m=bucket[r]||{};
+                    if(numberOrNull(m.rssi24)!==null)a24.push(Number(m.rssi24));
+                    if(numberOrNull(m.rssi5)!==null)a5.push(Number(m.rssi5));
+                });
+                return {rssi24:a24.length===3?a24.reduce(function(x,y){return x+y;},0)/3:null,
+                    rssi5:a5.length===3?a5.reduce(function(x,y){return x+y;},0)/3:null};
+            }
+            function c3OrientComplete(angle) {
+                return POINT_DEFS.filter(function(d){return c3OrientCount(points[d.id],angle)===3;}).length;
+            }
+            function c3OrientRounds(angle) {
+                return POINT_DEFS.reduce(function(acc,d){return acc+c3OrientCount(points[d.id],angle);},0);
+            }
+            function c3OrientationScannedBefore(id) {
+                if(!id) return true;
+                return ['90','180','270'].some(function(angle){
+                    return Object.keys(c3OrientationData[angle]||{}).some(function(pid){
+                        var bucket=((c3OrientationData[angle][pid]||{}).measurements||{});
+                        return ['R1','R2','R3'].some(function(r){var m=bucket[r]||{};
+                            return sameRecordedScan(m,id) || (Array.isArray(m.rawScans)&&m.rawScans.some(function(row){return sameRecordedScan(row,id);}));
+                        });
+                    });
+                });
+            }
+            function c3OrientationArm() { c3OrientArmScanId=scanId(liveScan); }
+            function c3OrientationHtml() {
+                var html='<div class="c3-orient-box"><div class="c3-orient-head">📐 ทิศทางของ ESP32-C5 (อ้างอิง AP ณ จุดวัด)</div><div class="c3-orient-buttons">';
+                C3_ORIENTATIONS.forEach(function(a){
+                    html += '<button type="button" class="c3-orient-btn '+(selectedOrientation===a?'active':'')+'" onclick="C3.setOrientation(\''+a+'\')">'+a+'° · '+c3OrientComplete(a)+'/42</button>';
+                });
+                html+='</div><div class="c3-orient-note"><b>0°:</b> ข้อมูลเดิม R1–R3 ใน Calibration/Validation ใช้ Fit Model ตามเดิม<br>'+
+                    '<b>90° / 180° / 270°:</b> บันทึกแยกใน OrientationStudy; ไม่มีผลต่อ Model Fitting หรือ Final Evaluation<br>'+
+                    'กำหนดมุมแบบมองจากด้านบน หมุนตามเข็มนาฬิกาจากทิศหน้าอุปกรณ์หันเข้า AP ที่แต่ละจุด</div>';
+                if(selectedOrientation!=='0') {
+                    html+='<div class="c3-orient-note">ชุด '+selectedOrientation+'° · '+c3OrientRounds(selectedOrientation)+'/126 รอบ · '+(c3OrientLoaded?'Firebase พร้อม':'กำลังอ่าน Firebase / ยังไม่พร้อม')+'</div>';
+                    if(c3OrientArmScanId && scanId(liveScan)===c3OrientArmScanId)
+                        html+='<div class="c3-orient-warn">⏳ รอ Scan ใหม่หลังเปลี่ยนมุม/จุดวัดก่อนกดบันทึก (เพื่อไม่ให้ใช้ค่าเดิม)</div>';
+                }
+                return html+'</div>';
+            }
             function numberOrNull(v) { if (v === '' || v === null || v === undefined) return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
             function val(v) { return v === null || v === undefined ? '' : String(v); }
             function esc(v) { return String(v === null || v === undefined ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -11131,7 +11213,7 @@
             function calValidationComplete() { return totalComplete() === TOTAL_POINTS; }
             function candidateMeasurementExists(candidate) { candidate = evalCandidate(candidate); return EVAL_POINT_DEFS.some(function (d) { return roundCount(points[d.id], candidate) > 0; }); }
             function anyEvaluationMeasurementExists() { return ['A', 'B', 'C'].some(function (c) { return candidateMeasurementExists(c); }); }
-            function anyMeasurementExists() { return POINT_DEFS.some(function (d) { return roundCount(points[d.id]) > 0; }) || anyEvaluationMeasurementExists() || materialAnyCaptured(); }
+            function anyMeasurementExists() { return POINT_DEFS.some(function (d) { return roundCount(points[d.id]) > 0; }) || anyEvaluationMeasurementExists() || materialAnyCaptured() || ['90','180','270'].some(function(a){return c3OrientRounds(a)>0;}); }
             function c3V28CompletedRounds(candidate) {
                 var finished = 0;
                 var defs = candidate ? EVAL_POINT_DEFS : POINT_DEFS;
@@ -11755,6 +11837,20 @@
                 try {
                     db.ref('.info/connected').on('value', function (s) { firebaseConnected = !!s.val(); renderStatus(); renderControls(); });
                     db.ref('WiFi_Scan/current').on('value', function (s) { liveScan = s.exists() ? (s.val() || {}) : {}; liveScanReceivedAt = Date.now(); renderStatus(); renderControls(); });
+                    // Orientation snapshots are independent of legacy Calibration / Validation.
+                    var listenerBasePath = basePath();
+                    c3OrientationListenerRef = db.ref(listenerBasePath + '/OrientationStudy/angles');
+                    c3OrientationListenerCallback = function(s) {
+                        if(basePath()!==listenerBasePath) return; // no cross-profile contamination
+                        var v = s.val() || {};
+                        ['90','180','270'].forEach(function(a){c3OrientationData[a]=(v[a]&&v[a].points)||{};});
+                        c3OrientProfile=profile(); c3OrientLoaded=true;
+                        renderStatus(); renderControls(); renderTestbed();
+                        if(document.getElementById('c3-data-modal') && document.getElementById('c3-data-modal').classList.contains('open')) renderDataTable();
+                    };
+                    c3OrientationListenerRef.on('value', c3OrientationListenerCallback, function(err){
+                        c3OrientLoaded=false; console.error('OrientationStudy listener',err); toast('⚠️ ไม่สามารถโหลดข้อมูลมุมหมุนจาก Firebase','warning');
+                    });
                     db.ref('WiFi_Scan/config').on('value', function (s) {
                         deviceConfig = s.exists() ? (s.val() || {}) : {};
                         ap.z = apHeight();
@@ -11997,7 +12093,7 @@
             function currentMeasurement() {
                 var pt = points[selectedPoint]; if (!pt) return {};
                 if (c3AverageMode) return recalc(pt, isEvaluationPoint(pt) ? selectedEvalAp : null) || {};
-                return measurementBucket(pt, isEvaluationPoint(pt) ? selectedEvalAp : null)[selectedRound] || {};
+                return (!isEvaluationPoint(pt) ? c3OrientBucket(pt) : measurementBucket(pt, selectedEvalAp))[selectedRound] || {};
             }
             function scanAlreadyUsed(id, excludePoint, excludeRound, excludeCandidate) {
                 if (!id) return true;
@@ -12019,7 +12115,7 @@
                         });
                     });
                 });
-                return used || materialScanUsed(id);
+                return used || materialScanUsed(id) || c3OrientationScannedBefore(id);
             }
 
             function renderStatus() {
@@ -12073,19 +12169,23 @@
                 var html = '<table><thead><tr>' + headers.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>';
                 var defs = selectedStage === 'E' ? EVAL_POINT_DEFS : POINT_DEFS;
                 defs.forEach(function (d) {
-                    var pt = points[d.id], candidate = isEvaluationPoint(pt) ? selectedEvalAp : null, dst = distance(pt, candidate), gs = geometryState(pt, candidate), avg = recalc(pt, candidate), bucket = measurementBucket(pt, candidate);
-                    function rr(r, k) { var m = bucket[r] || {}; return Number.isFinite(Number(m[k])) ? Number(m[k]).toFixed(1) : '-'; }
+                    var pt = points[d.id], candidate = isEvaluationPoint(pt) ? selectedEvalAp : null, dst = distance(pt, candidate), gs = geometryState(pt, candidate), avg = candidate ? recalc(pt,candidate) : c3OrientAverage(pt,selectedOrientation), bucket = candidate ? measurementBucket(pt,candidate) : c3OrientBucket(pt,selectedOrientation);
+                    function rr(r, k) { var m = bucket[r] || {}, n=numberOrNull(m[k]); return n===null ? '-' : n.toFixed(1); }
                     var deleteButtons = ['R1', 'R2', 'R3'].map(function (r) {
-                        var done = pointRoundDone(pt, r, candidate);
+                        var done = candidate ? pointRoundDone(pt,r,candidate) : c3OrientDone(pt,r,selectedOrientation);
                         var apArg = candidate || '';
                         return '<button type="button" class="c3-delete-one-round" ' +
                             (done ? '' : 'disabled title="รอบนี้ยังไม่มีข้อมูล" ') +
                             'onclick="C3.clearPointRound(\'' + pt.pointId + '\',\'' + r + '\',\'' + apArg + '\')">ลบ ' + r + '</button>';
                     }).join('');
-                    html += '<tr><td><b>' + pt.pointId + '</b></td><td class="c3-delete-buttons-cell">' + deleteButtons + '</td><td>' + pt.setType + '</td><td>' + (isEvaluationPoint(pt) ? ('AP-' + candidate) : 'AP-CAL') + '</td><td>' + (pt.sourcePoint || '-') + '</td><td>' + (gs.kw === null || gs.kw === undefined ? pt.wallCount : gs.kw) + '</td><td>' + (pt.x === null ? '-' : Number(pt.x).toFixed(2)) + '</td><td>' + (pt.y === null ? '-' : Number(pt.y).toFixed(2)) + '</td><td>' + Number(pt.z).toFixed(2) + '</td><td>' + (dst.d2 === null ? '-' : dst.d2.toFixed(2)) + '</td><td>' + (dst.d3 === null ? '-' : dst.d3.toFixed(2)) + '</td><td>' + rr('R1', 'rssi24') + '</td><td>' + rr('R2', 'rssi24') + '</td><td>' + rr('R3', 'rssi24') + '</td><td>' + (avg.rssi24 === null ? '-' : avg.rssi24.toFixed(1)) + '</td><td>' + rr('R1', 'rssi5') + '</td><td>' + rr('R2', 'rssi5') + '</td><td>' + rr('R3', 'rssi5') + '</td><td>' + (avg.rssi5 === null ? '-' : avg.rssi5.toFixed(1)) + '</td><td>' + (gs.cabinetBlocked ? 'STEEL 3D' : (gs.furniturePotential ? 'Furniture? 2D' : 'Clear')) + '</td><td>' + pointStatus(pt, candidate) + '</td></tr>';
+                    html += '<tr><td><b>' + pt.pointId + '</b></td><td class="c3-delete-buttons-cell">' + deleteButtons + '</td><td>' + pt.setType + '</td><td>' + (isEvaluationPoint(pt) ? ('AP-' + candidate) : 'AP-CAL') + '</td><td>' + (pt.sourcePoint || '-') + '</td><td>' + (gs.kw === null || gs.kw === undefined ? pt.wallCount : gs.kw) + '</td><td>' + (pt.x === null ? '-' : Number(pt.x).toFixed(2)) + '</td><td>' + (pt.y === null ? '-' : Number(pt.y).toFixed(2)) + '</td><td>' + Number(pt.z).toFixed(2) + '</td><td>' + (dst.d2 === null ? '-' : dst.d2.toFixed(2)) + '</td><td>' + (dst.d3 === null ? '-' : dst.d3.toFixed(2)) + '</td><td>' + rr('R1', 'rssi24') + '</td><td>' + rr('R2', 'rssi24') + '</td><td>' + rr('R3', 'rssi24') + '</td><td>' + (avg.rssi24 === null ? '-' : avg.rssi24.toFixed(1)) + '</td><td>' + rr('R1', 'rssi5') + '</td><td>' + rr('R2', 'rssi5') + '</td><td>' + rr('R3', 'rssi5') + '</td><td>' + (avg.rssi5 === null ? '-' : avg.rssi5.toFixed(1)) + '</td><td>' + (gs.cabinetBlocked ? 'STEEL 3D' : (gs.furniturePotential ? 'Furniture? 2D' : 'Clear')) + '</td><td>' + (candidate ? pointStatus(pt,candidate) : (c3OrientCount(pt,selectedOrientation)===3?'COMPLETE':(c3OrientCount(pt,selectedOrientation)>0?'INCOMPLETE':'NOT STARTED'))) + '</td></tr>';
                 });
                 html += '</tbody></table>';
                 if (selectedStage === 'E') html = '<div style="font-size:10px;color:#475569;margin-bottom:7px;text-align:left;"><b>Final Evaluation AP-' + selectedEvalAp + '</b> · E01–E12 ใช้พิกัด Validation เดิม · Final Model 2.4=' + esc(evaluationSetup.model24 || '-') + ' · 5G=' + esc(evaluationSetup.model5 || '-') + '</div>' + html;
+                if(selectedStage!=='E') {
+                    var switchButtons=C3_ORIENTATIONS.map(function(a){return '<button type="button" class="c3-orient-btn '+(a===selectedOrientation?'active':'')+'" onclick="C3.setOrientation(\''+a+'\')">'+a+'°</button>';}).join('');
+                    html='<div class="c3-orient-box"><div class="c3-orient-head">มุม '+selectedOrientation+'° · '+c3OrientComplete(selectedOrientation)+'/42 จุด · ลบเฉพาะมุมที่แสดง</div><div class="c3-orient-buttons">'+switchButtons+'</div></div>'+html;
+                }
                 box.innerHTML = html;
             }
 
@@ -12232,6 +12332,7 @@
             }
 
             function loadData() {
+                c3OrientLoaded=false; c3OrientProfile='';
                 if (typeof db === 'undefined') { applyDraftFieldPlanPositions(); syncEvaluationCoordinates(); renderAll(); return; }
                 Promise.all([
                     db.ref(basePath() + '/Layout').once('value'),
@@ -12246,7 +12347,8 @@
                     db.ref(basePath() + '/Evaluation/B').once('value'),
                     db.ref(basePath() + '/Evaluation/C').once('value'),
                     db.ref(basePath() + '/MaterialStudy/Setup').once('value'),
-                    db.ref(basePath() + '/MaterialStudy/Points').once('value')
+                    db.ref(basePath() + '/MaterialStudy/Points').once('value'),
+                    db.ref(basePath() + '/OrientationStudy/angles').once('value')
                 ]).then(function (sn) {
                     if (sn[0].exists()) {
                         var l = sn[0].val() || {};
@@ -12340,6 +12442,9 @@
                         });
                     });
                     materialMergeSnapshots(sn[11], sn[12]);
+                    var c3O = (sn[13] && sn[13].val()) || {};
+                    ['90','180','270'].forEach(function(a){c3OrientationData[a]=(c3O[a]&&c3O[a].points)||{};});
+                    c3OrientLoaded=true; c3OrientProfile=profile();
                     // v21: read the measured 214-cm cabinet and require explicit user approval.
                     // Never auto-overwrite Firebase AP or measuring points on reload.
                     c3RefreshApPlanFromTallCabinet();
@@ -12666,6 +12771,15 @@
                 renderAll();
             };
             C3.setView = function (v) { viewMode = v === 'floor2' ? 'floor2' : 'testbed'; renderAll(); };
+            C3.setOrientation = function(angle) {
+                angle=String(angle);
+                if (!isCase3() || C3_ORIENTATIONS.indexOf(angle)<0) return;
+                if(c3MeasurementPending||c3RoundDeletionPending||c3OrientBusy) {toast('⏳ กำลังบันทึก/ลบผลวัดอยู่','warning');return;}
+                if(angle!=='0' && (!c3OrientLoaded || c3OrientProfile!==profile())) {toast('⛔ ยังอ่านข้อมูล OrientationStudy ไม่ครบ ห้ามเขียนทับ','warning');return;}
+                selectedOrientation=angle; c3AverageMode=false; c3SteelCaptureAck=null; c3OrientationArm();
+                renderAll();
+                if(document.getElementById('c3-data-modal') && document.getElementById('c3-data-modal').classList.contains('open')) renderDataTable();
+            };
             C3.setStage = function (s) {
                 if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยนขั้นตอนยังไม่ได้', 'info'); return; }
                 selectedStage = ['L', 'W', 'V', 'E', 'M'].indexOf(s) >= 0 ? s : 'L';
@@ -12673,9 +12787,9 @@
                 var ids = currentStageIds(); if (selectedStage === 'M') { placementMode = ''; renderAll(); return; }
                 if (ids.indexOf(selectedPoint) < 0) selectedPoint = ids[0];
                 // Keep the manually selected round across stages (LOS / Wall / Validation).
-                placementMode = ''; renderAll();
+                placementMode = ''; c3OrientationArm(); renderAll();
             };
-            C3.selectPoint = function (id) { if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยนจุดยังไม่ได้', 'info'); return; } if (!points[id]) return; selectedPoint = id; selectedStage = stageOf(id); if (selectedStage === 'E') syncEvaluationCoordinates(); placementMode = ''; renderAll(); };
+            C3.selectPoint = function (id) { if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยนจุดยังไม่ได้', 'info'); return; } if (!points[id]) return; selectedPoint = id; selectedStage = stageOf(id); if (selectedStage === 'E') syncEvaluationCoordinates(); placementMode = ''; c3OrientationArm(); c3SteelCaptureAck=null; renderAll(); };
             C3.setEvalAp = function (candidate) {
                 if (c3MeasurementPending) { toast('⏳ กำลังรับ 1 Scan ใหม่ — เปลี่ยน AP ยังไม่ได้', 'info'); return; }
                 if (['A', 'B', 'C'].indexOf(candidate) < 0) return;
@@ -13056,7 +13170,74 @@
                 return { sample: sample, id: id, timestampMs: timestampMs };
             }
 
+            // v31: multi-angle captures are independent from the 0° model-training dataset.
+            C3.orientationMeasure = async function () {
+                if(c3MeasurementPending||c3OrientBusy||c3RoundDeletionPending) {toast('⏳ กำลังบันทึก/ลบอยู่','warning');return;}
+                if(!c3OrientEnabled()||selectedOrientation==='0') return;
+                if(!c3OrientLoaded||c3OrientProfile!==profile()||!firebaseConnected||typeof db==='undefined') {toast('⛔ ยังโหลดข้อมูลมุมหมุน/Firebase ไม่พร้อม','warning');return;}
+                if(legacyGeometryBlocked||!layoutReady()||!apCalFieldGate()||!deviceConfigReady()||c3AverageMode) {toast('⛔ Config, Layout, AP-CAL หรือโหมดวัดไม่พร้อม','warning');return;}
+                var pt=points[selectedPoint], gs=geometryState(pt), angle=selectedOrientation, rnd=selectedRound, p=profile(), pid=selectedPoint;
+                if(!pt||isEvaluationPoint(pt)||pt.x===null||pt.y===null||!gs.ok) {toast('⛔ พิกัดหรือ Geometry ไม่พร้อม','warning');return;}
+                if(gs.cabinetBlocked&&!c3SteelAckValid(pt,null)) {toast('⛔ ติ๊กยืนยันสิ่งกีดขวางตู้เหล็กก่อน','warning');return;}
+                var latest=c3LatestScanAtClick(pid,'',null); // do NOT exempt same-point original 0° scan ID
+                if(latest.error) {toast('⛔ '+latest.error,'warning');return;}
+                if(c3OrientArmScanId && latest.id===c3OrientArmScanId) {toast('⏳ รอ ESP32 ส่ง Scan ใหม่ หลังตั้งมุมและจุดวัดแล้วก่อนกดบันทึก','warning');return;}
+                if(c3OrientationScannedBefore(latest.id)) {toast('⛔ Scan นี้เคยบันทึกในการทดลองมุมอื่นแล้ว','warning');return;}
+                var ref=db.ref(c3OrientPath(angle,pid)+'/measurements/'+rnd), previous;
+                try {previous=(await ref.once('value')).val();} catch(err) {toast('⛔ ตรวจข้อมูลเดิมบน Firebase ไม่สำเร็จ','warning');return;}
+                var isExisting=previous&&typeof previous==='object'&&Object.keys(previous).length>0;
+                if(isExisting && !confirm('จุด '+pid+' · '+angle+'° · '+rnd+' มีข้อมูลอยู่แล้ว!\nบันทึก Scan ใหม่แทนเฉพาะมุมและรอบนี้หรือไม่?\nควรสำรอง JSON ก่อน'))return;
+                if(p!==profile()||pid!==selectedPoint||angle!==selectedOrientation||rnd!==selectedRound||!c3OrientEnabled()) {toast('⛔ จุด/มุม/รอบเปลี่ยน ไม่บันทึก','warning');return;}
+                var raw=c3BatchRawRow(latest.sample,latest.id,latest.timestampMs),now=Date.now();
+                var record={captureMethod:'V31_ORIENTATION_LATEST_SCAN',orientationDeg:Number(angle),orientationReference:'0=facing AP at each point; clockwise from above',
+                    scanCount:1,expectedScanCount:1,rawScans:[raw],timestamp:now,captureStartedAt:now,captureCompletedAt:now,
+                    rssi24:raw.rssi24,rssi5:raw.rssi5,sourceScanId:raw.sourceScanId,sourceScanTimestamp:raw.sourceScanTimestamp,
+                    scanSequence:raw.scanSequence,sourceScanAgeSeconds:raw.sourceScanAgeSeconds,observedBssid24:raw.observedBssid24,
+                    observedBssid5:raw.observedBssid5,channel24:raw.channel24,channel5:raw.channel5,
+                    geometryVersion:C3_GEOMETRY_VERSION,apCalPosition:{x:ap.x,y:ap.y,z:ap.z},pointPosition:{x:pt.x,y:pt.y,z:pt.z},
+                    cabinetBlocked:!!gs.cabinetBlocked,cabinetFieldConfirmedAt:gs.cabinetBlocked?Date.now():null,
+                    oneWallCalibrationEligible:!!gs.ok&&!gs.cabinetBlocked};
+                c3OrientBusy=true;c3MeasurementPending=true;c3CaptureProgress={pointId:pid,round:rnd,count:1,target:1,status:'บันทึกมุม '+angle+'° ลง Firebase'};
+                renderControls();
+                try {
+                    // Transaction prevents replacing somebody else's concurrent capture without confirmation.
+                    var oldId=previous&&previous.sourceScanId||'',res=await ref.transaction(function(current){
+                        var exists=current&&typeof current==='object'&&Object.keys(current).length>0;
+                        if(exists && !isExisting) return;
+                        if(exists && isExisting && (current.sourceScanId||'')!==oldId) return;
+                        return record;
+                    },undefined,false);
+                    if(!res.committed) {toast('⛔ Firebase มีข้อมูลเปลี่ยนระหว่างบันทึก ไม่เขียนทับ กรุณารีโหลด','warning');return;}
+                    c3OrientationData[angle]=c3OrientationData[angle]||{};
+                    var node=c3OrientationData[angle][pid]||{};node.measurements=node.measurements||{};node.measurements[rnd]=record;c3OrientationData[angle][pid]=node;
+                    lastAcceptedScanId=latest.id; c3OrientArmScanId=latest.id; c3SteelCaptureAck=null;
+                    toast('✅ บันทึก '+pid+' · '+angle+'° · '+rnd+' · 2.4G '+raw.rssi24+' / 5G '+raw.rssi5+' dBm','success');
+                } catch(err) {console.error('Case3 angle capture',err);toast('❌ บันทึกมุมหมุนไม่สำเร็จ: '+err.message,'error');}
+                finally {c3OrientBusy=false;c3MeasurementPending=false;c3CaptureProgress=null;renderAll();}
+            };
+            C3.clearOrientationRound = async function(pointId,round,angle) {
+                angle=String(angle);
+                if(!c3OrientEnabled()||angle==='0'||!C3_ORIENTATIONS.includes(angle)||!POINT_DEFS.some(function(d){return d.id===pointId;})||!['R1','R2','R3'].includes(round)) {toast('⛔ จุด/มุม/รอบไม่ถูกต้อง','warning');return;}
+                if(c3MeasurementPending||c3OrientBusy||c3RoundDeletionPending||!firebaseConnected||!c3OrientLoaded||c3OrientProfile!==profile()) {toast('⛔ Firebase ยังไม่พร้อมหรือกำลังบันทึก','warning');return;}
+                var p=profile(),ref=db.ref(c3OrientPath(angle,pointId)+'/measurements/'+round),old;
+                c3RoundDeletionPending=true;
+                try {old=(await ref.once('value')).val();
+                    if(!old || !Object.keys(old).length){toast('ℹ️ ยังไม่มีข้อมูล '+pointId+' '+angle+'° '+round,'info');return;}
+                    if(!confirm('ลบเฉพาะ '+pointId+' · '+angle+'° · '+round+' ?\nจะไม่ลบรอบอื่น มุมอื่น หรือพิกัด'))return;
+                    if(p!==profile()||!firebaseConnected||angle!==selectedOrientation) {toast('⛔ มุม/โปรไฟล์เปลี่ยน','warning');return;}
+                    var oldId=old.sourceScanId||'',res=await ref.transaction(function(current){
+                        if(!current || (current.sourceScanId||'')!==oldId) return;
+                        return null;
+                    },undefined,false);
+                    if(!res.committed){toast('⛔ ข้อมูลเปลี่ยนจากอีกเครื่อง รีโหลดแล้วลองใหม่','warning');return;}
+                    if(c3OrientationData[angle]&&c3OrientationData[angle][pointId]&&c3OrientationData[angle][pointId].measurements)
+                        delete c3OrientationData[angle][pointId].measurements[round];
+                    toast('✅ ลบ '+pointId+' · '+angle+'° · '+round+' แล้ว','success');renderDataTable();renderAll();
+                }catch(err){console.error(err);toast('❌ ลบรอบมุมหมุนไม่สำเร็จ: '+err.message,'error');}
+                finally{c3RoundDeletionPending=false;}
+            };
             C3.measure = async function () {
+                if (c3OrientEnabled() && selectedOrientation !== '0') return C3.orientationMeasure();
                 if (c3MeasurementPending) { toast('⏳ ระบบกำลังบันทึกจุดก่อนหน้าอยู่', 'info'); return; }
                 if (legacyGeometryBlocked) { toast('⛔ ข้อมูล Case 3 รุ่นพิกัดเดิมอยู่ในโปรไฟล์นี้ กรุณาสร้างโปรไฟล์ใหม่ ห้ามรวมชุดวัด', 'warning'); return; }
                 if (c3AverageMode) { toast('โหมดเฉลี่ยใช้ดูผลจาก R1–R3 และไม่บันทึกข้อมูลใหม่', 'info'); return; }
@@ -13166,6 +13347,7 @@
             // so another point, round or AP/Room Layout cannot be overwritten.
             var c3RoundDeletionPending = false;
             C3.clearPointRound = async function (pointId, round, candidate) {
+                if (!candidate && c3OrientEnabled() && selectedOrientation!=='0') return C3.clearOrientationRound(pointId,round,selectedOrientation);
                 if (!isCase3()) { toast('⛔ เปิด Case 3 ก่อนลบผลวัด', 'warning'); return; }
                 if (c3MeasurementPending || c3RoundDeletionPending) {
                     toast('⏳ กำลังบันทึก/ลบข้อมูลอยู่ กรุณารอให้จบก่อน', 'warning'); return;
@@ -13237,11 +13419,28 @@
                 var calval = {}, evaluation = { A: {}, B: {}, C: {} };
                 POINT_DEFS.forEach(function (d) { calval[d.id] = payload(points[d.id]); });
                 ['A', 'B', 'C'].forEach(function (c) { EVAL_POINT_DEFS.forEach(function (d) { evaluation[c][d.id] = payload(points[d.id], c); }); });
-                return { exportedAt: new Date().toISOString(), profile: profile(), path: basePath(), scope: 'Room 10 + right corridor controlled AP testbed', expectedRssiRecords: EXPECTED_CASE3_RSSI_RECORDS, completedRssiRecords: completedRssiRecordCount(), layout: JSON.parse(JSON.stringify(layout)), apCal: JSON.parse(JSON.stringify(ap)), finalModels: JSON.parse(JSON.stringify(evaluationSetup)), candidateAps: JSON.parse(JSON.stringify(candidateAps)), deviceConfig: JSON.parse(JSON.stringify(deviceConfig)), calibrationValidation: calval, evaluation: evaluation, materialStudy: materialBackup() };
+                return { exportedAt: new Date().toISOString(), profile: profile(), path: basePath(), orientationStudy: { reference: '0° face AP at each point, clockwise viewed from above; baseline stored in Calibration/Validation', angles: c3OrientationData, baseline0ReusesCalibrationValidation: true }, scope: 'Room 10 + right corridor controlled AP testbed', expectedRssiRecords: EXPECTED_CASE3_RSSI_RECORDS, completedRssiRecords: completedRssiRecordCount(), layout: JSON.parse(JSON.stringify(layout)), apCal: JSON.parse(JSON.stringify(ap)), finalModels: JSON.parse(JSON.stringify(evaluationSetup)), candidateAps: JSON.parse(JSON.stringify(candidateAps)), deviceConfig: JSON.parse(JSON.stringify(deviceConfig)), calibrationValidation: calval, evaluation: evaluation, materialStudy: materialBackup() };
             }
             C3.exportJson = function () { var blob = new Blob([JSON.stringify(backupObject(), null, 2)], { type: 'application/json;charset=utf-8' }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = 'Case3_Hybrid_468MainRSSI_Backup_' + profile() + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); };
             // V27: export each raw snapshot as its own CSV row for reproducibility.
             // Legacy single-scan rounds appear with MeasurementMode=LEGACY_SINGLE.
+            C3.exportOrientationCsv = function () {
+                if(!c3OrientLoaded || c3OrientProfile!==profile()) {toast('⛔ ยังโหลดมุมหมุนไม่ครบ ห้าม Export ข้อมูลไม่ครบ','warning');return;}
+                var rows=[['Profile','Orientation_deg','PointID','SetType','Environment','X_m','Y_m','Z_m','AP_X_m','AP_Y_m','AP_Z_m','Round','RSSI24_dBm','RSSI5_dBm','SourceScanId','SourceTimestampMs','Channel24','Channel5','BSSID24','BSSID5','CaptureMethod','CaptureTimeMs','Avg24_3Rounds_dBm','Avg5_3Rounds_dBm','RoundComplete','MeasurementNote']];
+                C3_ORIENTATIONS.forEach(function(angle){
+                    POINT_DEFS.forEach(function(d){
+                        var pt=points[d.id], buck=c3OrientBucket(pt,angle),avg=c3OrientAverage(pt,angle);
+                        ['R1','R2','R3'].forEach(function(r){ var m=buck[r]||{}, done=c3OrientDone(pt,r,angle);
+                            rows.push([profile(),angle,pt.pointId,pt.setType,pt.environment,val(pt.x),val(pt.y),val(pt.z),val(ap.x),val(ap.y),val(ap.z),r,
+                                done?m.rssi24:'',done?m.rssi5:'',m.sourceScanId||'',m.sourceScanTimestamp||'',m.channel24||'',m.channel5||'',m.observedBssid24||'',m.observedBssid5||'',m.captureMethod||'',m.timestamp||'',
+                                avg.rssi24===null?'':avg.rssi24.toFixed(3),avg.rssi5===null?'':avg.rssi5.toFixed(3),done?'YES':'NO',angle==='0'?'LEGACY_BASELINE_FOR_MODEL':'ORIENTATION_STUDY_ONLY']);
+                        });
+                    });
+                });
+                var csv=rows.map(function(row){return row.map(function(v){return '"'+String(v===null||v===undefined?'':v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+                var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+                a.href=url;a.download='Case3_Orientation_0_90_180_270_'+profile()+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+            };
             C3.exportRawCsv = function () {
                 var rows = [['Profile', 'Stage', 'APPosition', 'PointID', 'Round', 'MeasurementMode', 'ScanIndex', 'ScanCount',
                     'SourceScanId', 'SourceTimestampMs', 'ScanSequence', 'RSSI24_dBm', 'RSSI5_dBm',
@@ -13970,6 +14169,7 @@
                 var pt = points[selectedPoint], m = currentMeasurement(), dst = distance(pt), gs = geometryState(pt);
                 var id = scanId(liveScan), age = scanAgeSeconds(liveScan), fresh = !!id && age <= C3_STALE_SEC;
                 var unique = !!id && !scanAlreadyUsed(id, selectedPoint, selectedRound, selectedStage === 'E' ? selectedEvalAp : '');
+                if(c3OrientEnabled() && selectedOrientation!=='0') unique = unique && c3OrientLoaded && c3OrientProfile===profile() && (!c3OrientArmScanId || id!==c3OrientArmScanId);
                 var a = activeAp(), posOk = layoutReady() && a && a.x !== null && a.y !== null && pt && pt.x !== null && pt.y !== null && gs.ok;
                 var cfgOk = deviceConfigReady(), bOk = bssidMatch(liveScan), cOk = channelMatch(liveScan);
                 var physicalOk = selectedStage !== 'E' ? apCalFieldGate() : (
@@ -14006,6 +14206,7 @@
                     '<button class="c3-stage-btn ' + (selectedStage === 'E' ? 'active' : '') + '" onclick="C3.setStage(\'E\')">Final Evaluation</button>' +
                     '<button class="c3-stage-btn ' + (selectedStage === 'M' ? 'active' : '') + '" onclick="C3.setStage(\'M\')">Material Study</button>' +
                     '</div>';
+                if (c3OrientEnabled()) html += c3OrientationHtml();
 
                 if (selectedStage === 'W') html += c3WallPlanHtml();
 
@@ -14089,15 +14290,15 @@
                 }
 
                 html += '<div class="c3-v9-label">รอบการวัด</div><div class="c3-round-row">';
-                ['R1', 'R2', 'R3'].forEach(function (r) { html += '<button class="c3-round-btn ' + (!c3AverageMode && selectedRound === r ? 'active ' : '') + (pointRoundDone(pt, r, selectedStage === 'E' ? selectedEvalAp : null) ? 'done' : '') + '" onclick="C3.setRound(\'' + r + '\')">' + r + '</button>'; });
+                ['R1', 'R2', 'R3'].forEach(function (r) { html += '<button class="c3-round-btn ' + (!c3AverageMode && selectedRound === r ? 'active ' : '') + ((c3OrientEnabled() ? c3OrientDone(pt,r,selectedOrientation) : pointRoundDone(pt,r,selectedEvalAp)) ? 'done' : '') + '" onclick="C3.setRound(\'' + r + '\')">' + r + '</button>'; });
                 html += '<button class="c3-round-btn ' + (c3AverageMode ? 'active ' : '') + '" onclick="C3.setRound(\'AVG\')">เฉลี่ย</button></div>';
                 html += '<div class="c3-v9-label" style="margin-top:8px;">คลื่นความถี่</div>';
                 html += '<div class="c3-round-row"><button type="button" class="c3-band-btn ' + (currentFreq === '2.4GHz' ? 'active' : '') + '" onclick="C3.setBand(\'2.4GHz\')">2.4 GHz</button><button type="button" class="c3-band-btn ' + (currentFreq === '5GHz' ? 'active' : '') + '" onclick="C3.setBand(\'5GHz\')">5 GHz</button></div>';
-                var avg = recalc(pt, selectedStage === 'E' ? selectedEvalAp : null);
+                var avg = c3OrientEnabled() ? c3OrientAverage(pt,selectedOrientation) : recalc(pt, selectedEvalAp);
                 var selectedSaved = currentFreq === '5GHz' ? avg.rssi5 : avg.rssi24;
                 var selectedDisplay = c3AverageMode ? selectedSaved : (currentFreq === '5GHz' ? liveScan.rssi_5g : liveScan.rssi_24g);
                 var roundLabel = c3AverageMode ? 'เฉลี่ย' : selectedRound;
-                html += '<div class="c3-v9-current"><b>' + activeApLabel() + ' · ' + selectedPoint + ' · ' + roundLabel + '</b><span>d3D ' + d3 + ' · RSSI ' + rssi(selectedDisplay) + '</span></div>';
+                html += '<div class="c3-v9-current"><b>' + activeApLabel() + (c3OrientEnabled()?' · '+selectedOrientation+'°':'') + ' · ' + selectedPoint + ' · ' + roundLabel + '</b><span>d3D ' + d3 + ' · RSSI ' + rssi(selectedDisplay) + '</span></div>';
                 html += '<div class="c3-utility-row"><button type="button" class="c3-secondary-btn" onclick="C3.openFieldGuide()">จุดจริง 42 จุด</button><button type="button" class="c3-secondary-btn" onclick="C3.togglePlanGrid()">Grid 1 m · ' + (c3ShowGrid ? 'เปิด' : 'ปิด') + '</button></div>';
 
                 if (gs.cabinetBlocked && gs.ok && selectedStage !== 'E') {
@@ -14111,7 +14312,7 @@
                         '<span>ตรวจสอบจุดจริงแล้ว และยืนยันเก็บ RSSI ที่ตำแหน่งนี้ในรอบ ' + esc(selectedRound) + '</span></label></div>';
                 }
                 if (c3AverageMode) {
-                    html += '<div class="c3-average-note">เฉลี่ย RSSI จาก R1–R3 ของ ' + activeApLabel() + ' · ครบ ' + roundCount(pt, selectedStage === 'E' ? selectedEvalAp : null) + '/3 รอบ</div>';
+                    html += '<div class="c3-average-note">เฉลี่ย RSSI จาก R1–R3 ของ ' + activeApLabel() + ' · ครบ ' + (c3OrientEnabled()?c3OrientCount(pt,selectedOrientation):roundCount(pt,selectedEvalAp)) + '/3 รอบ</div>';
                     html += '<button class="c3-main-measure" disabled>โหมดเฉลี่ย — ดูผลเท่านั้น</button>';
                 } else {
                     var blockReason = '';
@@ -14124,24 +14325,24 @@
                     html += '<button class="c3-main-measure" onclick="C3.measure()" ' + (activeBatch ? 'disabled ' : '') +
                         (measureReady ? '' : 'title="' + esc(blockReason || 'ยังไม่มี Scan ล่าสุดที่ใช้ได้ — ตรวจข้อมูล/รอ ESP32 อัปเดต') + '"') + '>' +
                         (activeBatch ? ('⏳ กำลังบันทึก RSSI ' + c3CaptureProgress.count + '/' + c3CaptureProgress.target) :
-                            ('💾 บันทึก Scan ล่าสุด · ' + selectedPoint + ' ' + selectedRound)) + '</button>';
+                            ('💾 บันทึก Scan ล่าสุด · ' + selectedPoint + ' ' + selectedRound + (c3OrientEnabled()?' · '+selectedOrientation+'°':''))) + '</button>';
                     if (activeBatch) html += '<div class="c3-v7-sub" style="padding:8px;background:#e6fffa;border-radius:8px;margin-top:6px;">' +
                         '<b>' + esc(c3CaptureProgress.pointId) + ' ' + esc(c3CaptureProgress.round) + ' · ' + c3CaptureProgress.count + '/1 Scan</b><br>' +
                         esc(c3CaptureProgress.status) + '<br>อย่าย้ายขาตั้งจนกว่าจะบันทึกสำเร็จ</div>';
-                    var savedRound = measurementBucket(pt, selectedStage === 'E' ? selectedEvalAp : null)[selectedRound] || {};
-                    if ((savedRound.captureMethod === 'V28_ONE_FRESH_SCAN_PER_ROUND' || savedRound.captureMethod === 'V29_LATEST_SCAN_ON_CLICK') &&
+                    var savedRound = (c3OrientEnabled()?c3OrientBucket(pt,selectedOrientation):measurementBucket(pt,selectedEvalAp))[selectedRound] || {};
+                    if ((savedRound.captureMethod === 'V28_ONE_FRESH_SCAN_PER_ROUND' || savedRound.captureMethod === 'V29_LATEST_SCAN_ON_CLICK' || savedRound.captureMethod === 'V31_ORIENTATION_LATEST_SCAN') &&
                         savedRound.scanCount === 1 && savedRound.rssi24Stats && savedRound.rssi5Stats)
                         html += '<div class="c3-v7-sub" style="margin-top:6px;">บันทึกแล้ว 1 Scan · 2.4G ' +
                             esc(savedRound.rssi24) + ' dBm · 5G ' + esc(savedRound.rssi5) + ' dBm</div>';
-                    else if (pointRoundDone(pt, selectedRound, selectedStage === 'E' ? selectedEvalAp : null))
+                    else if ((c3OrientEnabled()?c3OrientDone(pt,selectedRound,selectedOrientation):pointRoundDone(pt,selectedRound,selectedEvalAp)))
                         html += '<div class="c3-v7-sub" style="margin-top:6px;color:#b45309;">รอบนี้เป็นข้อมูลรูปแบบเก่า · หากต้องการชุดข้อมูลแบบ 1 Scan ให้กดวัดใหม่เพื่อแทนรอบนี้</div>';
                 }
 
-                var progressDone = selectedStage === 'E' ? totalEvaluationComplete(selectedEvalAp) : totalComplete();
+                var progressDone = selectedStage === 'E' ? totalEvaluationComplete(selectedEvalAp) : c3OrientComplete(selectedOrientation);
                 var progressTotal = selectedStage === 'E' ? TOTAL_EVAL_POINTS : TOTAL_POINTS;
                 html += '<div class="c3-progress-line"><div style="width:' + (progressDone / progressTotal * 100) + '%"></div></div><div class="c3-v9-progress">ครบ ' + progressDone + '/' + progressTotal + ' จุด · RSSI records ' + completedRssiRecordCount() + '/' + EXPECTED_CASE3_RSSI_RECORDS + '</div>';
                 html += '<div class="c3-v7-sub" style="color:#0f766e;font-weight:700;margin:7px 0;">ชุดวัดใหม่ 1 Scan/รอบ: ' +
-                    c3V28CompletedRounds(selectedStage === 'E' ? selectedEvalAp : null) + '/' +
+                    (c3OrientEnabled() && selectedOrientation!=='0' ? c3OrientRounds(selectedOrientation) : c3V28CompletedRounds(selectedStage === 'E' ? selectedEvalAp : null)) + '/' +
                     ((selectedStage === 'E' ? TOTAL_EVAL_POINTS : TOTAL_POINTS) * 3) +
                     ' รอบ · นับรวม Scan รอบเดิม v28 และ Scan ล่าสุด v29</div>';
                 html += '<div class="c3-action-row c3-v9-tools"><button class="c3-secondary-btn" onclick="C3.openModal(\'config\')">Config</button><button class="c3-secondary-btn" onclick="C3.openModal(\'data\')">Data</button></div>';
@@ -14639,8 +14840,8 @@
                         var pt = points[d.id], pos = markerPosition(d, vl), isSel = d.id === selectedPoint;
                         var candidate = isEvaluationPoint(pt) ? selectedEvalAp : null;
                         var mm;
-                        if (c3AverageMode) { mm = recalc(pt, candidate) || {}; }
-                        else mm = measurementBucket(pt, candidate)[selectedRound] || {};
+                        if (c3AverageMode) { mm = !isEvaluationPoint(pt) ? c3OrientAverage(pt) : recalc(pt, candidate); }
+                        else mm = (!isEvaluationPoint(pt) ? c3OrientBucket(pt) : measurementBucket(pt, candidate))[selectedRound] || {};
                         var bandRssi = currentFreq === '5GHz' ? Number(mm.rssi5) : Number(mm.rssi24);
                         var hasBandRssi = Number.isFinite(bandRssi);
                         var fill = pos.actual ? (hasBandRssi ? c3BandRssiColor(bandRssi) : '#94a3b8') : '#ffffff';
