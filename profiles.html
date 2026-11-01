@@ -13,11 +13,9 @@
     <title>ระบบจัดการโปรไฟล์ — Wi-Fi Heatmap Dashboard V11.9</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
-
         rel="stylesheet">
 
     <style>
-
         * {
 
             box-sizing: border-box;
@@ -56,7 +54,7 @@
 
 
 
-/* ---------------- Header Section ---------------- */
+        /* ---------------- Header Section ---------------- */
 
         .header {
 
@@ -124,7 +122,7 @@
 
 
 
-/* ---------------- Buttons ---------------- */
+        /* ---------------- Buttons ---------------- */
 
         .btn {
 
@@ -238,7 +236,7 @@
 
 
 
-/* ---------------- Search & Filter Bar ---------------- */
+        /* ---------------- Search & Filter Bar ---------------- */
 
         .filter-bar {
 
@@ -292,7 +290,7 @@
 
 
 
-/* ---------------- Profiles Grid & Card ---------------- */
+        /* ---------------- Profiles Grid & Card ---------------- */
 
         .profiles-grid {
 
@@ -502,7 +500,7 @@
 
 
 
-/* ---------------- Modal Component ---------------- */
+        /* ---------------- Modal Component ---------------- */
 
         .modal-overlay {
 
@@ -678,7 +676,7 @@
 
 
 
-/* ---------------- Data Summary Table ---------------- */
+        /* ---------------- Data Summary Table ---------------- */
 
         .summary-stats {
 
@@ -800,7 +798,7 @@
 
 
 
-/* V11.9 — quieter landing header and denser profile workspace. */
+        /* V11.9 — quieter landing header and denser profile workspace. */
 
         .header {
 
@@ -923,13 +921,11 @@
             }
 
         }
-
     </style>
 
 
 
     <style id="v11-12-profile-unassigned-case">
-
         .profile-unassigned-badge {
 
             background: #F1F5F9 !important;
@@ -939,7 +935,6 @@
             border: 1px solid #E2E8F0;
 
         }
-
     </style>
 
 
@@ -947,8 +942,7 @@
 
 
     <style id="v11-27-empty-profile-state">
-
-/* Empty profiles are valid workspaces, but should not look like measured data. */
+        /* Empty profiles are valid workspaces, but should not look like measured data. */
 
         .badge-count.profile-empty-count {
 
@@ -961,7 +955,6 @@
             font-weight: 700 !important;
 
         }
-
     </style>
 
 
@@ -974,7 +967,7 @@
 
     <div class="container">
 
-<!-- Header Section -->
+        <!-- Header Section -->
 
         <div class="header">
 
@@ -989,7 +982,6 @@
             <div class="header-actions">
 
                 <a href="#" class="btn btn-secondary"
-
                     onclick="openLastMeasurementPage(); return false;">กลับหน้าวัดล่าสุด</a>
 
                 <button class="btn btn-primary" onclick="openCreateModal()">สร้างโปรไฟล์ใหม่</button>
@@ -1000,12 +992,11 @@
 
 
 
-<!-- Filter / Search Bar -->
+        <!-- Filter / Search Bar -->
 
         <div class="filter-bar">
 
             <input type="text" id="search-input" class="search-input" placeholder="ค้นหาชื่อโปรไฟล์..."
-
                 oninput="filterProfiles()">
 
             <div style="font-size: 14px; color: #7F8C8D;">
@@ -1018,11 +1009,11 @@
 
 
 
-<!-- Profiles Grid -->
+        <!-- Profiles Grid -->
 
         <div id="profiles-grid" class="profiles-grid">
 
-<!-- Dynamic Profile Cards rendered here -->
+            <!-- Dynamic Profile Cards rendered here -->
 
         </div>
 
@@ -1030,7 +1021,7 @@
 
 
 
-<!-- Create Profile Modal -->
+    <!-- Create Profile Modal -->
 
     <div id="create-modal" class="modal-overlay">
 
@@ -1045,7 +1036,6 @@
                     <label for="create-name-input">ชื่อโปรไฟล์:</label>
 
                     <input type="text" id="create-name-input" class="form-input"
-
                         placeholder="เช่น case1 final หรือ case2 final">
 
                 </div>
@@ -1066,7 +1056,7 @@
 
 
 
-<!-- Edit Profile Modal -->
+    <!-- Edit Profile Modal -->
 
     <div id="edit-modal" class="modal-overlay">
 
@@ -1102,7 +1092,7 @@
 
 
 
-<!-- Delete Profile Modal (Cascading Delete Warning) -->
+    <!-- Delete Profile Modal (Cascading Delete Warning) -->
 
     <div id="delete-modal" class="modal-overlay">
 
@@ -1121,7 +1111,6 @@
                 </p>
 
                 <div
-
                     style="background-color: #FFF5F5; border-left: 4px solid #E03131; padding: 12px; border-radius: 6px; font-size: 13px; color: #C92A2A;">
 
                     <strong>การลบแบบ Cascading:</strong> การดำเนินการนี้จะทำการลบข้อมูลจุดสัญญาณ (Heatmap Points)
@@ -1148,7 +1137,7 @@
 
 
 
-<!-- Data Summary View Modal — Case 1 / Case 2 / Case 3 -->
+    <!-- Data Summary View Modal — Case 1 / Case 2 / Case 3 -->
 
     <div id="summary-modal" class="modal-overlay">
 
@@ -1159,7 +1148,6 @@
             <div class="modal-body">
 
                 <div
-
                     style="background:#F8F9FA;padding:12px 16px;border-radius:12px;border:1px solid #E2E8F0;margin-bottom:15px;">
 
                     <div id="summary-case-filter-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
@@ -1167,19 +1155,15 @@
                         <span style="font-size:12px;font-weight:bold;color:#495057;">Case:</span>
 
                         <button class="segmented-btn active" id="summary-case-all"
-
                             onclick="filterSummaryData('case','all')">ทั้งหมด</button>
 
                         <button class="segmented-btn" id="summary-case-case1"
-
                             onclick="filterSummaryData('case','Case1')">Case 1</button>
 
                         <button class="segmented-btn" id="summary-case-case2"
-
                             onclick="filterSummaryData('case','Case2')">Case 2</button>
 
                         <button class="segmented-btn" id="summary-case-case3"
-
                             onclick="filterSummaryData('case','Case3')">Case 3</button>
 
                     </div>
@@ -1189,11 +1173,9 @@
                         <span style="font-size:12px;font-weight:bold;color:#495057;">คลื่นความถี่:</span>
 
                         <button class="segmented-btn active" id="summary-freq-all"
-
                             onclick="filterSummaryData('freq','all')">ทั้งหมด</button>
 
                         <button class="segmented-btn" id="summary-freq-24"
-
                             onclick="filterSummaryData('freq','2_4GHz')">2.4 GHz</button>
 
                         <button class="segmented-btn" id="summary-freq-5" onclick="filterSummaryData('freq','5GHz')">5
@@ -1261,7 +1243,6 @@
 
 
                 <div
-
                     style="font-size:12px;color:#64748B;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 12px;margin-bottom:12px;text-align:left;">
 
                     <b>Case 1:</b> ห้องเรียน Huawei · R1/R2/R3 · 2.4/5 GHz<br>
@@ -1320,7 +1301,7 @@
 
 
 
-<!-- Firebase SDK -->
+    <!-- Firebase SDK -->
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 
@@ -1330,7 +1311,7 @@
 
     <script>
 
-const firebaseConfig = {
+        const firebaseConfig = {
 
             apiKey: "AIzaSyCFRMtLJVy07MrxJ6S8IbftnXcGcZhfxMo",
 
@@ -1352,19 +1333,19 @@ const firebaseConfig = {
 
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 
-const db = firebase.database();
+        const db = firebase.database();
 
 
 
-let allProfilesData = [];
+        let allProfilesData = [];
 
-let allHeatmapDataCache = {};
+        let allHeatmapDataCache = {};
 
 
 
-// Fetch Profiles & Heatmap Summary Data in Realtime
+        // Fetch Profiles & Heatmap Summary Data in Realtime
 
-function initProfilesListener() {
+        function initProfilesListener() {
 
             db.ref('Profiles').on('value', (profilesSnap) => {
 
@@ -1382,17 +1363,17 @@ function initProfilesListener() {
 
 
 
-function processProfilesData(profilesObj) {
+        function processProfilesData(profilesObj) {
 
             allProfilesData = [];
 
 
 
-// Ensure Default exists if empty
+            // Ensure Default exists if empty
 
             if (!profilesObj || Object.keys(profilesObj).length === 0) {
 
-const now = Date.now();
+                const now = Date.now();
 
                 db.ref('Profiles/Default').set({ name: 'Default', created_at: now, updated_at: now });
 
@@ -1404,15 +1385,15 @@ const now = Date.now();
 
             Object.keys(profilesObj).forEach(key => {
 
-const val = profilesObj[key];
+                const val = profilesObj[key];
 
-let created_at = Date.now();
+                let created_at = Date.now();
 
-let updated_at = Date.now();
+                let updated_at = Date.now();
 
 
 
-// Support legacy boolean or object metadata
+                // Support legacy boolean or object metadata
 
                 if (typeof val === 'object' && val !== null) {
 
@@ -1424,21 +1405,21 @@ let updated_at = Date.now();
 
 
 
-// Calculate point count for this profile across all sub-paths
+                // Calculate point count for this profile across all sub-paths
 
-const measurements = collectProfileMeasurements(key);
+                const measurements = collectProfileMeasurements(key);
 
-const count = measurements.length;
+                const count = measurements.length;
 
-const hasCase1 = measurements.some(r => r.caseId === 'Case1');
+                const hasCase1 = measurements.some(r => r.caseId === 'Case1');
 
-const hasCase2 = measurements.some(r => r.caseId === 'Case2');
+                const hasCase2 = measurements.some(r => r.caseId === 'Case2');
 
-const hasCase3 = measurements.some(r => r.caseId === 'Case3');
+                const hasCase3 = measurements.some(r => r.caseId === 'Case3');
 
 
 
-const detectedCases = [
+                const detectedCases = [
 
                     hasCase1 ? 'Case1' : null,
 
@@ -1448,7 +1429,7 @@ const detectedCases = [
 
                 ].filter(Boolean);
 
-let detectedCase = 'empty';
+                let detectedCase = 'empty';
 
                 if (detectedCases.length === 1) detectedCase = detectedCases[0];
 
@@ -1456,17 +1437,17 @@ let detectedCase = 'empty';
 
 
 
-const rawStoredCase = (val && typeof val === 'object' && ['Case1', 'Case2', 'Case3'].includes(val.case_id))
+                const rawStoredCase = (val && typeof val === 'object' && ['Case1', 'Case2', 'Case3'].includes(val.case_id))
 
                     ? val.case_id
 
                     : '';
 
-const explicitAssignment = Boolean(val && typeof val === 'object' && (val.case_assigned_at || val.case_lock_source));
+                const explicitAssignment = Boolean(val && typeof val === 'object' && (val.case_assigned_at || val.case_lock_source));
 
-const staleDefaultCase = (key === 'Default' && count === 0 && rawStoredCase && !explicitAssignment);
+                const staleDefaultCase = (key === 'Default' && count === 0 && rawStoredCase && !explicitAssignment);
 
-const storedCase = staleDefaultCase ? '' : rawStoredCase;
+                const storedCase = staleDefaultCase ? '' : rawStoredCase;
 
 
 
@@ -1490,17 +1471,18 @@ const storedCase = staleDefaultCase ? '' : rawStoredCase;
 
 
 
-// Sort by updated_at descending
+            // Sort by updated_at descending
 
             allProfilesData.sort((a, b) => b.updated_at - a.updated_at);
 
+            window.allProfilesData = allProfilesData;
             renderProfilesGrid(allProfilesData);
 
         }
 
 
 
-function normalizeFreqKey(freq) {
+        function normalizeFreqKey(freq) {
 
             if (freq === '2.4GHz' || freq === '2_4GHz') return '2_4GHz';
 
@@ -1512,39 +1494,39 @@ function normalizeFreqKey(freq) {
 
 
 
-function collectProfileMeasurements(profileName) {
+        function collectProfileMeasurements(profileName) {
 
-const profileData = allHeatmapDataCache[profileName];
+            const profileData = allHeatmapDataCache[profileName];
 
-const rows = [];
+            const rows = [];
 
             if (!profileData) return rows;
 
 
 
-const pushPoints = (caseId, areaKey, areaLabel, roundKey, freqKey, pointsObj) => {
+            const pushPoints = (caseId, areaKey, areaLabel, roundKey, freqKey, pointsObj) => {
 
                 if (!pointsObj || typeof pointsObj !== 'object') return;
 
                 Object.keys(pointsObj).forEach(key => {
 
-const p = pointsObj[key];
+                    const p = pointsObj[key];
 
                     if (!p || typeof p !== 'object') return;
 
 
 
-const rssi = Number(p.rssi);
+                    const rssi = Number(p.rssi);
 
                     if (!Number.isFinite(rssi)) return;
 
 
 
-const freq = normalizeFreqKey(p.frequency || freqKey);
+                    const freq = normalizeFreqKey(p.frequency || freqKey);
 
-const pointId = p.pointId || key;
+                    const pointId = p.pointId || key;
 
-const timestamp = Number(p.timestamp || 0);
+                    const timestamp = Number(p.timestamp || 0);
 
 
 
@@ -1588,19 +1570,19 @@ const timestamp = Number(p.timestamp || 0);
 
 
 
-// ---------------- Current Case 1 schema ----------------
+            // ---------------- Current Case 1 schema ----------------
 
-// HeatmapData/<profile>/Case1/Room1/Round1/2_4GHz/<point>
+            // HeatmapData/<profile>/Case1/Room1/Round1/2_4GHz/<point>
 
-const c1 = profileData.Case1;
+            const c1 = profileData.Case1;
 
             if (c1 && typeof c1 === 'object') {
 
-const room1 = c1.Room1 || {};
+                const room1 = c1.Room1 || {};
 
                 ['Round1', 'Round2', 'Round3'].forEach(round => {
 
-const roundObj = room1[round];
+                    const roundObj = room1[round];
 
                     if (!roundObj) return;
 
@@ -1616,21 +1598,21 @@ const roundObj = room1[round];
 
 
 
-// ---------------- Current Case 2 schema ----------------
+            // ---------------- Current Case 2 schema ----------------
 
-// HeatmapData/<profile>/Case2/Floor2/Round1/2_4GHz/P01
+            // HeatmapData/<profile>/Case2/Floor2/Round1/2_4GHz/P01
 
-const c2 = profileData.Case2;
+            const c2 = profileData.Case2;
 
             if (c2 && typeof c2 === 'object') {
 
                 ['Floor2', 'Floor3'].forEach(floor => {
 
-const floorObj = c2[floor];
+                    const floorObj = c2[floor];
 
                     if (!floorObj) return;
 
-const areaLabel = floor === 'Floor2'
+                    const areaLabel = floor === 'Floor2'
 
                         ? 'ชั้น 2 ตึกภาควิชาโทรคมนาคม'
 
@@ -1640,7 +1622,7 @@ const areaLabel = floor === 'Floor2'
 
                     ['Round1', 'Round2', 'Round3'].forEach(round => {
 
-const roundObj = floorObj[round];
+                        const roundObj = floorObj[round];
 
                         if (!roundObj) return;
 
@@ -1658,37 +1640,37 @@ const roundObj = floorObj[round];
 
 
 
-// ---------------- Current Case 3 schema ----------------
+            // ---------------- Current Case 3 schema ----------------
 
-// HeatmapData/<profile>/Case3/TestbedFloor2/{Calibration|Validation}/<point>
+            // HeatmapData/<profile>/Case3/TestbedFloor2/{Calibration|Validation}/<point>
 
-const c3 = profileData.Case3 && profileData.Case3.TestbedFloor2;
+            const c3 = profileData.Case3 && profileData.Case3.TestbedFloor2;
 
             if (c3 && typeof c3 === 'object') {
 
                 ['Calibration', 'Validation'].forEach(setType => {
 
-const setObj = c3[setType];
+                    const setObj = c3[setType];
 
                     if (!setObj || typeof setObj !== 'object') return;
 
                     Object.keys(setObj).forEach(pointKey => {
 
-const point = setObj[pointKey];
+                        const point = setObj[pointKey];
 
                         if (!point || typeof point !== 'object') return;
 
-const pointId = point.pointId || pointKey;
+                        const pointId = point.pointId || pointKey;
 
-const env = point.environment === 'Room10' ? 'Room 10' : 'Corridor';
+                        const env = point.environment === 'Room10' ? 'Room 10' : 'Corridor';
 
-const areaLabel = `${setType} — ${env}`;
+                        const areaLabel = `${setType} — ${env}`;
 
-const measurements = point.measurements || {};
+                        const measurements = point.measurements || {};
 
                         ['R1', 'R2', 'R3'].forEach(round => {
 
-const m = measurements[round] || {};
+                            const m = measurements[round] || {};
 
                             [
 
@@ -1698,7 +1680,7 @@ const m = measurements[round] || {};
 
                             ].forEach(([freq, rawRssi, bssid, channel]) => {
 
-const rssi = Number(rawRssi);
+                                const rssi = Number(rawRssi);
 
                                 if (!Number.isFinite(rssi)) return;
 
@@ -1744,23 +1726,93 @@ const rssi = Number(rawRssi);
 
                 });
 
+                // Final Evaluation (AP-A, AP-B, AP-C across angles 0°, 90°, 180°, 270° and rounds R1, R2, R3)
+                const evalObj = c3.Evaluation;
+                if (evalObj && typeof evalObj === 'object') {
+                    ['A', 'B', 'C'].forEach(candidate => {
+                        const candData = evalObj[candidate];
+                        if (!candData || typeof candData !== 'object') return;
+                        Object.keys(candData).forEach(pointKey => {
+                            if (pointKey === 'Placement') return;
+                            const point = candData[pointKey];
+                            if (!point || typeof point !== 'object') return;
+                            const pointId = point.pointId || pointKey;
+
+                            const pushEvalScan = (m, round, angleLabel) => {
+                                if (!m || typeof m !== 'object') return;
+                                [
+                                    ['2_4GHz', m.rssi24, m.observedBssid24, m.channel24],
+                                    ['5GHz', m.rssi5, m.observedBssid5, m.channel5]
+                                ].forEach(([freq, rawRssi, bssid, channel]) => {
+                                    const rssi = Number(rawRssi);
+                                    if (!Number.isFinite(rssi)) return;
+                                    rows.push({
+                                        caseId: 'Case3',
+                                        areaKey: 'Evaluation',
+                                        areaLabel: `Final Evaluation AP-${candidate} (${angleLabel})`,
+                                        round: round || m.round || 'R1',
+                                        freq,
+                                        pointId,
+                                        rssi,
+                                        timestamp: Number(m.timestamp || m.sourceScanTimestamp || point.updatedAt || 0),
+                                        x: point.xMeters,
+                                        y: point.yMeters,
+                                        ssid: m.sourceSsid || point.deviceConfigSnapshot?.targetSsid || '',
+                                        bssid: bssid || '',
+                                        channel: channel ?? '',
+                                        threshold: '',
+                                        status: ''
+                                    });
+                                });
+                            };
+
+                            if (point.angles) {
+                                if (Array.isArray(point.angles)) {
+                                    point.angles.forEach((angleObj, idx) => {
+                                        if (!angleObj || typeof angleObj !== 'object') return;
+                                        const ang = angleObj.orientationDeg !== undefined ? angleObj.orientationDeg : (idx * 90);
+                                        const meas = angleObj.measurements || {};
+                                        ['R1', 'R2', 'R3'].forEach(r => {
+                                            if (meas[r]) pushEvalScan(meas[r], r, `${ang}°`);
+                                        });
+                                    });
+                                } else if (typeof point.angles === 'object') {
+                                    Object.keys(point.angles).forEach(angKey => {
+                                        const angleObj = point.angles[angKey];
+                                        if (!angleObj || typeof angleObj !== 'object') return;
+                                        const meas = angleObj.measurements || {};
+                                        ['R1', 'R2', 'R3'].forEach(r => {
+                                            if (meas[r]) pushEvalScan(meas[r], r, `${angKey}°`);
+                                        });
+                                    });
+                                }
+                            }
+                            if (point.measurements && typeof point.measurements === 'object') {
+                                ['R1', 'R2', 'R3'].forEach(r => {
+                                    if (point.measurements[r]) pushEvalScan(point.measurements[r], r, 'Omni');
+                                });
+                            }
+                        });
+                    });
+                }
+
             }
 
 
 
-// ---------------- Compatibility with older current Case1 variants ----------------
+            // ---------------- Compatibility with older current Case1 variants ----------------
 
-// Some previous builds used Case1/Round1/Room1/... or Default/Case1/Room1/...
+            // Some previous builds used Case1/Round1/Room1/... or Default/Case1/Room1/...
 
             if (c1 && rows.filter(r => r.caseId === 'Case1').length === 0) {
 
                 ['Round1', 'Round2', 'Round3'].forEach(round => {
 
-const roundObj = c1[round];
+                    const roundObj = c1[round];
 
                     if (!roundObj) return;
 
-const room = roundObj.Room1 || roundObj;
+                    const room = roundObj.Room1 || roundObj;
 
                     ['2_4GHz', '5GHz'].forEach(freq => {
 
@@ -1774,25 +1826,25 @@ const room = roundObj.Room1 || roundObj;
 
 
 
-// ---------------- Legacy Before / After fallback ----------------
+            // ---------------- Legacy Before / After fallback ----------------
 
-// Kept only so old profiles do not become unreadable.
+            // Kept only so old profiles do not become unreadable.
 
             ['Before', 'After'].forEach(mode => {
 
-const modeObj = profileData[mode];
+                const modeObj = profileData[mode];
 
                 if (!modeObj) return;
 
                 ['Room1', 'Lab1'].forEach(loc => {
 
-const locObj = modeObj[loc];
+                    const locObj = modeObj[loc];
 
                     if (!locObj) return;
 
                     ['2_4GHz', '5GHz'].forEach(freq => {
 
-const label = loc === 'Room1' ? 'ห้องเรียน Huawei' : 'ห้องแล็บ (Legacy)';
+                        const label = loc === 'Room1' ? 'ห้องเรียน Huawei' : 'ห้องแล็บ (Legacy)';
 
                         pushPoints('Legacy', loc, label, mode, freq, locObj[freq]);
 
@@ -1810,7 +1862,7 @@ const label = loc === 'Room1' ? 'ห้องเรียน Huawei' : 'ห้�
 
 
 
-function calculatePointsCount(profileName) {
+        function calculatePointsCount(profileName) {
 
             return collectProfileMeasurements(profileName).length;
 
@@ -1818,11 +1870,11 @@ function calculatePointsCount(profileName) {
 
 
 
-async function useProfile(profileName, detectedCase, lockedCase = '') {
+        async function useProfile(profileName, detectedCase, lockedCase = '') {
 
-const validCases = ['Case1', 'Case2', 'Case3'];
+            const validCases = ['Case1', 'Case2', 'Case3'];
 
-let assignedCase = validCases.includes(lockedCase)
+            let assignedCase = validCases.includes(lockedCase)
 
                 ? lockedCase
 
@@ -1830,21 +1882,21 @@ let assignedCase = validCases.includes(lockedCase)
 
 
 
-// Existing one-case profiles are migrated to the explicit one-profile/one-case rule.
+            // Existing one-case profiles are migrated to the explicit one-profile/one-case rule.
 
             if (assignedCase && !validCases.includes(lockedCase)) {
 
                 try {
 
-const ref = db.ref(`Profiles/${profileName}`);
+                    const ref = db.ref(`Profiles/${profileName}`);
 
-const snap = await ref.once('value');
+                    const snap = await ref.once('value');
 
-const old = snap.val();
+                    const old = snap.val();
 
-const now = Date.now();
+                    const now = Date.now();
 
-const meta = (old && typeof old === 'object') ? { ...old } : {};
+                    const meta = (old && typeof old === 'object') ? { ...old } : {};
 
                     meta.name = meta.name || profileName;
 
@@ -1892,7 +1944,7 @@ const meta = (old && typeof old === 'object') ? { ...old } : {};
 
 
 
-const params = new URLSearchParams();
+            const params = new URLSearchParams();
 
             params.set('profile', profileName);
 
@@ -1910,9 +1962,9 @@ const params = new URLSearchParams();
 
 
 
-function openLastMeasurementPage() {
+        function openLastMeasurementPage() {
 
-let profileName = '';
+            let profileName = '';
 
             try { profileName = localStorage.getItem('wifiLastProfile') || ''; } catch (e) { }
 
@@ -1924,7 +1976,7 @@ let profileName = '';
 
             }
 
-const p = allProfilesData.find(item => item.name === profileName);
+            const p = allProfilesData.find(item => item.name === profileName);
 
             useProfile(profileName, p ? p.detectedCase : '', p ? p.lockedCase : '');
 
@@ -1932,34 +1984,34 @@ const p = allProfilesData.find(item => item.name === profileName);
 
 
 
-// iPad: provide a normal touchable link directly to the exact profile dashboard.
-// Reading a profile is navigation only: no Firebase writes are required.
-function getProfileOpenHref(profile) {
-    const validCases = ['Case1', 'Case2', 'Case3'];
-    let chosenCase = validCases.includes(profile.lockedCase)
-        ? profile.lockedCase
-        : (validCases.includes(profile.detectedCase) ? profile.detectedCase : '');
+        // iPad: provide a normal touchable link directly to the exact profile dashboard.
+        // Reading a profile is navigation only: no Firebase writes are required.
+        function getProfileOpenHref(profile) {
+            const validCases = ['Case1', 'Case2', 'Case3'];
+            let chosenCase = validCases.includes(profile.lockedCase)
+                ? profile.lockedCase
+                : (validCases.includes(profile.detectedCase) ? profile.detectedCase : '');
 
-    // Empty Case 3 workspaces have no measurements from which to detect a Case.
-    // Infer Case from a clearly named profile, without changing its metadata.
-    if (!chosenCase) {
-        const match = /^case\s*([123])(?:$|[\s_-])/i.exec(profile.name.trim());
-        if (match) chosenCase = 'Case' + match[1];
-    }
+            // Empty Case 3 workspaces have no measurements from which to detect a Case.
+            // Infer Case from a clearly named profile, without changing its metadata.
+            if (!chosenCase) {
+                const match = /^case\s*([123])(?:$|[\s_-])/i.exec(profile.name.trim());
+                if (match) chosenCase = 'Case' + match[1];
+            }
 
-    const destination = new URL('index.html', window.location.href);
-    destination.searchParams.set('profile', profile.name);
-    if (chosenCase) {
-        destination.searchParams.set('case', chosenCase);
-        destination.searchParams.set('locked', '1');
-    }
-    // Attribute-safe URL; the ampersand must be escaped in the generated HTML.
-    return destination.href.replace(/&/g, '&amp;');
-}
+            const destination = new URL('index.html', window.location.href);
+            destination.searchParams.set('profile', profile.name);
+            if (chosenCase) {
+                destination.searchParams.set('case', chosenCase);
+                destination.searchParams.set('locked', '1');
+            }
+            // Attribute-safe URL; the ampersand must be escaped in the generated HTML.
+            return destination.href.replace(/&/g, '&amp;');
+        }
 
-function renderProfilesGrid(profilesList) {
+        function renderProfilesGrid(profilesList) {
 
-const grid = document.getElementById('profiles-grid');
+            const grid = document.getElementById('profiles-grid');
 
             document.getElementById('total-profiles-count').innerText = profilesList.length;
 
@@ -1979,21 +2031,21 @@ const grid = document.getElementById('profiles-grid');
 
             profilesList.forEach(p => {
 
-const createdStr = new Date(p.created_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+                const createdStr = new Date(p.created_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
-const updatedStr = new Date(p.updated_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+                const updatedStr = new Date(p.updated_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
-const profileNameJs = JSON.stringify(p.name);
+                const profileNameJs = JSON.stringify(p.name);
 
-const effectiveCase = ['Case1', 'Case2', 'Case3'].includes(p.lockedCase) ? p.lockedCase : p.detectedCase;
+                const effectiveCase = ['Case1', 'Case2', 'Case3'].includes(p.lockedCase) ? p.lockedCase : p.detectedCase;
 
-const detectedCaseJs = JSON.stringify(['Case1', 'Case2', 'Case3'].includes(p.detectedCase) ? p.detectedCase : '');
+                const detectedCaseJs = JSON.stringify(['Case1', 'Case2', 'Case3'].includes(p.detectedCase) ? p.detectedCase : '');
 
-const lockedCaseJs = JSON.stringify(['Case1', 'Case2', 'Case3'].includes(p.lockedCase) ? p.lockedCase : '');
+                const lockedCaseJs = JSON.stringify(['Case1', 'Case2', 'Case3'].includes(p.lockedCase) ? p.lockedCase : '');
 
 
 
-const cardHtml = `
+                const cardHtml = `
 
                     <div class="profile-card">
 
@@ -2033,7 +2085,7 @@ const cardHtml = `
 
                         ? '<span class="badge-count profile-empty-count">ว่าง</span>'
 
-                        : `<span class="badge-count">${p.pointCount} รายการ</span>`}
+                        : `<span class="badge-count" title="${p.pointCount} รายการ RSSI (${Math.floor(p.pointCount / 2)} สแกน Dual-band)">${p.pointCount} รายการ (${Math.floor(p.pointCount / 2)} สแกน)</span>`}
 
                             </div>
 
@@ -2071,11 +2123,11 @@ const cardHtml = `
 
 
 
-function filterProfiles() {
+        function filterProfiles() {
 
-const query = document.getElementById('search-input').value.toLowerCase().trim();
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
 
-const filtered = allProfilesData.filter(p => p.name.toLowerCase().includes(query));
+            const filtered = allProfilesData.filter(p => p.name.toLowerCase().includes(query));
 
             renderProfilesGrid(filtered);
 
@@ -2083,15 +2135,15 @@ const filtered = allProfilesData.filter(p => p.name.toLowerCase().includes(query
 
 
 
-/* ---------------- Modal Controls ---------------- */
+        /* ---------------- Modal Controls ---------------- */
 
-function openModal(id) { document.getElementById(id).classList.add('show'); }
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
 
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
 
 
-function openCreateModal() {
+        function openCreateModal() {
 
             document.getElementById('create-name-input').value = '';
 
@@ -2101,11 +2153,11 @@ function openCreateModal() {
 
 
 
-function submitCreateProfile() {
+        function submitCreateProfile() {
 
-let input = document.getElementById('create-name-input').value.trim();
+            let input = document.getElementById('create-name-input').value.trim();
 
-// Automatically replace forward slashes '/' with '-' because '/' is a key delimiter in Firebase RTDB
+            // Automatically replace forward slashes '/' with '-' because '/' is a key delimiter in Firebase RTDB
 
             if (input.includes('/')) {
 
@@ -2133,7 +2185,7 @@ let input = document.getElementById('create-name-input').value.trim();
 
 
 
-const now = Date.now();
+            const now = Date.now();
 
             db.ref(`Profiles/${input}`).set({
 
@@ -2153,7 +2205,7 @@ const now = Date.now();
 
 
 
-function openEditModal(oldName) {
+        function openEditModal(oldName) {
 
             document.getElementById('edit-old-name').value = oldName;
 
@@ -2165,11 +2217,11 @@ function openEditModal(oldName) {
 
 
 
-function submitEditProfile() {
+        function submitEditProfile() {
 
-const oldName = document.getElementById('edit-old-name').value;
+            const oldName = document.getElementById('edit-old-name').value;
 
-let newName = document.getElementById('edit-name-input').value.trim();
+            let newName = document.getElementById('edit-name-input').value.trim();
 
             if (newName.includes('/')) {
 
@@ -2205,19 +2257,19 @@ let newName = document.getElementById('edit-name-input').value.trim();
 
 
 
-const now = Date.now();
+            const now = Date.now();
 
-const oldProfileObj = allProfilesData.find(p => p.name === oldName);
+            const oldProfileObj = allProfilesData.find(p => p.name === oldName);
 
-const createdAt = oldProfileObj ? oldProfileObj.created_at : now;
+            const createdAt = oldProfileObj ? oldProfileObj.created_at : now;
 
 
 
-// Migrate HeatmapData if it exists
+            // Migrate HeatmapData if it exists
 
-const existingData = allHeatmapDataCache[oldName];
+            const existingData = allHeatmapDataCache[oldName];
 
-const updates = {};
+            const updates = {};
 
 
 
@@ -2247,7 +2299,7 @@ const updates = {};
 
 
 
-function openDeleteModal(targetName) {
+        function openDeleteModal(targetName) {
 
             document.getElementById('delete-target-name').value = targetName;
 
@@ -2259,15 +2311,15 @@ function openDeleteModal(targetName) {
 
 
 
-function submitDeleteProfile() {
+        function submitDeleteProfile() {
 
-const targetName = document.getElementById('delete-target-name').value;
+            const targetName = document.getElementById('delete-target-name').value;
 
 
 
-// Cascading delete: remove both Profiles node and HeatmapData node
+            // Cascading delete: remove both Profiles node and HeatmapData node
 
-const updates = {};
+            const updates = {};
 
             updates[`Profiles/${targetName}`] = null;
 
@@ -2285,19 +2337,19 @@ const updates = {};
 
 
 
-let currentSummaryProfileName = '';
+        let currentSummaryProfileName = '';
 
-let activeSummaryPointsList = [];
+        let activeSummaryPointsList = [];
 
-let summaryFilterCase = 'all';
+        let summaryFilterCase = 'all';
 
-let summaryFilterFreq = 'all';
+        let summaryFilterFreq = 'all';
 
-let summaryDetectedCase = 'mixed';
+        let summaryDetectedCase = 'mixed';
 
 
 
-function openSummaryModal(profileName) {
+        function openSummaryModal(profileName) {
 
             currentSummaryProfileName = profileName;
 
@@ -2309,13 +2361,13 @@ function openSummaryModal(profileName) {
 
 
 
-const hasCase1 = activeSummaryPointsList.some(p => p.caseId === 'Case1');
+            const hasCase1 = activeSummaryPointsList.some(p => p.caseId === 'Case1');
 
-const hasCase2 = activeSummaryPointsList.some(p => p.caseId === 'Case2');
+            const hasCase2 = activeSummaryPointsList.some(p => p.caseId === 'Case2');
 
-const hasCase3 = activeSummaryPointsList.some(p => p.caseId === 'Case3');
+            const hasCase3 = activeSummaryPointsList.some(p => p.caseId === 'Case3');
 
-const detectedCases = [
+            const detectedCases = [
 
                 hasCase1 ? 'Case1' : null,
 
@@ -2347,17 +2399,17 @@ const detectedCases = [
 
 
 
-// ถ้าโปรไฟล์เป็น Case เดียว ให้ซ่อนตัวเลือก Case อื่นทั้งหมด
+            // ถ้าโปรไฟล์เป็น Case เดียว ให้ซ่อนตัวเลือก Case อื่นทั้งหมด
 
-const caseRow = document.getElementById('summary-case-filter-row');
+            const caseRow = document.getElementById('summary-case-filter-row');
 
-const btnAll = document.getElementById('summary-case-all');
+            const btnAll = document.getElementById('summary-case-all');
 
-const btnCase1 = document.getElementById('summary-case-case1');
+            const btnCase1 = document.getElementById('summary-case-case1');
 
-const btnCase2 = document.getElementById('summary-case-case2');
+            const btnCase2 = document.getElementById('summary-case-case2');
 
-const btnCase3 = document.getElementById('summary-case-case3');
+            const btnCase3 = document.getElementById('summary-case-case3');
 
 
 
@@ -2397,7 +2449,7 @@ const btnCase3 = document.getElementById('summary-case-case3');
 
 
 
-function filterSummaryData(type, value) {
+        function filterSummaryData(type, value) {
 
             if (type === 'case') {
 
@@ -2419,7 +2471,7 @@ function filterSummaryData(type, value) {
 
 
 
-function formatFreqLabel(freq) {
+        function formatFreqLabel(freq) {
 
             return freq === '2_4GHz' ? '2.4 GHz' : freq === '5GHz' ? '5 GHz' : freq;
 
@@ -2427,7 +2479,7 @@ function formatFreqLabel(freq) {
 
 
 
-function case1SignalLabel(rssi) {
+        function case1SignalLabel(rssi) {
 
             if (rssi >= -30) return 'Amazing';
 
@@ -2443,13 +2495,13 @@ function case1SignalLabel(rssi) {
 
 
 
-function renderSummaryView() {
+        function renderSummaryView() {
 
             ['all', 'Case1', 'Case2', 'Case3'].forEach(c => {
 
-const id = c === 'all' ? 'summary-case-all' : `summary-case-${c.toLowerCase()}`;
+                const id = c === 'all' ? 'summary-case-all' : `summary-case-${c.toLowerCase()}`;
 
-const btn = document.getElementById(id);
+                const btn = document.getElementById(id);
 
                 if (btn) btn.classList.toggle('active', summaryFilterCase === c);
 
@@ -2467,7 +2519,7 @@ const btn = document.getElementById(id);
 
             ].forEach(([value, id]) => {
 
-const btn = document.getElementById(id);
+                const btn = document.getElementById(id);
 
                 if (btn) btn.classList.toggle('active', summaryFilterFreq === value);
 
@@ -2475,7 +2527,7 @@ const btn = document.getElementById(id);
 
 
 
-const filtered = activeSummaryPointsList
+            const filtered = activeSummaryPointsList
 
                 .filter(p => summaryFilterCase === 'all' || p.caseId === summaryFilterCase)
 
@@ -2485,23 +2537,23 @@ const filtered = activeSummaryPointsList
 
 
 
-const tableBody = document.getElementById('summary-table-body');
+            const tableBody = document.getElementById('summary-table-body');
 
             tableBody.innerHTML = '';
 
 
 
-const total = filtered.length;
+            const total = filtered.length;
 
-const countCase1 = filtered.filter(p => p.caseId === 'Case1').length;
+            const countCase1 = filtered.filter(p => p.caseId === 'Case1').length;
 
-const countCase2 = filtered.filter(p => p.caseId === 'Case2').length;
+            const countCase2 = filtered.filter(p => p.caseId === 'Case2').length;
 
-const countCase3 = filtered.filter(p => p.caseId === 'Case3').length;
+            const countCase3 = filtered.filter(p => p.caseId === 'Case3').length;
 
-const count24 = filtered.filter(p => p.freq === '2_4GHz').length;
+            const count24 = filtered.filter(p => p.freq === '2_4GHz').length;
 
-const count5 = filtered.filter(p => p.freq === '5GHz').length;
+            const count5 = filtered.filter(p => p.freq === '5GHz').length;
 
 
 
@@ -2519,13 +2571,13 @@ const count5 = filtered.filter(p => p.freq === '5GHz').length;
 
 
 
-// โปรไฟล์ Case เดียว: ซ่อนกล่อง Case ที่ไม่เกี่ยวข้อง
+            // โปรไฟล์ Case เดียว: ซ่อนกล่อง Case ที่ไม่เกี่ยวข้อง
 
-const statCase1Box = document.getElementById('stat-case1')?.closest('.stat-box');
+            const statCase1Box = document.getElementById('stat-case1')?.closest('.stat-box');
 
-const statCase2Box = document.getElementById('stat-case2')?.closest('.stat-box');
+            const statCase2Box = document.getElementById('stat-case2')?.closest('.stat-box');
 
-const statCase3Box = document.getElementById('stat-case3')?.closest('.stat-box');
+            const statCase3Box = document.getElementById('stat-case3')?.closest('.stat-box');
 
 
 
@@ -2551,13 +2603,13 @@ const statCase3Box = document.getElementById('stat-case3')?.closest('.stat-box')
 
             filtered.forEach(p => {
 
-let detail = '';
+                let detail = '';
 
 
 
                 if (p.caseId === 'Case1') {
 
-const xy = (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
+                    const xy = (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
 
                         ? `(${Number(p.x).toFixed(2)}, ${Number(p.y).toFixed(2)})`
 
@@ -2567,7 +2619,7 @@ const xy = (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
 
                 } else if (p.caseId === 'Case2') {
 
-const parts = [];
+                    const parts = [];
 
                     if (p.ssid) parts.push(p.ssid);
 
@@ -2581,7 +2633,7 @@ const parts = [];
 
                 } else if (p.caseId === 'Case3') {
 
-const parts = [];
+                    const parts = [];
 
                     if (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y))) {
 
@@ -2603,7 +2655,7 @@ const parts = [];
 
 
 
-const color = p.rssi >= -50 ? '#2ECC71'
+                const color = p.rssi >= -50 ? '#2ECC71'
 
                     : p.rssi >= -70 ? '#F59F00'
 
@@ -2611,7 +2663,7 @@ const color = p.rssi >= -50 ? '#2ECC71'
 
 
 
-const row = `<tr>
+                const row = `<tr>
 
                     <td><b>${p.caseId}</b></td>
 
@@ -2651,7 +2703,7 @@ const row = `<tr>
 
 
 
-// Initialize Realtime Listener
+        // Initialize Realtime Listener
 
         initProfilesListener();
 
