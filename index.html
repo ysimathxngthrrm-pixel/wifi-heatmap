@@ -11611,8 +11611,14 @@
                 E12: { x: 6.64, y: 3.55, z: 1.00, env: 'Room10', source: 'VW08', note: 'Restored from Validation VW08 (Room 10 East-Central)' }
             };
             var C3_EVAL_E08_ALT = { x: 5.25, y: 4.05, z: 1.00, env: 'Room10', source: 'VW04', note: 'Locked to Validation VW04 (Clearance to AP-A is 1.99m > 0.50m safe threshold)' };
+            var C3_EVAL_TO_VAL_MAP = {
+                E01: 'VC01', E02: 'VC02', E03: 'VC03', E04: 'VC04',
+                E05: 'VW01', E06: 'VW02', E07: 'VW03', E08: 'VW04',
+                E09: 'VW05', E10: 'VW06', E11: 'VW07', E12: 'VW08'
+            };
             window.C3_EVAL_REV3_POINTS = C3_EVAL_REV3_POINTS;
             window.C3_EVAL_E08_ALT = C3_EVAL_E08_ALT;
+            window.C3_EVAL_TO_VAL_MAP = C3_EVAL_TO_VAL_MAP;
 
             var EVAL_POINT_DEFS = [
                 { id: 'E01', source: 'VC01', env: 'Corridor', kw: 0, los: 'LOS' },
@@ -12331,20 +12337,30 @@
                     }
                 });
 
-                // Apply restored validation coordinates directly to E01–E12
+                // Apply 1:1 mapped Validation coordinates directly to E01–E12
                 EVAL_POINT_DEFS.forEach(function (d) {
                     var dst = points[d.id];
                     if (!dst) return;
-                    var ref = (d.id === 'E08' && c3UseE08Alt) ? C3_EVAL_E08_ALT : C3_EVAL_REV3_POINTS[d.id];
-                    if (!ref) return;
-                    dst.x = ref.x;
-                    dst.y = ref.y;
-                    dst.z = (ref.z !== undefined && ref.z !== null) ? ref.z : 1.00;
-                    dst.environment = ref.env;
-                    dst.sourceValidationPoint = ref.source || d.source;
-                    dst.sourcePoint = dst.sourceValidationPoint;
-                    dst.referenceP = dst.sourceValidationPoint;
-                    dst.fieldNote = ref.note;
+                    var srcId = (typeof C3_EVAL_TO_VAL_MAP !== 'undefined' && C3_EVAL_TO_VAL_MAP[d.id]) || d.source;
+                    var valPt = points[srcId];
+                    var valDef = POINT_DEFS.find(function (x) { return x.id === srcId; });
+                    var vl = visualLayout();
+                    var valPos = valDef ? markerPosition(valDef, vl) : null;
+                    var ref = C3_EVAL_REV3_POINTS[d.id];
+
+                    // 1:1 exact mapping to Validation point coordinates:
+                    var vx = (valPt && valPt.x !== null) ? Number(valPt.x) : (valPos && valPos.actual ? Number(valPos.x) : (ref ? ref.x : null));
+                    var vy = (valPt && valPt.y !== null) ? Number(valPt.y) : (valPos && valPos.actual ? Number(valPos.y) : (ref ? ref.y : null));
+                    var vz = (valPt && valPt.z !== null) ? Number(valPt.z) : (ref ? ref.z : 1.00);
+
+                    dst.x = vx;
+                    dst.y = vy;
+                    dst.z = vz;
+                    dst.environment = (valPt && valPt.environment) ? valPt.environment : (ref ? ref.env : d.env);
+                    dst.sourceValidationPoint = srcId;
+                    dst.sourcePoint = srcId;
+                    dst.referenceP = srcId;
+                    dst.fieldNote = ref ? ref.note : ('Mapped 1:1 from Validation ' + srcId);
                 });
             }
 
@@ -12966,6 +12982,7 @@
                 if (!map) return;
                 document.body.classList.toggle('c3-testbed-view', viewMode === 'testbed');
                 document.body.classList.toggle('c3-floor2-view', viewMode === 'floor2');
+                ['l', 'w', 'v', 'e', 'm'].forEach(function (s) { document.body.classList.toggle('c3-stage-' + s, String(selectedStage).toLowerCase() === s); });
                 var b1 = document.getElementById('c3-v-testbed'), b2 = document.getElementById('c3-v-floor2');
                 if (b1) b1.classList.toggle('active', viewMode === 'testbed'); if (b2) b2.classList.toggle('active', viewMode === 'floor2');
                 var eb = document.getElementById('c3-editor-btn');
@@ -13042,9 +13059,10 @@
 
             function markerPosition(d, vl) {
                 var pt = points[d.id];
-                if (pt.x !== null && pt.y !== null) return { x: Number(pt.x), y: Number(pt.y), actual: true };
-                if (d.source && points[d.source]) {
-                    var srcDef = POINT_DEFS.find(function (x) { return x.id === d.source; });
+                if (pt && pt.x !== null && pt.y !== null) return { x: Number(pt.x), y: Number(pt.y), actual: true };
+                var srcId = d.source || (typeof C3_EVAL_TO_VAL_MAP !== 'undefined' ? C3_EVAL_TO_VAL_MAP[d.id] : null);
+                if (srcId && points[srcId]) {
+                    var srcDef = POINT_DEFS.find(function (x) { return x.id === srcId; });
                     if (srcDef) return markerPosition(srcDef, vl);
                 }
                 if (d.env === 'Room10') return { x: d.gx * Number(vl.roomWidth), y: d.gy * Number(vl.roomDepth), actual: false };
@@ -13683,7 +13701,7 @@
                 ensureUi(); configureView(); loadData();
             }
 
-            function leaveCase3() { editorMode = false; editorPlacement = null; document.body.classList.remove('c3-active', 'c3-testbed-view', 'c3-floor2-view', 'c3-editor-on'); var t = document.getElementById('c3-testbed-layer'); if (t) t.innerHTML = ''; var map = document.getElementById('map-container'); if (map) { map.style.height = ''; map.style.width = ''; map.style.maxWidth = ''; } placementMode = ''; }
+            function leaveCase3() { editorMode = false; editorPlacement = null; document.body.classList.remove('c3-active', 'c3-testbed-view', 'c3-floor2-view', 'c3-editor-on', 'c3-stage-l', 'c3-stage-w', 'c3-stage-v', 'c3-stage-e', 'c3-stage-m'); var t = document.getElementById('c3-testbed-layer'); if (t) t.innerHTML = ''; var map = document.getElementById('map-container'); if (map) { map.style.height = ''; map.style.width = ''; map.style.maxWidth = ''; } placementMode = ''; }
 
             // CASE 3: review-only, live-layout-driven Wall Calibration relocation planner.
             // No point changes on load. Preview must be explicitly accepted and committed.
@@ -13992,7 +14010,7 @@
                 angle = String(angle);
                 if (!isCase3() || C3_ORIENTATIONS.indexOf(angle) < 0) return;
                 if (c3MeasurementPending || c3RoundDeletionPending || c3OrientBusy) { toast('⏳ กำลังบันทึก/ลบผลวัดอยู่', 'warning'); return; }
-                if (angle !== '0' && (!c3OrientLoaded || c3OrientProfile !== profile())) { toast('⛔ ยังอ่านข้อมูล OrientationStudy ไม่ครบ ห้ามเขียนทับ', 'warning'); return; }
+                if (selectedStage !== 'E' && angle !== '0' && (!c3OrientLoaded || c3OrientProfile !== profile())) { toast('⛔ ยังอ่านข้อมูล OrientationStudy ไม่ครบ ห้ามเขียนทับ', 'warning'); return; }
                 selectedOrientation = angle; c3AverageMode = false; c3SteelCaptureAck = null; c3OrientationArm();
                 renderAll();
                 if (document.getElementById('c3-data-modal') && document.getElementById('c3-data-modal').classList.contains('open')) renderDataTable();
@@ -15690,7 +15708,7 @@
                 else if (steelNeedsAck) blockReason = 'ต้องตรวจจุดจริงและติ๊กยืนยันแนวตู้เหล็กก่อน';
 
                 var dsSec = document.getElementById('c3-device-status-section');
-                if (dsSec) dsSec.style.display = (selectedStage === 'E' ? 'none' : '');
+                if (dsSec) dsSec.style.setProperty('display', selectedStage === 'E' ? 'none' : 'block', 'important');
 
                 var html = '<div id="c3-control-root">';
                 html += '<div class="c3-v9-compact">';
@@ -15707,7 +15725,7 @@
                         html += '<div style="margin-top:8px"><button class="c3-secondary-btn" onclick="C3.confirmApCalPhysical()" style="width:100%" ' + ((!apCalMatchesPlan() || !firebaseConnected || !apCalAutoMigrationSaved) ? 'disabled' : '') + '>✅ ยืนยันว่าติดตั้ง AP-CAL ตัวจริงแล้ว</button></div>';
                     html += '</div>';
                 }
-                if (ap.x !== null && ap.y !== null && Math.hypot(Number(ap.x) - DRAFT_AP_POSITION.x, Number(ap.y) - DRAFT_AP_POSITION.y) > .25)
+                if (selectedStage !== 'E' && ap.x !== null && ap.y !== null && Math.hypot(Number(ap.x) - DRAFT_AP_POSITION.x, Number(ap.y) - DRAFT_AP_POSITION.y) > .25)
                     html += '<div class="c3-v7-sub" style="color:#92400e;background:#fffbeb;padding:8px;border:1px solid #fbbf24;border-radius:8px;margin:5px 0;">⚠️ AP-CAL ปัจจุบัน (' + Number(ap.x).toFixed(2) + ', ' + Number(ap.y).toFixed(2) + ') ไม่ใช่พิกัดสติกเกอร์ (' + DRAFT_AP_POSITION.x.toFixed(2) + ', ' + (c3TallCabinetDatum() ? c3TallCabinetDatum().bottom.toFixed(3) : '-') + ') m · ตรวจแนวตู้และห้ามเก็บข้อมูลก่อนยืนยัน AP จริง</div>';
                 html += '<div class="c3-stage-row">' +
                     '<button class="c3-stage-btn ' + (selectedStage === 'L' ? 'active' : '') + '" onclick="C3.setStage(\'L\')">Calibration LOS</button>' +
@@ -15728,7 +15746,7 @@
                         html += '<div class="c3-field-pilot-badge">ทดสอบอุปกรณ์ · Hardware Pilot (ไม่นำไปใช้ในงานวิจัย)</div>';
                     }
                     if (finalModelLocked()) {
-                        html += '<div class="c3-field-model-badge">🔒 โมเดล: 2.4G ' + esc(String(evaluationSetup.model24 || '—').replace('Calibrated ', '')) + ' · 5G ' + esc(String(evaluationSetup.model5 || '—').replace('Simplified ', '').replace(' Multi-Wall', '-MW')) + '</div>';
+                        html += '<div class="c3-field-model-badge">🔒 <b>Final Model:</b> 2.4G ' + esc(String(evaluationSetup.model24 || 'FSPL').replace('Calibrated ', '')) + ' | 5G ' + esc(String(evaluationSetup.model5 || 'COST231-MW').replace('Simplified ', '').replace(' Multi-Wall', '-MW')) + '</div>';
                     } else {
                         html += '<div style="padding:8px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a;font-size:10px;color:#92400e;">' +
                             '<b>⚠️ Final Model ยังไม่ถูกล็อก</b> · ต้องล็อก Model ก่อนเริ่มบันทึก Final Evaluation</div>';
@@ -16032,6 +16050,8 @@
                 if (!isCase3()) return;
                 var section = document.getElementById('c3-device-status-section');
                 if (!section) return;
+                if (selectedStage === 'E') { section.style.setProperty('display', 'none', 'important'); return; }
+                section.style.setProperty('display', 'block', 'important');
                 var scan = liveScan || {};
                 var conf = deviceConfig || {};
                 var hasSample = !!scanId(scan);
@@ -16511,22 +16531,92 @@
                     visibleDefs.forEach(function (d) {
                         if (visible.indexOf(d.id) < 0) return;
                         var pt = points[d.id], pos = markerPosition(d, vl), isSel = d.id === selectedPoint;
-                        var candidate = isEvaluationPoint(pt) ? selectedEvalAp : null;
-                        var mm;
-                        if (c3AverageMode) { mm = !isEvaluationPoint(pt) ? c3OrientAverage(pt) : recalc(pt, candidate); }
-                        else mm = (!isEvaluationPoint(pt) ? c3OrientBucket(pt) : measurementBucket(pt, candidate))[selectedRound] || {};
-                        var bandRssi = currentFreq === '5GHz' ? Number(mm.rssi5) : Number(mm.rssi24);
-                        var hasBandRssi = Number.isFinite(bandRssi);
+                        var isEval = isEvaluationPoint(pt);
+                        var candidate = isEval ? selectedEvalAp : null;
+
+                        var bandRssi = null;
+                        var hasBandRssi = false;
+                        var evalRoundCount = 0;
+                        var subText = '';
+                        var subFill = '#1e293b';
+
+                        if (isEval) {
+                            // Final Evaluation:
+                            // Strictly isolate by selected AP (AP-A/B/C), selected Orientation (0/90/180/270), and selected Frequency (2.4/5 GHz).
+                            // Compute average across recorded rounds R1–R3 for this specific candidate & orientation.
+                            var evalCand = selectedEvalAp || 'A';
+                            var evalAngle = selectedOrientation || '0';
+                            var evalBucket = measurementBucket(pt, evalCand, evalAngle);
+                            var recordedVals = [];
+                            ['R1', 'R2', 'R3'].forEach(function (r) {
+                                var rm = evalBucket[r];
+                                if (rm) {
+                                    var v = currentFreq === '5GHz' ? Number(rm.rssi5) : Number(rm.rssi24);
+                                    if (Number.isFinite(v) && v > -127 && v <= 0) {
+                                        recordedVals.push(v);
+                                    }
+                                }
+                            });
+                            evalRoundCount = recordedVals.length;
+                            if (evalRoundCount > 0) {
+                                var avgRssi = recordedVals.reduce(function (sum, val) { return sum + val; }, 0) / evalRoundCount;
+                                bandRssi = avgRssi;
+                                hasBandRssi = true;
+                                subText = Math.round(bandRssi) + ' dBm (' + evalRoundCount + '/3)';
+                                subFill = '#1e293b';
+                            } else {
+                                subText = 'ยังไม่วัด (0/3)';
+                                subFill = '#64748b';
+                            }
+                        } else {
+                            // Calibration / Validation stage:
+                            var mm;
+                            if (c3AverageMode) mm = c3OrientAverage(pt);
+                            else mm = c3OrientBucket(pt)[selectedRound] || {};
+                            var bRssi = currentFreq === '5GHz' ? Number(mm.rssi5) : Number(mm.rssi24);
+                            if (Number.isFinite(bRssi) && bRssi > -127 && bRssi <= 0) {
+                                bandRssi = bRssi;
+                                hasBandRssi = true;
+                                subText = Math.round(bandRssi) + ' dBm';
+                                subFill = '#334155';
+                            }
+                        }
+
                         var fill = pos.actual ? (hasBandRssi ? c3BandRssiColor(bandRssi) : '#94a3b8') : '#ffffff';
                         var stroke = isSel ? '#f59e0b' : (pos.actual ? '#ffffff' : '#94a3b8');
                         var pointCheck = pos.actual && layoutReady() ? geometryState(pt, candidate) : null;
                         if (pointCheck && !pointCheck.ok) stroke = '#dc2626';
-                        var g = svgEl('g', { 'data-point': d.id, style: 'cursor:pointer' });
-                        if (pointCheck && !pointCheck.ok) { var title = svgEl('title', {}); title.textContent = pointCheck.label; g.appendChild(title); }
-                        if (isSel) g.appendChild(svgEl('circle', { cx: pos.x, cy: pos.y, r: '.24', fill: 'none', stroke: '#f59e0b', 'stroke-width': '.055' }));
-                        g.appendChild(svgEl('circle', { cx: pos.x, cy: pos.y, r: '.17', fill: fill, stroke: stroke, 'stroke-width': pos.actual ? '.04' : '.045', 'stroke-dasharray': pos.actual ? '0' : '.06 .045' }));
-                        addSvgText(g, pos.x, pos.y + .035, d.id, '.115', (pos.actual && hasBandRssi) ? '#fff' : '#64748b', '900');
-                        if (hasBandRssi) addSvgText(g, pos.x, pos.y + .34, Math.round(bandRssi) + ' dBm', '.11', '#334155', '800');
+                        // Stage E uses exactly the Validation source point as its visible map label.
+                        // The Firebase/selection identifier remains E01-E12 to keep all measurements isolated.
+                        // This makes the original Validation location unambiguous during the field test.
+                        var sourceValidationId = isEval
+                            ? (pt.sourceValidationPoint || pt.sourcePoint || C3_EVAL_TO_VAL_MAP[d.id] || d.source)
+                            : '';
+                        var visibleMarkerId = (isEval && sourceValidationId) ? sourceValidationId : d.id;
+                        var g = svgEl('g', {
+                            'data-point': d.id,
+                            'data-validation-source': sourceValidationId || '',
+                            style: 'cursor:pointer'
+                        });
+                        var markerTitle = svgEl('title', {});
+                        markerTitle.textContent = (isEval && sourceValidationId)
+                            ? (d.id + ' = ' + sourceValidationId + ' (พิกัด Validation เดิม)')
+                            : d.id;
+                        if (pointCheck && !pointCheck.ok) markerTitle.textContent += ' — ' + pointCheck.label;
+                        g.appendChild(markerTitle);
+                        if (isSel) g.appendChild(svgEl('circle', { cx: pos.x, cy: pos.y, r: '0.24', fill: 'none', stroke: '#f59e0b', 'stroke-width': '.055' }));
+                        g.appendChild(svgEl('circle', { cx: pos.x, cy: pos.y, r: '0.17', fill: fill, stroke: stroke, 'stroke-width': pos.actual ? '.04' : '.045', 'stroke-dasharray': pos.actual ? '0' : '.06 .045' }));
+                        addSvgText(g, pos.x, pos.y + .035, visibleMarkerId, isEval ? '.095' : '.115', '#ffffff', '900', 'middle');
+                        // Show E ID subtly beside the original Validation ID without shifting RSSI.
+                        // The RSSI label remains at the exact original Validation anchor (+0.34 m).
+                        if (isEval && sourceValidationId) {
+                            var evalIdLabel = addSvgText(g, pos.x + .235, pos.y - .19, d.id, '.10', '#155e75', '800', 'start');
+                            evalIdLabel.setAttribute('style', 'paint-order:stroke fill;stroke:#ffffff;stroke-width:.03;stroke-linejoin:round;');
+                        }
+                        if (subText) {
+                            var stEl = addSvgText(g, pos.x, pos.y + .34, subText, '.11', subFill, '800', 'middle');
+                            stEl.setAttribute('style', 'paint-order: stroke fill; stroke: #ffffff; stroke-width: .025; stroke-linejoin: round;');
+                        }
                         g.addEventListener('click', function (ev) { ev.stopPropagation(); C3.selectPoint(d.id); });
                         g.addEventListener('dblclick', function (ev) {
                             ev.preventDefault(); ev.stopPropagation(); C3.selectPoint(d.id);
@@ -21185,18 +21275,18 @@
         }
 
         /* v33: Case 3 professional label-only markers in Heatmap/Threshold.
-           Preserve complete native markers in the Points mode and preserve AP marker. */
+           Preserve complete native markers in Points mode, Stage E (Final Evaluation), and Stage V (Validation). */
         #c3-testbed-svg g[data-point] rect.v33-label-background {
             display: none;
         }
 
-        body.v32-has-surface.c3-active #c3-testbed-svg g[data-point] circle {
+        body.v32-has-surface.c3-active:not(.c3-stage-e):not(.c3-stage-v) #c3-testbed-svg g[data-point] circle {
             opacity: 0 !important;
             pointer-events: all;
             /* transparent circle retains easy point selection */
         }
 
-        body.v32-has-surface.c3-active #c3-testbed-svg g[data-point] rect.v33-label-background {
+        body.v32-has-surface.c3-active:not(.c3-stage-e):not(.c3-stage-v) #c3-testbed-svg g[data-point] rect.v33-label-background {
             display: block;
             fill: #ffffff;
             fill-opacity: .92;
@@ -21205,17 +21295,35 @@
             pointer-events: none;
         }
 
-        body.v32-has-surface.c3-active #c3-testbed-svg g[data-point] text {
+        body.v32-has-surface.c3-active:not(.c3-stage-e):not(.c3-stage-v) #c3-testbed-svg g[data-point] text {
             display: none !important;
         }
 
-        body.v32-has-surface.c3-active #c3-testbed-svg g[data-point] text:first-of-type {
+        body.v32-has-surface.c3-active:not(.c3-stage-e):not(.c3-stage-v) #c3-testbed-svg g[data-point] text:first-of-type {
             display: block !important;
             fill: #334155 !important;
             font-size: .137px !important;
             font-weight: 800 !important;
             stroke: none !important;
             pointer-events: all;
+        }
+
+        /* In Stage E and Stage V, measurement circles and RSSI texts are ALWAYS fully visible like Validation */
+        body.c3-active.c3-stage-e #c3-testbed-svg g[data-point] circle,
+        body.c3-active.c3-stage-v #c3-testbed-svg g[data-point] circle {
+            opacity: 1 !important;
+            display: block !important;
+            pointer-events: all !important;
+        }
+
+        body.c3-active.c3-stage-e #c3-testbed-svg g[data-point] text,
+        body.c3-active.c3-stage-v #c3-testbed-svg g[data-point] text {
+            display: block !important;
+        }
+
+        body.c3-active.c3-stage-e #c3-testbed-svg g[data-point] rect.v33-label-background,
+        body.c3-active.c3-stage-v #c3-testbed-svg g[data-point] rect.v33-label-background {
+            display: none !important;
         }
 
         /* v34: Put the heatmap mode switch inside the existing controls drawer.
@@ -21783,7 +21891,10 @@
             // Add a small white SVG name tag behind each Case 3 point ID (no data writes).
             // The badge is hidden via CSS in Points mode, which keeps the original circle/RSSI UI.
             function addCase3NameBadges(svg) {
-                if (!svg || mode() === 'points' || mode() === 'predicted') return;
+                if (!svg || mode() === 'points' || mode() === 'predicted' || (window.C3 && (window.C3.selectedStage === 'E' || window.C3.selectedStage === 'V')) || (typeof selectedStage !== 'undefined' && (selectedStage === 'E' || selectedStage === 'V'))) {
+                    svg.querySelectorAll('rect.v33-label-background').forEach(function (r) { r.remove(); });
+                    return;
+                }
                 for (const g of svg.querySelectorAll('g[data-point]')) {
                     if (g.querySelector('rect.v33-label-background')) continue;
                     const label = g.querySelector('text');
