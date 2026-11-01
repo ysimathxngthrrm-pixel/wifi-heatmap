@@ -10042,10 +10042,697 @@
             .c3-v9-size-grid .full {
                 grid-column: auto;
             }
+        }
 
-            .c3-v9-current {
-                align-items: flex-start;
-                flex-direction: column;
+        /* =========================================================
+           CASE 3 FIELD MEASUREMENT UI (COMPACT & IPAD TOUCH OPTIMIZED)
+           ========================================================= */
+        .c3-field-container {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            text-align: left;
+            margin-top: 6px;
+        }
+
+        .c3-field-pilot-badge {
+            padding: 5px 8px;
+            border-radius: 7px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .c3-field-model-badge {
+            padding: 5px 8px;
+            border-radius: 7px;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .c3-field-section-title {
+            font-size: 10.5px;
+            font-weight: 800;
+            color: #334155;
+            margin: 4px 0 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .c3-field-section-title small {
+            font-size: 9px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        /* AP Selection */
+        .c3-field-ap-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+
+        .c3-field-ap-btn {
+            min-height: 44px;
+            padding: 5px 3px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .c3-field-ap-btn:active {
+            transform: scale(0.97);
+        }
+
+        .c3-field-ap-btn.active {
+            background: #2563eb !important;
+            color: #ffffff !important;
+            border-color: #1d4ed8 !important;
+            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.28) !important;
+        }
+
+        .c3-field-ap-btn.done {
+            border-color: #16a34a;
+        }
+
+        .c3-field-ap-btn.active.done {
+            background: #16a34a !important;
+            border-color: #15803d !important;
+            color: #ffffff !important;
+        }
+
+        .c3-field-ap-status {
+            padding: 5px 8px;
+            border-radius: 7px;
+            font-size: 9px;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
+        .c3-field-ap-status.confirmed {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .c3-field-ap-status.unconfirmed {
+            background: #fffbeb;
+            color: #9a3412;
+            border: 1px solid #fed7aa;
+        }
+
+        .c3-field-confirm-ap-btn {
+            width: 100%;
+            min-height: 38px;
+            background: #f59e0b !important;
+            color: #ffffff !important;
+            border: 1px solid #d97706 !important;
+            border-radius: 8px !important;
+            font-weight: 800 !important;
+            font-size: 11px !important;
+            cursor: pointer;
+        }
+
+        /* E01-E12 Point Grid */
+        .c3-field-point-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+
+        .c3-field-point-btn {
+            min-height: 44px;
+            padding: 4px 2px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #1e293b;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.15;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .c3-field-point-btn:active {
+            transform: scale(0.96);
+        }
+
+        .c3-field-point-btn small {
+            font-size: 8.5px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .c3-field-point-btn.active {
+            background: #0f766e !important;
+            color: #ffffff !important;
+            border-color: #0d9488 !important;
+            box-shadow: 0 3px 8px rgba(15, 118, 110, 0.3) !important;
+        }
+
+        .c3-field-point-btn.active small {
+            color: #ccfbf1 !important;
+        }
+
+        .c3-field-point-btn.done {
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #166534;
+        }
+
+        .c3-field-point-btn.active.done {
+            background: #16a34a !important;
+            border-color: #15803d !important;
+            color: #ffffff !important;
+        }
+
+        .c3-field-point-btn.part {
+            background: #fefce8;
+            border-color: #fef08a;
+            color: #854d0e;
+        }
+
+        /* Angle & Round Buttons */
+        .c3-field-angle-row,
+        .c3-field-round-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+
+        .c3-field-angle-btn,
+        .c3-field-round-btn {
+            min-height: 44px;
+            padding: 5px 2px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .c3-field-angle-btn:active,
+        .c3-field-round-btn:active {
+            transform: scale(0.96);
+        }
+
+        .c3-field-angle-btn small,
+        .c3-field-round-btn small {
+            font-size: 8.5px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .c3-field-angle-btn.active {
+            background: #7c3aed !important;
+            color: #ffffff !important;
+            border-color: #6d28d9 !important;
+            box-shadow: 0 3px 8px rgba(124, 58, 237, 0.28) !important;
+        }
+
+        .c3-field-angle-btn.active small {
+            color: #ede9fe !important;
+        }
+
+        .c3-field-round-btn.active {
+            background: #0284c7 !important;
+            color: #ffffff !important;
+            border-color: #0369a1 !important;
+            box-shadow: 0 3px 8px rgba(2, 132, 199, 0.28) !important;
+        }
+
+        .c3-field-round-btn.active small {
+            color: #e0f2fe !important;
+        }
+
+        .c3-field-angle-btn.done,
+        .c3-field-round-btn.done {
+            border-color: #86efac;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        /* Dual-Band Live RSSI Big Readout Card */
+        .c3-field-rssi-card {
+            background: #ffffff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 11px;
+            padding: 9px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+        }
+
+        .c3-field-rssi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+            margin-bottom: 7px;
+        }
+
+        .c3-field-rssi-box {
+            padding: 7px 9px;
+            border-radius: 9px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .c3-field-rssi-box .band-head {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .c3-field-rssi-box .rssi-num {
+            font-size: 22px;
+            font-weight: 900;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, sans-serif;
+            line-height: 1.15;
+            letter-spacing: -0.5px;
+        }
+
+        .c3-field-rssi-box .rssi-num.rssi-good {
+            color: #16a34a;
+        }
+
+        .c3-field-rssi-box .rssi-num.rssi-mid {
+            color: #d97706;
+        }
+
+        .c3-field-rssi-box .rssi-num.rssi-bad {
+            color: #dc2626;
+        }
+
+        .c3-field-rssi-box .rssi-num.rssi-na {
+            color: #94a3b8;
+        }
+
+        .c3-field-status-pills {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .c3-field-pill {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2.5px 6px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .c3-field-pill.ok {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        .c3-field-pill.bad {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+
+        /* Progress Bar */
+        .c3-field-progress-box {
+            padding: 6px 9px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            font-size: 9.5px;
+            color: #475569;
+            line-height: 1.35;
+        }
+
+        /* Sticky Action Bar (Bottom Safe-Area) */
+        .c3-sticky-action-bar {
+            position: sticky;
+            bottom: -42px;
+            margin: 10px -16px -42px -16px;
+            padding: 10px 16px max(16px, env(safe-area-inset-bottom));
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            border-top: 1.5px solid #cbd5e1;
+            box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
+            z-index: 50;
+        }
+
+        .c3-field-block-reason {
+            padding: 6px 9px;
+            margin-bottom: 6px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 7px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #991b1b;
+            line-height: 1.35;
+            text-align: left;
+        }
+
+        .c3-field-save-btn {
+            width: 100% !important;
+            min-height: 48px !important;
+            border-radius: 11px !important;
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.2px !important;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.28) !important;
+            transition: all 0.15s ease !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .c3-field-save-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        /* Accordions */
+        .c3-field-accordion {
+            margin-top: 7px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            background: #ffffff;
+            overflow: hidden;
+            transition: border-color 0.2s ease;
+        }
+
+        .c3-field-accordion[open] {
+            border-color: #94a3b8;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+
+        .c3-field-accordion summary {
+            padding: 8px 11px;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #334155;
+            background: #f8fafc;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .c3-field-accordion[open] summary {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .c3-field-accordion-body {
+            padding: 9px 11px;
+            font-size: 9.5px;
+            line-height: 1.5;
+            color: #475569;
+        }
+
+        /* =========================================================
+           CASE 3 FINAL EVALUATION — ORIGINAL VISUAL PATTERN, LESS CLUTTER
+           This block is GLOBAL (outside the @media rule above).
+           UI-only: no Firebase / scan-capture logic changes.
+           ========================================================= */
+        .c3-field-container {
+            font-family: 'Sarabun', sans-serif;
+            gap: 8px;
+            font-size: 12px;
+            line-height: 1.35;
+            color: #334155;
+            min-width: 0;
+        }
+
+        .c3-field-container *,
+        .c3-field-container *::before,
+        .c3-field-container *::after {
+            box-sizing: border-box;
+        }
+
+        .c3-field-section-title {
+            font-family: 'Sarabun', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            color: #334155;
+            gap: 5px;
+            margin: 3px 0 0;
+        }
+
+        .c3-field-section-title small {
+            flex: 0 1 auto;
+            min-width: 0;
+            font-size: 10px;
+            color: #64748b;
+            text-align: right;
+        }
+
+        .c3-field-pilot-badge {
+            padding: 6px 9px;
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+            font-size: 11px;
+        }
+
+        .c3-field-model-badge {
+            padding: 6px 9px;
+            border-color: #bde8dc;
+            background: #f0fdfa;
+            color: #0f766e;
+            font-size: 11px;
+        }
+
+        .c3-field-ap-row,
+        .c3-field-point-grid,
+        .c3-field-angle-row,
+        .c3-field-round-row {
+            width: 100%;
+        }
+
+        .c3-field-ap-btn,
+        .c3-field-point-btn,
+        .c3-field-angle-btn,
+        .c3-field-round-btn {
+            font-family: 'Sarabun', sans-serif;
+            border: 1px solid #d9e2eb;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #334155;
+            min-width: 0;
+            min-height: 44px;
+            box-shadow: none;
+        }
+
+        .c3-field-ap-btn.active,
+        .c3-field-point-btn.active,
+        .c3-field-angle-btn.active,
+        .c3-field-round-btn.active,
+        .c3-field-ap-btn.active.done,
+        .c3-field-point-btn.active.done {
+            background: #2b7a78 !important;
+            color: white !important;
+            border-color: #2b7a78 !important;
+            box-shadow: 0 2px 6px rgba(43, 122, 120, .14) !important;
+        }
+
+        .c3-field-ap-btn.active small,
+        .c3-field-point-btn.active small,
+        .c3-field-angle-btn.active small,
+        .c3-field-round-btn.active small {
+            color: #e2f7f3 !important;
+        }
+
+        .c3-field-ap-btn.done:not(.active),
+        .c3-field-point-btn.done:not(.active),
+        .c3-field-angle-btn.done:not(.active),
+        .c3-field-round-btn.done:not(.active) {
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #166534;
+        }
+
+        .c3-field-point-btn.part:not(.active) {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+
+        .c3-field-ap-status {
+            font-size: 10.5px;
+            line-height: 1.4;
+        }
+
+        .c3-field-confirm-ap-btn {
+            min-height: 44px;
+            font-size: 12px !important;
+        }
+
+        .c3-field-rssi-card {
+            background: #f8fbfb;
+            border-color: #d4e8e7;
+            padding: 9px;
+        }
+
+        .c3-field-rssi-box {
+            background: #fff;
+            min-width: 0;
+            padding: 9px;
+        }
+
+        .c3-field-rssi-box .band-head {
+            font-size: 11px;
+        }
+
+        .c3-field-rssi-box .rssi-num {
+            font-size: 21px;
+            font-family: 'Sarabun', sans-serif;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .c3-field-band-note {
+            color: #94a3b8;
+            font-size: 9px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .c3-field-progress-box {
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .c3-field-progress-box>div:first-child {
+            flex-wrap: wrap;
+            gap: 2px 8px;
+        }
+
+        .c3-field-progress-box .c3-progress-line {
+            margin: 5px 0 0;
+        }
+
+        .c3-field-pill {
+            font-size: 10px;
+            padding: 3px 7px;
+        }
+
+        .c3-field-accordion summary {
+            font-family: 'Sarabun', sans-serif;
+            font-size: 11px;
+            min-height: 44px;
+            gap: 6px;
+        }
+
+        .c3-field-accordion-body {
+            font-family: 'Sarabun', sans-serif;
+            font-size: 11px;
+        }
+
+        .c3-field-save-btn {
+            min-height: 50px !important;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 14px !important;
+            background: #2b7a78 !important;
+            color: white !important;
+            border: 1px solid #2b7a78 !important;
+            box-shadow: 0 2px 8px rgba(43, 122, 120, .20) !important;
+        }
+
+        .c3-field-save-btn:disabled {
+            background: #e9ecef !important;
+            color: #94a3b8 !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: none !important;
+        }
+
+        .c3-sticky-action-bar {
+            position: sticky;
+            bottom: 0;
+            margin: 4px -6px 0;
+            padding: 8px 6px max(8px, env(safe-area-inset-bottom));
+            border-top: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, .97);
+            z-index: 10;
+        }
+
+        .c3-field-accordion-body .c3-secondary-btn {
+            min-height: 44px !important;
+        }
+
+        .c3-field-measure-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 8px 10px;
+            color: #0f766e;
+            background: #f0fdfa;
+            border: 1px solid #ccebe6;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .c3-field-more-label {
+            margin: 7px 0 0;
+            font-weight: 800;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        @media(max-width: 390px) {
+            .c3-field-point-grid {
+                gap: 4px;
+            }
+
+            .c3-field-point-btn {
+                font-size: 11px;
+                padding: 3px 1px;
+            }
+
+            .c3-field-section-title small {
+                font-size: 9px;
             }
         }
     </style>
@@ -14072,6 +14759,13 @@
                     } else if (!isEvaluationPoint(pt) && pointStatus(pt, candidate) === 'COMPLETE') {
                         toast('✅ ' + pointAtClick + ' ครบ R1/R2/R3 แล้ว', 'success');
                     }
+                    if (isEvaluationPoint(pt)) {
+                        if (roundAtClick === 'R1' && !pointRoundDone(pt, 'R2', candidate, activeAngle)) {
+                            selectedRound = 'R2';
+                        } else if (roundAtClick === 'R2' && !pointRoundDone(pt, 'R3', candidate, activeAngle)) {
+                            selectedRound = 'R3';
+                        }
+                    }
                 } finally {
                     c3MeasurementPending = false;
                     c3CaptureProgress = null;
@@ -14976,6 +15670,28 @@
                 var measureReady = cfgOk && firebaseConnected && fresh && unique && bOk && cOk && posOk && evalGate && physicalOk && !legacyGeometryBlocked && !steelNeedsAck && payloadValid && rssiValid && pilotStageOk;
                 var d3 = dst.d3 === null ? '-' : dst.d3.toFixed(2) + ' m';
 
+                var blockReason = '';
+                if (!firebaseConnected) blockReason = 'Firebase ยังไม่เชื่อมต่อ';
+                else if (!cfgOk) blockReason = 'Device Config ยังไม่พร้อม';
+                else if (!fresh) blockReason = 'Scan ล่าสุดเก่าเกินกำหนด (' + (age > 9999 ? 'ยังไม่มี Scan' : age.toFixed(1) + 's') + ') — กรุณารอ ESP32 ส่งผลใหม่';
+                else if (liveScan && liveScan.measurement_valid === false) blockReason = 'Scan ไม่สมบูรณ์ (measurement_valid = false)';
+                else if (!rssiValid) blockReason = 'RSSI ล่าสุดไม่ถูกต้องหรือต่ำเกินไป (-127 dBm)';
+                else if (!bOk) blockReason = 'BSSID ล่าสุดไม่ตรงกับ Target Config';
+                else if (!cOk) blockReason = 'Channel ล่าสุดไม่ตรงกับ Expected Config';
+                else if (!unique) blockReason = 'Scan ID นี้ถูกบันทึกไปแล้ว — รอ Scan ถัดไป';
+                else if (legacyGeometryBlocked) blockReason = 'พบข้อมูล Case 3 คนละ Geometry Version';
+                else if (isHardwarePilotProfile() && selectedStage !== 'E') blockReason = 'โปรไฟล์ Hardware Pilot บันทึกเฉพาะ Final Evaluation เท่านั้น';
+                else if (selectedStage === 'E' && !isHardwarePilotProfile() && !calValidationComplete()) blockReason = 'ต้องวัด Calibration + Validation ให้ครบก่อน';
+                else if (selectedStage === 'E' && !finalModelLocked()) blockReason = 'ต้องล็อก Final Model ก่อน';
+                else if (selectedStage === 'E' && !evaluationSetup.candidateGenerated && !isProtocolRev3) blockReason = 'ต้องสร้าง Candidate C1...Cn จาก Final Model หรือใช้ Protocol Revision 3';
+                else if (selectedStage === 'E' && (!a || a.x === null || a.y === null)) blockReason = 'ยังไม่มีพิกัด ' + activeApLabel() + ' จาก Candidate Simulation';
+                else if (selectedStage === 'E' && (!candidateAps[selectedEvalAp] || !candidateAps[selectedEvalAp].placementConfirmed)) blockReason = 'ต้องตั้ง ' + activeApLabel() + ' ตามพิกัดจริงและกดยืนยันก่อน';
+                else if (!posOk) blockReason = 'ตำแหน่ง/Geometry ยังไม่พร้อม (' + gs.label + ')';
+                else if (steelNeedsAck) blockReason = 'ต้องตรวจจุดจริงและติ๊กยืนยันแนวตู้เหล็กก่อน';
+
+                var dsSec = document.getElementById('c3-device-status-section');
+                if (dsSec) dsSec.style.display = (selectedStage === 'E' ? 'none' : '');
+
                 var html = '<div id="c3-control-root">';
                 html += '<div class="c3-v9-compact">';
                 if (legacyGeometryBlocked) html += '<div class="c3-v7-sub" style="color:#b91c1c;font-weight:800;">⛔ พบข้อมูล Case 3 คนละ Geometry Version ในโปรไฟล์นี้ — ต้องสร้างโปรไฟล์ใหม่ก่อนวัดแผน 30+12</div>';
@@ -15000,104 +15716,223 @@
                     '<button class="c3-stage-btn ' + (selectedStage === 'E' ? 'active' : '') + '" onclick="C3.setStage(\'E\')">Final Evaluation</button>' +
                     '<button class="c3-stage-btn ' + (selectedStage === 'M' ? 'active' : '') + '" onclick="C3.setStage(\'M\')">Material Study</button>' +
                     '</div>';
-                if (c3OrientEnabled()) html += c3OrientationHtml();
-
-                if (selectedStage === 'W') html += c3WallPlanHtml();
 
                 if (selectedStage === 'E') {
-                    html += '<div style="margin-top:8px;padding:8px;border:1px solid #dbeafe;background:#f8fbff;border-radius:9px;font-size:9.5px;line-height:1.45;color:#475569;">' +
-                        '<b>Final Evaluation (12 จุดวัดคืนพิกัด Validation)</b><br>E01–E12 ตรึงพิกัดตรงกับ Validation ทั้ง 12 จุด (VC01–VC04, VW01–VW08) · รองรับ 3 AP Candidate (AP-A, AP-B, AP-C)' +
-                        '<div style="margin-top:6px;padding:5px 7px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;">' +
-                        '<label style="display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:700;color:#1e293b;cursor:default;">' +
-                        '<input type="checkbox" id="c3-e08-alt-toggle" disabled style="accent-color:#2563eb;cursor:not-allowed;">' +
-                        '<span>พิกัดสำรอง E08-ALT: <b>ปิดการใช้งาน</b></span>' +
-                        '</label>' +
-                        '<div style="font-size:8.5px;color:#166534;margin-top:2px;">' +
-                        '🔒 E08 ล็อกพิกัดตรงกับ VW04: (5.25, 4.05, 1.00 m) · ระยะห่าง AP-A คือ 1.99 ม. (> 0.50 ม. ปลอดภัย)' +
-                        '</div></div></div>';
+                    // =========================================================
+                    // COMPACT FIELD MEASUREMENT UI FOR FINAL EVALUATION
+                    // =========================================================
+                    html += '<div class="c3-field-container">';
 
-                    var analysis = calValidationComplete() ? c3AnalyzeModels() : null;
-
-                    if (!finalModelLocked()) {
-                        var rec24 = analysis && analysis.recommended24 ? analysis.recommended24.name : '';
-                        var rec5 = analysis && analysis.recommended5 ? analysis.recommended5.name : '';
-
-                        html += '<div class="c3-v9-label">Final Model — เลือกแยกตามย่านความถี่</div>';
-                        html += c3ModelAnalysisHtml(analysis);
-                        html += '<div style="margin-top:6px;font-size:9.5px;font-weight:800;color:#475569;">2.4 GHz</div>' +
-                            '<select id="c3-final-model-24" class="c3-form-input" style="margin:3px 0 6px;">' +
-                            modelOptionsHtml(evaluationSetup.model24 || rec24) + '</select>';
-                        html += '<div style="font-size:9.5px;font-weight:800;color:#475569;">5 GHz</div>' +
-                            '<select id="c3-final-model-5" class="c3-form-input" style="margin:3px 0 6px;">' +
-                            modelOptionsHtml(evaluationSetup.model5 || rec5) + '</select>';
-                        html += '<button class="c3-secondary-btn" style="width:100%;" onclick="C3.lockFinalModel()" ' +
-                            (calValidationComplete() ? '' : 'disabled') + '>ล็อก Final Model + Parameters</button>' +
-                            '<div class="c3-v7-sub" style="margin-top:5px;">' +
-                            (calValidationComplete()
-                                ? 'เลือกจาก Validation: RMSE ต่ำสุดเป็นหลัก แล้วดู MAE / |Bias| / R² ประกอบ'
-                                : 'ต้องเก็บ Calibration + Validation ให้ครบ 42/42 ก่อน') +
-                            '</div>';
-                    } else {
-                        html += '<div style="margin-top:7px;padding:7px 8px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;font-size:9.5px;color:#166534;line-height:1.45;">' +
-                            '<b>Final Model LOCKED</b>' +
-                            '<br><b>2.4 GHz:</b> ' + esc(evaluationSetup.model24) +
-                            ' · RMSE ' + c3FmtMetric(evaluationSetup.metrics24 && evaluationSetup.metrics24.rmse) + ' dB' +
-                            '<br><b>5 GHz:</b> ' + esc(evaluationSetup.model5) +
-                            ' · RMSE ' + c3FmtMetric(evaluationSetup.metrics5 && evaluationSetup.metrics5.rmse) + ' dB' +
-                            '</div>';
-                        if (isHardwarePilotProfile()) {
-                            html += '<div style="margin-top:5px;padding:6px 8px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;font-size:9.5px;color:#1e40af;line-height:1.45;">' +
-                                '<b>🛰️ Hardware Pilot Mode (โปรไฟล์ทดสอบฮาร์ดแวร์)</b><br>' +
-                                'ข้ามเฉพาะ Gate ตรวจสอบ Calibration/Validation · ใช้โมเดลอ้างอิง 2.4G Calibrated FSPL + 5G COST231-MW จาก Case 3 final โดยไม่ Fit ใหม่ · บันทึกผลพร้อม testOnly=true' +
-                                '</div>';
-                        }
+                    // 1. CONDENSED MODEL BADGE & PILOT BADGE
+                    if (isHardwarePilotProfile()) {
+                        html += '<div class="c3-field-pilot-badge">ทดสอบอุปกรณ์ · Hardware Pilot (ไม่นำไปใช้ในงานวิจัย)</div>';
                     }
-
                     if (finalModelLocked()) {
-                        html += '<div class="c3-v9-label">Candidate AP Simulation</div>';
-                        html += '<div style="padding:7px 8px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:9.5px;line-height:1.45;color:#475569;">' +
-                            'ระบบสร้าง <b>C1…Cn</b> บนพื้นที่ที่ไม่ทับเฟอร์นิเจอร์ หรือใช้พิกัดยืนยันตาม Protocol Revision 3 (AP-A/B/C).<br>' +
-                            '<b>B = predicted best</b> · A = mid/high · C = lower เพื่อให้ Final Evaluation ตรวจสอบลำดับได้ชัด</div>';
-
-                        html += '<button class="c3-secondary-btn" style="width:100%;margin-top:6px;" onclick="C3.generateCandidates()" ' +
-                            (anyEvaluationMeasurementExists() ? 'disabled' : '') + '>' +
-                            (evaluationSetup.candidateGenerated ? 'คำนวณ Candidate ใหม่จาก Final Model' : 'สร้าง Candidate C1…Cn + เลือก A/B/C') +
-                            '</button>';
-
-                        if (evaluationSetup.candidateGenerated) {
-                            html += '<div class="c3-v7-sub" style="margin-top:4px;">สร้างแล้ว ' +
-                                (evaluationSetup.candidatePool ? evaluationSetup.candidatePool.length : 0) +
-                                ' Candidates · Threshold ' +
-                                ((typeof rssiThreshold !== 'undefined' && Number.isFinite(Number(rssiThreshold))) ? Number(rssiThreshold) : -67) +
-                                ' dBm</div>';
-                        }
+                        html += '<div class="c3-field-model-badge">🔒 โมเดล: 2.4G ' + esc(String(evaluationSetup.model24 || '—').replace('Calibrated ', '')) + ' · 5G ' + esc(String(evaluationSetup.model5 || '—').replace('Simplified ', '').replace(' Multi-Wall', '-MW')) + '</div>';
+                    } else {
+                        html += '<div style="padding:8px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a;font-size:10px;color:#92400e;">' +
+                            '<b>⚠️ Final Model ยังไม่ถูกล็อก</b> · ต้องล็อก Model ก่อนเริ่มบันทึก Final Evaluation</div>';
                     }
 
-                    html += '<div class="c3-v9-label">ตำแหน่ง AP Final Evaluation</div><div class="c3-stage-row">';
+                    // 2. AP CANDIDATE SELECTOR (A / B / C) + CONFIRMATION
+                    html += '<div class="c3-field-section-title"><span>ตำแหน่ง AP</span><small>' + totalEvaluationScansAll() + '/432 Scans</small></div>';
+                    html += '<div class="c3-field-ap-row">';
                     ['A', 'B', 'C'].forEach(function (c) {
                         var scans = totalEvaluationScans(c);
-                        html += '<button class="c3-stage-btn ' + (selectedEvalAp === c ? 'active ' : '') +
-                            (scans === 144 ? 'done' : '') +
-                            '" onclick="C3.setEvalAp(\'' + c + '\')">' + c + ' · ' + scans + '/144</button>';
+                        html += '<button type="button" class="c3-field-ap-btn ' + (selectedEvalAp === c ? 'active ' : '') + (scans === 144 ? 'done' : '') +
+                            '" onclick="C3.setEvalAp(\'' + c + '\')"><b>AP-' + c + '</b><small>' + scans + '/144</small></button>';
                     });
                     html += '</div>';
 
                     var ca = candidateAps[selectedEvalAp];
-                    html += '<div style="margin-top:6px;padding:8px;border:1px solid #fed7aa;background:#fff7ed;border-radius:8px;font-size:9.5px;line-height:1.5;color:#7c2d12;">' +
-                        '<b>AP-' + selectedEvalAp + '</b><br>' + c3CandidateSummaryHtml(selectedEvalAp) + '</div>';
-
-                    if ((evaluationSetup.candidateGenerated || isProtocolRev3) && ca && ca.x !== null && !ca.placementConfirmed) {
-                        html += '<button class="c3-secondary-btn" style="width:100%;margin-top:6px;" onclick="C3.confirmEvalApPlacement()">ยืนยันว่าตั้ง AP-' +
-                            selectedEvalAp + ' ตามพิกัดจริงแล้ว</button>';
-                    } else if (ca && ca.placementConfirmed) {
-                        html += '<div style="margin-top:5px;font-size:9.5px;color:#166534;font-weight:800;">ตำแหน่ง AP-' +
-                            selectedEvalAp + ' ถูกยืนยันแล้ว ✓</div>';
+                    if (ca && ca.placementConfirmed) {
+                        html += '<div class="c3-field-ap-status confirmed">✅ <b>AP-' + selectedEvalAp + ' ยืนยันตำแหน่งแล้ว:</b> X ' + Number(ca.x).toFixed(2) + ' m, Y ' + Number(ca.y).toFixed(2) + ' m, Z 2.60 m</div>';
+                    } else if (ca) {
+                        html += '<div class="c3-field-ap-status unconfirmed">⚠️ <b>ยังไม่ยืนยัน AP-' + selectedEvalAp + ':</b> ตั้ง Tripod ที่ X ' + Number(ca.x).toFixed(2) + ' m, Y ' + Number(ca.y).toFixed(2) + ' m แล้วกดยืนยัน</div>';
+                        html += '<button type="button" class="c3-secondary-btn c3-field-confirm-ap-btn" onclick="C3.confirmEvalApPlacement()">✅ ยืนยันว่าตั้ง AP-' + selectedEvalAp + ' ตามพิกัดจริงแล้ว</button>';
                     }
 
-                    html += '<div class="c3-v7-sub" style="margin-top:5px;">เว็บไม่ได้ตรวจตำแหน่ง AP ทางกายภาพอัตโนมัติ — พิกัดนี้มาจาก Revision 3 / Candidate Simulation และต้องนำ tripod ไปวางจริงตาม X/Y/Z ก่อนกดยืนยัน</div>';
+                    // 3. POINT SELECTOR (E01–E12) IN TOUCH GRID
+                    html += '<div class="c3-field-section-title"><span>จุดวัด E01–E12</span><small>' + (pt ? (pt.sourceValidationPoint ? 'Validation ' + pt.sourceValidationPoint : pt.environment) : '') + '</small></div>';
+                    html += '<div class="c3-field-point-grid">';
+                    EVAL_POINT_DEFS.forEach(function (d) {
+                        var ePt = points[d.id];
+                        var pRounds = evalPointTotalRounds(ePt, selectedEvalAp);
+                        var isSel = (d.id === selectedPoint);
+                        var isDone = (pRounds === 12);
+                        var isPart = (pRounds > 0 && !isDone);
+                        var cls = 'c3-field-point-btn' + (isSel ? ' active' : '') + (isDone ? ' done' : (isPart ? ' part' : ''));
+                        html += '<button type="button" class="' + cls + '" onclick="C3.selectPoint(\'' + d.id + '\')">' +
+                            '<b>' + d.id + '</b><small>' + pRounds + '/12</small></button>';
+                    });
+                    html += '</div>';
 
-                    html += c3EvaluationProgressMatrixHtml(selectedEvalAp);
+                    // 4. ANGLE SELECTOR (0°, 90°, 180°, 270°)
+                    html += '<div class="c3-field-section-title"><span>ทิศทาง ESP32-C5 · AP-' + selectedEvalAp + '</span><small>มุม ' + selectedOrientation + '°</small></div>';
+                    html += '<div class="c3-field-angle-row">';
+                    C3_ORIENTATIONS.forEach(function (ang) {
+                        var rCount = 0;
+                        ['R1', 'R2', 'R3'].forEach(function (r) {
+                            if (pointRoundDone(pt, r, selectedEvalAp, ang)) rCount++;
+                        });
+                        var isAct = (selectedOrientation === ang);
+                        var isDone = (rCount === 3);
+                        var cls = 'c3-field-angle-btn' + (isAct ? ' active' : '') + (isDone ? ' done' : '');
+                        html += '<button type="button" class="' + cls + '" onclick="C3.setOrientation(\'' + ang + '\')">' +
+                            '<b>' + ang + '°</b><small>' + rCount + '/3</small></button>';
+                    });
+                    html += '</div>';
+
+                    // 5. ROUND SELECTOR (R1 / R2 / R3 / AVG)
+                    html += '<div class="c3-field-section-title"><span>รอบการวัด</span><small>' + (c3AverageMode ? 'โหมดเฉลี่ย R1–R3' : ('รอบ ' + selectedRound)) + '</small></div>';
+                    html += '<div class="c3-field-round-row">';
+                    ['R1', 'R2', 'R3'].forEach(function (r) {
+                        var isDone = pointRoundDone(pt, r, selectedEvalAp, selectedOrientation);
+                        var isAct = (!c3AverageMode && selectedRound === r);
+                        var cls = 'c3-field-round-btn' + (isAct ? ' active' : '') + (isDone ? ' done' : '');
+                        html += '<button type="button" class="' + cls + '" onclick="C3.setRound(\'' + r + '\')">' +
+                            '<b>' + (isDone ? '✓ ' : '') + r + '</b><small>' + (isDone ? 'วัดแล้ว' : 'ยังไม่วัด') + '</small></button>';
+                    });
+                    html += '<button type="button" class="c3-field-round-btn ' + (c3AverageMode ? 'active' : '') + '" onclick="C3.setRound(\'AVG\')">' +
+                        '<b>เฉลี่ย</b><small>R1–R3</small></button>';
+                    html += '</div>';
+
+                    html += '<div class="c3-field-measure-summary"><b>' +
+                        'AP-' + selectedEvalAp + ' · ' + selectedPoint + ' · ' + selectedOrientation + '° · ' +
+                        (c3AverageMode ? 'เฉลี่ย R1–R3' : selectedRound) + '</b><span>ระยะ 3D ' + d3 + '</span></div>';
+
+                    // 6. DUAL-BAND LIVE RSSI BIG READOUT CARD
+                    var avg = (pt && pt.evaluationMeasurements && pt.evaluationMeasurements[selectedEvalAp] && pt.evaluationMeasurements[selectedEvalAp].angles && pt.evaluationMeasurements[selectedEvalAp].angles[selectedOrientation]) ? pt.evaluationMeasurements[selectedEvalAp].angles[selectedOrientation].average : {};
+                    var r24Num = c3AverageMode ? ((avg && avg.rssi24 !== null && avg.rssi24 !== undefined) ? Math.round(avg.rssi24) : null) : ((r24 !== null && r24 > -127 && r24 <= 0) ? Math.round(r24) : null);
+                    var r5Num = c3AverageMode ? ((avg && avg.rssi5 !== null && avg.rssi5 !== undefined) ? Math.round(avg.rssi5) : null) : ((r5 !== null && r5 > -127 && r5 <= 0) ? Math.round(r5) : null);
+                    var r24Class = r24Num === null ? 'rssi-na' : (r24Num >= -67 ? 'rssi-good' : (r24Num >= -80 ? 'rssi-mid' : 'rssi-bad'));
+                    var r5Class = r5Num === null ? 'rssi-na' : (r5Num >= -67 ? 'rssi-good' : (r5Num >= -80 ? 'rssi-mid' : 'rssi-bad'));
+                    var r24Disp = r24Num === null ? '—' : (r24Num + ' dBm');
+                    var r5Disp = r5Num === null ? '—' : (r5Num + ' dBm');
+
+                    html += '<div class="c3-field-rssi-card">';
+                    html += '<div class="c3-field-rssi-grid">';
+                    html += '<div class="c3-field-rssi-box">' +
+                        '<div class="band-head"><span>2.4 GHz</span><span>CH ' + (liveScan && liveScan.channel_24g || '—') + '</span></div>' +
+                        '<div class="rssi-num ' + r24Class + '">' + r24Disp + '</div>' +
+                        '<div class="c3-field-band-note" title="BSSID 2.4 GHz">BSSID ' + esc(liveScan && liveScan.bssid_24g || '—') + '</div>' +
+                        '</div>';
+                    html += '<div class="c3-field-rssi-box">' +
+                        '<div class="band-head"><span>5 GHz</span><span>CH ' + (liveScan && liveScan.channel_5g || '—') + '</span></div>' +
+                        '<div class="rssi-num ' + r5Class + '">' + r5Disp + '</div>' +
+                        '<div class="c3-field-band-note" title="BSSID 5 GHz">BSSID ' + esc(liveScan && liveScan.bssid_5g || '—') + '</div>' +
+                        '</div>';
+                    html += '</div>';
+
+                    // Status pills
+                    html += '<div class="c3-field-status-pills">';
+                    html += '<span class="c3-field-pill ' + (fresh ? 'ok' : 'bad') + '">Scan: ' + (Number.isFinite(age) ? (age > 999 ? '—' : age.toFixed(1) + 's') : '—') + ' ' + (fresh ? '✓' : '✕') + '</span>';
+                    html += '<span class="c3-field-pill ' + (bOk ? 'ok' : 'bad') + '">BSSID ' + (bOk ? '✓' : '✕') + '</span>';
+                    html += '<span class="c3-field-pill ' + (cOk ? 'ok' : 'bad') + '">Channel ' + (cOk ? '✓' : '✕') + '</span>';
+                    html += '<span class="c3-field-pill ' + (unique ? 'ok' : 'bad') + '">Scan ' + (unique ? 'ใหม่ ✓' : 'ใช้แล้ว ✕') + '</span>';
+                    html += '<span class="c3-field-pill ' + (physicalOk ? 'ok' : 'bad') + '">AP ' + (physicalOk ? 'ยืนยันแล้ว ✓' : 'รอยืนยัน ✕') + '</span>';
+                    html += '</div>';
+                    html += '<div style="font-size:9px;color:#64748b;margin-top:5px;display:flex;justify-content:space-between;">' +
+                        '<span>Scan Seq: <b>' + (liveScan && liveScan.scan_sequence !== undefined ? liveScan.scan_sequence : '—') + '</b></span>' +
+                        '<span>d3D: <b>' + d3 + '</b> · Kw=' + (gs.kw !== null ? gs.kw : 0) + ' (' + gs.los + ')</span>' +
+                        '</div>';
+                    html += '</div>';
+
+                    // Frequency selector for Heatmap visual display
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">' +
+                        '<span style="font-size:10px;font-weight:700;color:#64748b;">ย่านความถี่บนแผนที่:</span>' +
+                        '<div class="c3-round-row" style="margin:0;gap:4px;">' +
+                        '<button type="button" class="c3-band-btn ' + (currentFreq === '2.4GHz' ? 'active' : '') + '" style="min-height:30px;padding:3px 10px;font-size:10px;" onclick="C3.setBand(\'2.4GHz\')">2.4 GHz</button>' +
+                        '<button type="button" class="c3-band-btn ' + (currentFreq === '5GHz' ? 'active' : '') + '" style="min-height:30px;padding:3px 10px;font-size:10px;" onclick="C3.setBand(\'5GHz\')">5 GHz</button>' +
+                        '</div></div>';
+
+                    // 7. COMPACT PROGRESS BAR
+                    var progressDone = totalEvaluationScans(selectedEvalAp);
+                    var allScansDone = totalEvaluationScansAll();
+                    html += '<div class="c3-field-progress-box">' +
+                        '<div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:3px;">' +
+                        '<span>AP-' + selectedEvalAp + ': <b>' + progressDone + '/144</b> Scans</span>' +
+                        '<span>รวม 3 AP: <b>' + allScansDone + '/432</b> (' + ((allScansDone / 432) * 100).toFixed(1) + '%)</span>' +
+                        '</div>' +
+                        '<div class="c3-progress-line"><div style="width:' + (progressDone / 144 * 100) + '%;"></div></div>' +
+                        '</div>';
+
+                    // 8. STICKY BOTTOM ACTION BAR (SAFE AREA)
+                    html += '<div class="c3-sticky-action-bar">';
+                    if (!measureReady && blockReason) {
+                        html += '<div class="c3-field-block-reason">⚠️ <b>ไม่สามารถบันทึกได้:</b> ' + esc(blockReason) + '</div>';
+                    }
+                    var activeBatch = c3MeasurementPending && c3CaptureProgress;
+                    var btnDisabled = activeBatch || !measureReady;
+                    var btnLabel = activeBatch ? ('⏳ กำลังบันทึก RSSI ' + c3CaptureProgress.count + '/' + c3CaptureProgress.target) :
+                        ('💾 บันทึก Scan ล่าสุด · ' + selectedPoint + ' ' + selectedOrientation + '° ' + (c3AverageMode ? 'เฉลี่ย' : selectedRound));
+                    html += '<button class="c3-main-measure c3-field-save-btn" onclick="C3.measure()" ' +
+                        (btnDisabled ? 'disabled style="opacity:0.55;cursor:not-allowed;" ' : '') +
+                        'title="' + esc(blockReason || 'พร้อมบันทึก Scan ล่าสุด') + '">' +
+                        btnLabel + '</button>';
+                    html += '</div>';
+
+                    // 9. COLLAPSIBLE ACCORDIONS FOR RESEARCH / ANALYSIS (Collapsed by default)
+                    html += '<div style="margin-top:10px;font-size:10.5px;font-weight:800;color:#64748b;">รายละเอียดเพิ่มเติม (แตะเพื่อเปิด)</div>';
+
+                    // Accordion 1: Progress Matrix 12x4
+                    html += '<details class="c3-field-accordion"><summary><span>ตารางความคืบหน้า (12 จุด × 4 มุม)</span><span>▾</span></summary>' +
+                        '<div class="c3-field-accordion-body">' + c3EvaluationProgressMatrixHtml(selectedEvalAp) + '</div></details>';
+
+                    // Accordion 2: Candidate Simulation & Metrics
+                    html += '<details class="c3-field-accordion"><summary><span>การจำลอง AP และตัวชี้วัด</span><span>▾</span></summary>' +
+                        '<div class="c3-field-accordion-body">' +
+                        '<div style="margin-bottom:8px;">' + c3CandidateSummaryHtml(selectedEvalAp) + '</div>' +
+                        '<button class="c3-secondary-btn" style="width:100%;margin-top:4px;" onclick="C3.generateCandidates()" ' +
+                        (anyEvaluationMeasurementExists() ? 'disabled' : '') + '>คำนวณ Candidate ใหม่จาก Final Model</button>' +
+                        '</div></details>';
+
+                    // Accordion 3: Model Parameters & Fit
+                    html += '<details class="c3-field-accordion"><summary><span>ผลคัดเลือกโมเดล</span><span>▾</span></summary>' +
+                        '<div class="c3-field-accordion-body">' +
+                        '<b>2.4 GHz Model:</b> ' + esc(evaluationSetup.model24) + ' · RMSE ' + c3FmtMetric(evaluationSetup.metrics24 && evaluationSetup.metrics24.rmse) + ' dB<br>' +
+                        '<b>5 GHz Model:</b> ' + esc(evaluationSetup.model5) + ' · RMSE ' + c3FmtMetric(evaluationSetup.metrics5 && evaluationSetup.metrics5.rmse) + ' dB<br>' +
+                        (evaluationSetup.fit24 ? ('<small style="color:#64748b;">Fit 2.4G Bias: ' + Number(evaluationSetup.fit24.bias).toFixed(3) + ' dB</small><br>') : '') +
+                        (evaluationSetup.fit5 ? ('<small style="color:#64748b;">Fit 5G n=' + Number(evaluationSetup.fit5.n).toFixed(3) + ', Lw=' + Number(evaluationSetup.fit5.lw || 7.9).toFixed(3) + ' dB</small>') : '') +
+                        '</div></details>';
+
+                    // Accordion 4: Protocol Reference & Coordinates
+                    html += '<details class="c3-field-accordion"><summary><span>ระเบียบวิธีและพิกัด</span><span>▾</span></summary>' +
+                        '<div class="c3-field-accordion-body">' +
+                        '<b>Protocol Revision 3:</b> E01–E12 ตรึงพิกัดตรงกับ Validation ทั้ง 12 จุด (VC01–VC04 บน Corridor, VW01–VW08 ใน Room 10)<br>' +
+                        '<b>E08 Coordinate:</b> ล็อกพิกัดตรงกับ VW04 (5.25, 4.05, 1.00 m) · ระยะห่างจาก AP-A คือ 1.99 ม. (> 0.50 ม. ปลอดภัย)<br>' +
+                        '<b>4 Orientations:</b> 0° (หันหน้าเข้าหา AP), 90°, 180°, 270° (หมุนตามเข็มนาฬิกาเมื่อมองจากด้านบน)<br>' +
+                        '<b>Total Scans:</b> 12 จุด × 4 มุม × 3 รอบ = 144 Scans ต่อ AP (รวม 3 AP = 432 Scans)' +
+                        '</div></details>';
+
+                    // Accordion 5: Config, Data & Tools
+                    html += '<details class="c3-field-accordion"><summary><span>เครื่องมือและข้อมูล</span><span>▾</span></summary>' +
+                        '<div class="c3-field-accordion-body">' +
+                        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">' +
+                        '<button type="button" class="c3-secondary-btn" style="min-height:36px;" onclick="C3.openModal(\'config\')">Config</button>' +
+                        '<button type="button" class="c3-secondary-btn" style="min-height:36px;" onclick="C3.openModal(\'data\')">Data</button>' +
+                        '<button type="button" class="c3-secondary-btn" style="min-height:36px;" onclick="C3.openFieldGuide()">จุดจริง 42 จุด</button>' +
+                        '<button type="button" class="c3-secondary-btn" style="min-height:36px;" onclick="C3.togglePlanGrid()">Grid 1 m · ' + (c3ShowGrid ? 'เปิด' : 'ปิด') + '</button>' +
+                        '</div>' +
+                        '<button type="button" class="c3-open-editor-btn" style="width:100%;margin-top:4px;" onclick="C3.toggleEditor()">เปิด Testbed Editor</button>' +
+                        '</div></details>';
+
+                    html += '</div>'; // end c3-field-container
+                    html += '</div></div>';
+                    var fieldOpenSections = Array.prototype.map.call(
+                        box.querySelectorAll('.c3-field-accordion'), function (section, index) {
+                            return section.open ? index : -1;
+                        }).filter(function (index) { return index >= 0; });
+                    box.innerHTML = html;
+                    var fieldNewSections = box.querySelectorAll('.c3-field-accordion');
+                    fieldOpenSections.forEach(function (index) {
+                        if (fieldNewSections[index]) fieldNewSections[index].open = true;
+                    });
+                    return;
                 }
+
+                if (c3OrientEnabled()) html += c3OrientationHtml();
+                if (selectedStage === 'W') html += c3WallPlanHtml();
 
                 html += '<div class="c3-v9-label">รอบการวัด</div><div class="c3-round-row">';
                 ['R1', 'R2', 'R3'].forEach(function (r) {
