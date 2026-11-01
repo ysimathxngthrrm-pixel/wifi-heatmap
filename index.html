@@ -3959,6 +3959,17 @@
         }
 
         function handleProfileChange(val) {
+            if (val !== '__CREATE_NEW__' && typeof window.C3_EVAL_NUMBERING !== 'undefined' &&
+                String(window.__WIFI_BOOT_PROFILE__ || '') !== String(val)) {
+                var destCase = (typeof profileCaseLocks !== 'undefined' && profileCaseLocks) ? profileCaseLocks[val] : '';
+                var params = new URLSearchParams();
+                params.set('profile', val);
+                if (destCase && ['Case1', 'Case2', 'Case3'].indexOf(destCase) >= 0) {
+                    params.set('case', destCase); params.set('locked', '1');
+                }
+                window.location.assign('index.html?' + params.toString());
+                return;
+            }
             disableClearSelectedMode();
             closeInspectPopup();
             if (val === '__CREATE_NEW__') {
@@ -3974,6 +3985,10 @@
                             updated_at: now
                         }).then(() => {
                             currentProfile = trimmedName;
+                            if (typeof window.C3_EVAL_NUMBERING !== 'undefined') {
+                                window.location.assign('index.html?profile=' + encodeURIComponent(trimmedName));
+                                return;
+                            }
                             profileLockedCase = '';
                             try {
                                 localStorage.removeItem('wifiPreferredCase:' + currentProfile);
@@ -11634,6 +11649,81 @@
                 { id: 'E11', source: 'VW07', env: 'Room10', kw: 1, los: 'NLOS' },
                 { id: 'E12', source: 'VW08', env: 'Room10', kw: 1, los: 'NLOS' }
             ];
+            // ===============================================================
+            // CASE 3 FINAL / ID ORDER FIX, 2026-11-01
+            // New research plan numbering (Case3 final ONLY):
+            // E01..E08 => VW01..VW08 (Room 10), E09..E12 => VC01..VC04 (corridor).
+            // Prior test profiles are explicitly frozen at their original E IDs,
+            // because those profiles already contain Firebase scans under them.
+            // This is a real point-id mapping, NOT a cosmetic label substitution.
+            // ===============================================================
+            var C3_EVAL_RENUMBER_FOR_FINAL = String(window.__WIFI_BOOT_PROFILE__ || '') === 'Case3 final';
+            var C3_EVAL_ORIGINAL_MAP = Object.assign({}, C3_EVAL_TO_VAL_MAP);
+            var C3_EVAL_ORIGINAL_DEFS = Object.assign({}, C3_EVAL_REV3_POINTS);
+            var C3_EVAL_ID_TO_OLD = {};
+            var c3EvaluationMappingConflict = false;
+            if (C3_EVAL_RENUMBER_FOR_FINAL) {
+                var sourceOrder = ['VW01', 'VW02', 'VW03', 'VW04', 'VW05', 'VW06', 'VW07', 'VW08',
+                    'VC01', 'VC02', 'VC03', 'VC04'];
+                var legacyDefsBySource = {};
+                EVAL_POINT_DEFS.forEach(function (d) { legacyDefsBySource[d.source] = d; });
+                EVAL_POINT_DEFS = sourceOrder.map(function (src, i) {
+                    var id = 'E' + String(i + 1).padStart(2, '0');
+                    var original = legacyDefsBySource[src];
+                    if (!original) throw Error('Missing original Validation source ' + src);
+                    C3_EVAL_ID_TO_OLD[id] = original.id;
+                    return Object.assign({}, original, { id: id, source: src });
+                });
+                C3_EVAL_TO_VAL_MAP = {};
+                C3_EVAL_REV3_POINTS = {};
+                EVAL_POINT_DEFS.forEach(function (d) {
+                    var oldId = C3_EVAL_ID_TO_OLD[d.id];
+                    var oldSpec = C3_EVAL_ORIGINAL_DEFS[oldId];
+                    C3_EVAL_TO_VAL_MAP[d.id] = d.source;
+                    C3_EVAL_REV3_POINTS[d.id] = Object.assign({}, oldSpec, {
+                        source: d.source,
+                        note: 'Final Evaluation ' + d.id + ' = Validation ' + d.source + ' (same physical coordinate)'
+                    });
+                });
+                window.C3_EVAL_REV3_POINTS = C3_EVAL_REV3_POINTS;
+                window.C3_EVAL_TO_VAL_MAP = C3_EVAL_TO_VAL_MAP;
+            }
+            var C3_EVAL_VW04_ID = C3_EVAL_RENUMBER_FOR_FINAL ? 'E04' : 'E08';
+            window.C3_EVAL_NUMBERING = C3_EVAL_RENUMBER_FOR_FINAL ? 'VW_FIRST_V2' : 'LEGACY_VC_FIRST';
+            window.C3_EVAL_VW04_ID = C3_EVAL_VW04_ID;
+
+            // The precomputed prediction bundle may still be keyed with the
+            // original E ids. Translate it in memory; NEVER modify fitted data.
+            function c3EvalNormalizePredictions(perPoint) {
+                if (!perPoint || !C3_EVAL_RENUMBER_FOR_FINAL) return perPoint;
+                var out = {};
+                EVAL_POINT_DEFS.forEach(function (d) {
+                    var oldId = C3_EVAL_ID_TO_OLD[d.id];
+                    var oldRow = perPoint[oldId];
+                    // If the model bundle explicitly carries matching coordinates,
+                    // accept a newly regenerated key instead of translating twice.
+                    var newRow = perPoint[d.id];
+                    var spec = C3_EVAL_REV3_POINTS[d.id];
+                    var x = newRow && Number(newRow.x !== undefined ? newRow.x : newRow.point_x_m);
+                    var y = newRow && Number(newRow.y !== undefined ? newRow.y : newRow.point_y_m);
+                    var newMatches = newRow && Number.isFinite(x) && Number.isFinite(y) &&
+                        Math.abs(x - spec.x) < 1e-5 && Math.abs(y - spec.y) < 1e-5;
+                    var selected = newMatches ? newRow : oldRow;
+                    var predX = selected && Number(selected.x !== undefined ? selected.x : selected.point_x_m);
+                    var predY = selected && Number(selected.y !== undefined ? selected.y : selected.point_y_m);
+                    if (Number.isFinite(predX) && Number.isFinite(predY) &&
+                        (Math.abs(predX - spec.x) > .01 || Math.abs(predY - spec.y) > .01)) {
+                        console.warn('Case3 predicted RSSI skipped: source geometry mismatch', d.id);
+                        return;
+                    }
+                    if (selected) out[d.id] = Object.assign({}, selected, {
+                        pointId: d.id, sourceValidationPoint: d.source,
+                        x: spec.x, y: spec.y, z: spec.z
+                    });
+                });
+                return out;
+            }
+            window.C3_normalizePredictions = c3EvalNormalizePredictions;
             var TOTAL_EVAL_POINTS = EVAL_POINT_DEFS.length; // 12 evaluation points matching 12 validation points
             var EXPECTED_CASE3_RSSI_RECORDS = 468; // 180 CAL + 72 VAL + 216 EVAL A/B/C
 
@@ -12330,7 +12420,7 @@
                     // Attach Model A precomputed predictions (from AP_A_B_C_E01_E12_predictions.csv)
                     if (window.C3_EVAL_PREDICTIONS && window.C3_EVAL_PREDICTIONS[c]) {
                         if (!candidateAps[c].predicted) candidateAps[c].predicted = {};
-                        candidateAps[c].predicted.perPoint = window.C3_EVAL_PREDICTIONS[c].perPoint;
+                        candidateAps[c].predicted.perPoint = c3EvalNormalizePredictions(window.C3_EVAL_PREDICTIONS[c].perPoint);
                         candidateAps[c].predicted.coverage24 = 100.0;
                         candidateAps[c].predicted.coverage5 = 100.0;
                         candidateAps[c].predicted.coverageDual = 100.0;
@@ -13382,7 +13472,8 @@
                     candidateRule: evaluationSetup.candidateRule || '',
                     candidatePool: evaluationSetup.candidatePool || [],
                     calibrationValidationComplete: calValidationComplete(),
-                    mapping: { E01: 'VC01', E02: 'VC02', E03: 'VC03', E04: 'VC04', E05: 'VW01', E06: 'VW02', E07: 'VW03', E08: 'VW04', E09: 'VW05', E10: 'VW06', E11: 'VW07', E12: 'VW08' },
+                    mapping: Object.assign({}, C3_EVAL_TO_VAL_MAP),
+                    pointIdMappingVersion: window.C3_EVAL_NUMBERING,
                     updatedAt: Date.now()
                 }).then(function () { return true; }).catch(function (e) { console.error(e); return false; });
             }
@@ -13396,7 +13487,7 @@
                 var out = {
                     geometryVersion: C3_GEOMETRY_VERSION, pointId: pt.pointId, projectCase: 'Case3', experiment: isEvaluationPoint(pt) ? 'Controlled AP Final Evaluation' : 'Controlled AP Testbed Calibration',
                     setType: pt.setType, environment: pt.environment, wallCount: (gs.kw === null || gs.kw === undefined ? pt.wallCount : gs.kw), losType: gs.los || pt.losType,
-                    referenceP: pt.referenceP || '', sourceValidationPoint: pt.sourcePoint || '', fieldNote: pt.fieldNote || '', geometryAutoCheck: gs.label, geometryAutoValid: !!gs.ok, furnitureFootprintOnRay2D: !!gs.furniturePotential,
+                    referenceP: pt.referenceP || '', sourceValidationPoint: pt.sourcePoint || '', pointIdMappingVersion: isEvaluationPoint(pt) ? window.C3_EVAL_NUMBERING : null, fieldNote: pt.fieldNote || '', geometryAutoCheck: gs.label, geometryAutoValid: !!gs.ok, furnitureFootprintOnRay2D: !!gs.furniturePotential,
                     cabinetBlocked: !!gs.cabinetBlocked, cabinetObstacleNames: (gs.cabinetNames || []),
                     oneWallCalibrationEligible: !!gs.ok && !gs.cabinetBlocked,
                     obstructionType: gs.cabinetBlocked ? 'steel_direct_3d' : (gs.furniturePotential ? 'furniture_2d_possible' : 'none'),
@@ -13411,7 +13502,8 @@
                     out.researchExcluded = true;
                 }
                 if (isEvaluationPoint(pt)) {
-                    out.e08Variant = c3UseE08Alt ? 'E08-ALT' : 'E08';
+                    out.e08Variant = c3UseE08Alt ? (C3_EVAL_VW04_ID + '-ALT') : C3_EVAL_VW04_ID;
+                    out.pointIdMappingVersion = window.C3_EVAL_NUMBERING;
                     ensureEvaluationPointStructure(pt, candidate);
                     out.angles = pt.evaluationMeasurements[candidate].angles;
                     if (pt.evaluationMeasurements[candidate].legacyMeasurements) {
@@ -13448,10 +13540,24 @@
             }
             function mergeEvaluationPoint(pt, src, candidate) {
                 if (!src || !pt) return;
+                if (C3_EVAL_RENUMBER_FOR_FINAL) {
+                    var expectedSource = C3_EVAL_TO_VAL_MAP[pt.pointId] || '';
+                    var storedSource = String(src.sourceValidationPoint || src.sourcePoint || src.referenceP || '').trim();
+                    var storedX = Number(src.xMeters), storedY = Number(src.yMeters);
+                    var spec = C3_EVAL_REV3_POINTS[pt.pointId];
+                    var xyMismatch = spec && Number.isFinite(storedX) && Number.isFinite(storedY) &&
+                        (Math.abs(storedX - spec.x) > .01 || Math.abs(storedY - spec.y) > .01);
+                    if ((storedSource && storedSource !== expectedSource) || xyMismatch) {
+                        c3EvaluationMappingConflict = true;
+                        console.error('Case3 Evaluation point mapping conflict: refusing to relabel existing Firebase data',
+                            { pointId: pt.pointId, expectedSource: expectedSource, storedSource: storedSource });
+                        return;
+                    }
+                }
                 candidate = evalCandidate(candidate);
                 ensureEvaluationPointStructure(pt, candidate);
                 if (src.e08Variant) {
-                    if (src.e08Variant === 'E08-ALT') c3UseE08Alt = true;
+                    if (src.e08Variant === 'E08-ALT' || src.e08Variant === 'E04-ALT') c3UseE08Alt = true;
                 }
                 if (src.angles && typeof src.angles === 'object') {
                     ['0', '90', '180', '270'].forEach(function (a) {
@@ -13500,6 +13606,7 @@
             }
 
             function loadData() {
+                c3EvaluationMappingConflict = false;
                 c3OrientLoaded = false; c3OrientProfile = '';
                 resetPoints();
                 if (typeof db === 'undefined') { applyDraftFieldPlanPositions(); syncEvaluationCoordinates(); renderAll(); return Promise.resolve(); }
@@ -13641,6 +13748,9 @@
                         if (!snap.exists()) return;
                         var ca = snap.val() || {};
                         candidateAps[c].predicted = ca.predicted || null;
+                        if (candidateAps[c].predicted && candidateAps[c].predicted.perPoint) {
+                            candidateAps[c].predicted.perPoint = c3EvalNormalizePredictions(candidateAps[c].predicted.perPoint);
+                        }
                         candidateAps[c].placementConfirmed = !!ca.placementConfirmed;
                         candidateAps[c].confirmedAt = ca.confirmedAt || null;
                     });
@@ -14342,7 +14452,7 @@
                 }
                 c3UseE08Alt = false;
                 syncEvaluationCoordinates();
-                toast('🔒 E08 ตรึงพิกัดตามจุดวัด Validation VW04 (5.25, 4.05, 1.00 m) — ระยะห่าง AP-A คือ 1.99 ม. (ปลอดภัยเกินเกณฑ์ 0.50 ม. ไม่ต้องใช้พิกัด ALT เดิม)', 'info');
+                toast('🔒 ' + C3_EVAL_VW04_ID + ' ตรึงพิกัดตาม Validation VW04 (5.25, 4.05, 1.00 m) — ระยะห่าง AP-A 1.99 ม. (ไม่ต้องใช้ ALT)', 'info');
                 renderAll();
             };
 
@@ -14375,7 +14485,7 @@
                 var bandLabel = is5G ? '5 GHz' : '2.4 GHz';
                 var modelLabel = is5G ? 'Simplified COST231 Multi-Wall (5 GHz)' : 'Calibrated FSPL (2.4 GHz)';
 
-                var evalPreds = window.C3_EVAL_PREDICTIONS && window.C3_EVAL_PREDICTIONS[cand] && window.C3_EVAL_PREDICTIONS[cand].perPoint;
+                var evalPreds = c3EvalNormalizePredictions(window.C3_EVAL_PREDICTIONS && window.C3_EVAL_PREDICTIONS[cand] && window.C3_EVAL_PREDICTIONS[cand].perPoint);
                 var ptPred = evalPreds && evalPreds[pointId];
                 var pred24 = ptPred ? ptPred.rssi24 : null;
                 var pred5 = ptPred ? ptPred.rssi5 : null;
@@ -14628,6 +14738,7 @@
             C3.measure = async function () {
                 if (selectedStage !== 'E' && c3OrientEnabled() && selectedOrientation !== '0') return C3.orientationMeasure();
                 if (c3MeasurementPending) { toast('⏳ ระบบกำลังบันทึกจุดก่อนหน้าอยู่', 'info'); return; }
+                if (c3EvaluationMappingConflict) { toast('⛔ ข้อมูล Firebase ในโปรไฟล์นี้ใช้เลข E01–E12 คนละ Mapping — หยุดบันทึกเพื่อป้องกันสลับจุด', 'warning'); return; }
                 if (legacyGeometryBlocked) { toast('⛔ ข้อมูล Case 3 รุ่นพิกัดเดิมอยู่ในโปรไฟล์นี้ กรุณาสร้างโปรไฟล์ใหม่ ห้ามรวมชุดวัด', 'warning'); return; }
                 if (c3AverageMode) { toast('โหมดเฉลี่ยใช้ดูผลจาก R1–R3 และไม่บันทึกข้อมูลใหม่', 'info'); return; }
                 syncEvaluationCoordinates();
@@ -14750,7 +14861,9 @@
                             apZ: a ? a.z : null,
                             distance2D: dst.d2,
                             distance3D: dst.d3,
-                            e08Variant: c3UseE08Alt ? 'E08-ALT' : 'E08',
+                            e08Variant: c3UseE08Alt ? (C3_EVAL_VW04_ID + '-ALT') : C3_EVAL_VW04_ID,
+                            sourceValidationPoint: pt.sourcePoint,
+                            pointIdMappingVersion: window.C3_EVAL_NUMBERING,
                             updatedAt: Date.now()
                         };
                         if (isHardwarePilotProfile()) {
@@ -14936,7 +15049,7 @@
                             if (!done) return;
                             var scans = Array.isArray(m.rawScans) && m.rawScans.length ? m.rawScans : [m];
                             scans.forEach(function (x, i) {
-                                rows.push([profile(), pt.setType, candidate ? 'AP-' + candidate : 'AP-CAL', pt.pointId, ang, (isEval && pt.pointId === 'E08') ? (c3UseE08Alt ? 'E08-ALT' : 'E08') : '-',
+                                rows.push([profile(), pt.setType, candidate ? 'AP-' + candidate : 'AP-CAL', pt.pointId, ang, (isEval && pt.pointId === C3_EVAL_VW04_ID) ? (c3UseE08Alt ? C3_EVAL_VW04_ID + '-ALT' : C3_EVAL_VW04_ID) : '-',
                                 val(pt.x), val(pt.y), val(pt.z), a ? val(a.x) : '', a ? val(a.y) : '', a ? val(a.z) : '', r,
                                 m.captureMethod || 'LEGACY_SINGLE', i + 1, scans.length,
                                 x.sourceScanId || '', x.sourceScanTimestamp || '', x.scanSequence || '',
@@ -14968,7 +15081,7 @@
                     var avg = isEval ? (pt.evaluationMeasurements && pt.evaluationMeasurements[candidate] && pt.evaluationMeasurements[candidate].angles && pt.evaluationMeasurements[candidate].angles[ang] ? pt.evaluationMeasurements[candidate].angles[ang].average : {}) : recalc(pt, candidate);
                     var bucket = measurementBucket(pt, candidate, ang);
                     function rr(r, k) { var m = bucket[r] || {}; return m[k] === undefined || m[k] === null ? '' : m[k]; }
-                    var predPointKey = (isEval && pt.pointId === 'E08' && c3UseE08Alt) ? 'E08-ALT' : pt.pointId;
+                    var predPointKey = (isEval && pt.pointId === C3_EVAL_VW04_ID && c3UseE08Alt) ? (C3_EVAL_VW04_ID + '-ALT') : pt.pointId;
                     var pred = isEval && candidateAps[candidate] && candidateAps[candidate].predicted && candidateAps[candidate].predicted.perPoint
                         ? (candidateAps[candidate].predicted.perPoint[predPointKey] || candidateAps[candidate].predicted.perPoint[pt.pointId])
                         : null;
@@ -14984,7 +15097,7 @@
                         isEval && candidateAps[candidate] ? (candidateAps[candidate].sourceCandidateId || '') : '',
                         pt.pointId,
                         ang,
-                        (isEval && pt.pointId === 'E08') ? (c3UseE08Alt ? 'E08-ALT' : 'E08') : '-',
+                        (isEval && pt.pointId === C3_EVAL_VW04_ID) ? (c3UseE08Alt ? C3_EVAL_VW04_ID + '-ALT' : C3_EVAL_VW04_ID) : '-',
                         pt.sourcePoint || '', pt.setType, pt.environment,
                         gs.kw === null || gs.kw === undefined ? pt.wallCount : gs.kw,
                         gs.los || pt.losType,
@@ -15685,7 +15798,7 @@
                 var pilotStageOk = !isPilot || selectedStage === 'E';
                 var evalGate = selectedStage !== 'E' || (evaluationReady() && (evaluationSetup.candidateGenerated || isProtocolRev3) && physicalOk);
                 var steelNeedsAck = !!(gs.cabinetBlocked && gs.ok && !c3SteelAckValid(pt, selectedStage === 'E' ? selectedEvalAp : null));
-                var measureReady = cfgOk && firebaseConnected && fresh && unique && bOk && cOk && posOk && evalGate && physicalOk && !legacyGeometryBlocked && !steelNeedsAck && payloadValid && rssiValid && pilotStageOk;
+                var measureReady = cfgOk && firebaseConnected && fresh && unique && bOk && cOk && posOk && evalGate && physicalOk && !legacyGeometryBlocked && !c3EvaluationMappingConflict && !steelNeedsAck && payloadValid && rssiValid && pilotStageOk;
                 var d3 = dst.d3 === null ? '-' : dst.d3.toFixed(2) + ' m';
 
                 var blockReason = '';
@@ -15697,6 +15810,7 @@
                 else if (!bOk) blockReason = 'BSSID ล่าสุดไม่ตรงกับ Target Config';
                 else if (!cOk) blockReason = 'Channel ล่าสุดไม่ตรงกับ Expected Config';
                 else if (!unique) blockReason = 'Scan ID นี้ถูกบันทึกไปแล้ว — รอ Scan ถัดไป';
+                else if (c3EvaluationMappingConflict) blockReason = 'ข้อมูล Evaluation มีเลขจุด E01–E12 คนละ Mapping — ห้ามบันทึกทับ';
                 else if (legacyGeometryBlocked) blockReason = 'พบข้อมูล Case 3 คนละ Geometry Version';
                 else if (isHardwarePilotProfile() && selectedStage !== 'E') blockReason = 'โปรไฟล์ Hardware Pilot บันทึกเฉพาะ Final Evaluation เท่านั้น';
                 else if (selectedStage === 'E' && !isHardwarePilotProfile() && !calValidationComplete()) blockReason = 'ต้องวัด Calibration + Validation ให้ครบก่อน';
@@ -15917,8 +16031,8 @@
                     // Accordion 4: Protocol Reference & Coordinates
                     html += '<details class="c3-field-accordion"><summary><span>ระเบียบวิธีและพิกัด</span><span>▾</span></summary>' +
                         '<div class="c3-field-accordion-body">' +
-                        '<b>Protocol Revision 3:</b> E01–E12 ตรึงพิกัดตรงกับ Validation ทั้ง 12 จุด (VC01–VC04 บน Corridor, VW01–VW08 ใน Room 10)<br>' +
-                        '<b>E08 Coordinate:</b> ล็อกพิกัดตรงกับ VW04 (5.25, 4.05, 1.00 m) · ระยะห่างจาก AP-A คือ 1.99 ม. (> 0.50 ม. ปลอดภัย)<br>' +
+                        '<b>Protocol Revision 3:</b> E01–E12 ใช้พิกัด Validation ทั้ง 12 จุด · ' + (C3_EVAL_RENUMBER_FOR_FINAL ? 'E01–E08 = VW01–VW08, E09–E12 = VC01–VC04' : 'E01–E04 = VC01–VC04, E05–E12 = VW01–VW08') + '<br>' +
+                        '<b>' + C3_EVAL_VW04_ID + ' Coordinate:</b> ล็อกพิกัดตรงกับ VW04 (5.25, 4.05, 1.00 m) · ระยะห่างจาก AP-A 1.99 ม.<br>' +
                         '<b>4 Orientations:</b> 0° (หันหน้าเข้าหา AP), 90°, 180°, 270° (หมุนตามเข็มนาฬิกาเมื่อมองจากด้านบน)<br>' +
                         '<b>Total Scans:</b> 12 จุด × 4 มุม × 3 รอบ = 144 Scans ต่อ AP (รวม 3 AP = 432 Scans)' +
                         '</div></details>';
@@ -15990,6 +16104,7 @@
                     else if (!bOk) blockReason = 'BSSID ล่าสุดไม่ตรงกับ Target Config';
                     else if (!cOk) blockReason = 'Channel ล่าสุดไม่ตรงกับ Expected Config';
                     else if (!unique) blockReason = 'Scan ID นี้ถูกบันทึกไปแล้ว — รอ Scan ถัดไป';
+                    else if (c3EvaluationMappingConflict) blockReason = 'ข้อมูล Evaluation มีเลขจุด E01–E12 คนละ Mapping — ห้ามบันทึกทับ';
                     else if (legacyGeometryBlocked) blockReason = 'พบข้อมูล Case 3 คนละ Geometry Version';
                     else if (isHardwarePilotProfile() && selectedStage !== 'E') blockReason = 'โปรไฟล์ Hardware Pilot บันทึกเฉพาะ Final Evaluation เท่านั้น';
                     else if (selectedStage === 'E' && !isHardwarePilotProfile() && !calValidationComplete()) blockReason = 'ต้องวัด Calibration + Validation ให้ครบก่อน';
@@ -22110,7 +22225,7 @@
                     }
                     evalG.innerHTML = '';
                     const evalCand = candKey || 'CAL';
-                    const evalPredObj = window.C3_EVAL_PREDICTIONS && window.C3_EVAL_PREDICTIONS[evalCand] && window.C3_EVAL_PREDICTIONS[evalCand].perPoint;
+                    const evalPredObj = window.C3_normalizePredictions ? window.C3_normalizePredictions(window.C3_EVAL_PREDICTIONS && window.C3_EVAL_PREDICTIONS[evalCand] && window.C3_EVAL_PREDICTIONS[evalCand].perPoint) : null;
                     const evalDefs = (window.C3_EVAL_REV3_POINTS) || evalPredObj || {};
 
                     const evalPointList = ['E01', 'E02', 'E03', 'E04', 'E05', 'E06', 'E07', 'E08', 'E09', 'E10', 'E11', 'E12'];
