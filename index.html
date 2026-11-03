@@ -12987,7 +12987,7 @@
                 if (genericBody) { var gt = genericBody.closest('table'); if (gt) { gt.id = 'c3-generic-table'; var prev = gt.previousElementSibling; if (prev) prev.id = 'c3-generic-export'; } }
                 if (!document.getElementById('c3-toolbar')) {
                     var tb = document.createElement('div'); tb.id = 'c3-toolbar';
-                    tb.innerHTML = '<div class="c3-v7-switch"><button id="c3-v-testbed" onclick="C3.setView(\'testbed\')">Testbed 2D</button><button id="c3-v-floor2" onclick="C3.setView(\'floor2\')">แปลนชั้น 2 (อ้างอิง)</button></div>';
+                    tb.innerHTML = '<div class="c3-v7-switch"><button id="c3-v-testbed" onclick="C3.setView(\'testbed\')">Testbed 2D</button><button id="c3-v-floor2" onclick="C3.setView(\'floor2\')">แปลนชั้น 2 (อ้างอิง)</button><button id="c3-v-transfer-room" onclick="window.C3TransferPlanner && window.C3TransferPlanner.open()">ห้องใหม่ TR01</button></div>';
                     map.parentNode.insertBefore(tb, map);
                 }
                 if (!document.getElementById('c3-testbed-layer')) { var layer = document.createElement('div'); layer.id = 'c3-testbed-layer'; map.appendChild(layer); }
@@ -24103,6 +24103,156 @@
         }
     </style>
 
+
+    <style id="trp-ipad-plan-navigation-v1">
+        /* Navigation remains visible on iPad, regardless of the legacy sidebar visibility. */
+        #trp-root .trp-head {
+            flex-wrap: wrap;
+            gap: 9px 12px;
+        }
+
+        #trp-root .trp-head>div:first-child {
+            flex: 1 1 220px;
+            min-width: 0;
+            order: 0;
+        }
+
+        #trp-root .trp-head-actions {
+            flex: 0 1 auto;
+            order: 1;
+        }
+
+        #trp-sidebar-panel .trp-switch-tabs {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            padding: 0 0 10px;
+            white-space: nowrap;
+        }
+
+        #trp-sidebar-panel .trp-switch-tabs button,
+        #trp-sidebar-panel .trp-switch-tabs span {
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+            font: 750 10px Sarabun, Arial, sans-serif;
+            color: #334155;
+            padding: 5px 8px;
+            flex: 0 0 auto;
+        }
+
+        #trp-sidebar-panel .trp-switch-tabs span[aria-current] {
+            background: #2b7a78;
+            border-color: #2b7a78;
+            color: white;
+        }
+
+        #trp-root .trp-view-tabs {
+            display: flex;
+            flex: 1 0 100%;
+            order: 2;
+            align-items: center;
+            gap: 7px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+            padding: 2px 0 3px;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        #trp-root .trp-view-tab {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            padding: 9px 13px;
+            min-height: 42px;
+            border-radius: 9px;
+            border: 1px solid #cedce5;
+            background: #f8fafc;
+            color: #334155;
+            font: 750 11px Sarabun, Arial, sans-serif;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #trp-root .trp-view-tab.active {
+            color: white;
+            background: #2b7a78;
+            border-color: #2b7a78;
+        }
+
+        #trp-root .trp-view-tab:not(.active):hover {
+            background: #eaf2f2;
+        }
+
+        #trp-root .trp-view-tab:focus-visible {
+            outline: 2px solid #2b7a78;
+            outline-offset: 2px;
+        }
+
+        @media (max-width:1100px) {
+            #trp-root .trp-head>div:first-child {
+                flex: 1 1 100%;
+            }
+
+            #trp-root .trp-head-actions {
+                order: 3;
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            #trp-root .trp-view-tabs {
+                order: 1;
+            }
+
+            #trp-root .trp-head-actions .trp-btn {
+                min-height: 38px;
+            }
+
+            #c3-toolbar .c3-v7-switch {
+                max-width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #c3-toolbar .c3-v7-switch button {
+                min-height: 42px;
+                white-space: nowrap;
+            }
+        }
+
+        @media (min-width:631px) and (max-width:800px) {
+            body.trp-workspace-active.panel-open #trp-root {
+                left: min(calc(92vw + 10px), 365px) !important;
+            }
+        }
+
+        @media (max-width:630px) {
+            #trp-root .trp-head>div:first-child {
+                flex: 0 0 100%;
+            }
+
+            #trp-root .trp-head h2 {
+                font-size: 14px;
+            }
+
+            #trp-root .trp-head-actions {
+                gap: 4px;
+            }
+
+            #trp-root .trp-view-tab {
+                padding: 7px 10px;
+                font-size: 10px;
+            }
+        }
+    </style>
+
     <style id="trp-case3-workflow-style">
         /* TR01 only. Case1/2/3 original controls and data are not modified. */
         #trp-sidebar-panel .trp-rssi-legend {
@@ -24380,6 +24530,11 @@
                     <h2>Case 3 · แปลนห้องทดสอบใหม่</h2>
                     <p>Zero Local Calibration · แยกจากห้องเดิมและ Final Evaluation อย่างสมบูรณ์</p>
                 </div>
+                <nav class="trp-view-tabs" aria-label="สลับแปลน Case 3">
+                    <span class="trp-view-tab active" aria-current="page">ห้องใหม่ TR01</span>
+                    <button type="button" class="trp-view-tab" id="trp-tab-testbed">Testbed 2D เดิม</button>
+                    <button type="button" class="trp-view-tab" id="trp-tab-floor2">แปลนชั้น 2 อ้างอิง</button>
+                </nav>
                 <div class="trp-head-actions">
                     <button type="button" class="trp-btn" id="trp-export-json">ส่งออก JSON</button>
                     <button type="button" class="trp-btn" id="trp-export-csv">CSV จุดวัด</button>
@@ -25396,7 +25551,11 @@
                     panel.id = 'trp-sidebar-panel';
                     panel.hidden = true;
                     panel.classList.add('trp-measure-panel');
-                    panel.innerHTML = `<header class="trp-side-heading"><h3>Case 3 · ห้องทดสอบ TR01</h3><p>Zero Local Calibration · Predicted + Measured</p></header>
+                    panel.innerHTML = `<nav class="trp-switch-tabs" aria-label="สลับแปลน">
+                        <span aria-current="page">TR01</span>
+                        <button type="button" id="trp-side-testbed">Case 3 Testbed</button>
+                        <button type="button" id="trp-side-floor2">ชั้น 2</button>
+                        </nav><header class="trp-side-heading"><h3>Case 3 · ห้องทดสอบ TR01</h3><p>Zero Local Calibration · Predicted + Measured</p></header>
                         <div id="trp-workflow-panel" aria-live="polite"></div>
                         <div class="trp-work-section"><strong>Editor แปลน 2D</strong>
                           <button type="button" id="trp-toggle-editor" class="trp-side-toggle" aria-expanded="false">เปิด Editor</button>
@@ -25661,7 +25820,18 @@
             };
             $('trp-export-json').onclick = () => { if (!plan) return; download('Case3_TransferRoom_' + plan.roomId + '_Plan.json', JSON.stringify(modelJSON(), null, 2), 'application/json;charset=utf-8'); };
             $('trp-export-csv').onclick = () => { if (!plan) return; const q = s => '"' + String(s).replace(/"/g, '""') + '"'; const st = trpPredValid() ? plan.predictions.band5Status : ''; const rows = [['roomId', 'pointId', 'xMeters', 'yMeters', 'zMeters', 'predicted24', 'predicted5', 'measured24', 'measured5', 'predicted5_basis', 'tx_power_5ghz_assumed_dbm', 'tx_power_5ghz_measured_dbm'], ...plan.points.map(p => { const pr = trpPredictionPoint(p.id); return [plan.roomId, p.id, p.x, p.y, p.z, pr?.predicted24 ?? '', pr?.predicted5 ?? '', trpPointMeasured(p.id, '24') ?? '', trpPointMeasured(p.id, '5') ?? '', st, st === 'CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED' ? 20 : '', '']; })]; download('Case3_TransferRoom_' + plan.roomId + '_Points.csv', '\uFEFF' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv;charset=utf-8'); };
-            $('trp-close').onclick = close; // docked workspace, not a modal backdrop
+            // Tablet-friendly navigation. Switch to original Case 3 without changing TR01 measurements or geometry.
+            function trpNavigateLegacy(view) {
+                close();
+                if (typeof window.C3 !== 'undefined' && typeof window.C3.setView === 'function') {
+                    window.C3.setView(view);
+                }
+            }
+            $('trp-tab-testbed').addEventListener('click', () => trpNavigateLegacy('testbed'));
+            $('trp-tab-floor2').addEventListener('click', () => trpNavigateLegacy('floor2'));
+            // Same controls in sidebar: usable when the tablet's sidebar overlays the plan.
+            // These are registered when the sidebar is created, not at initial page load. 
+            $('trp-close').onclick = () => trpNavigateLegacy('testbed'); // docked workspace, not a modal backdrop
             // Stable sibling of Case 3 controls: renderControls() may rewrite its own contents.
             function mountLauncher() { const host = $('case-condition-controls'); if (!host || !host.parentElement) return; let launcher = $('trp-launcher'); if (!launcher) { launcher = document.createElement('div'); launcher.id = 'trp-launcher'; launcher.innerHTML = '<button type="button" class="trp-launch" id="trp-open">แปลนห้องทดสอบใหม่ <span aria-hidden="true">เปิด ›</span></button><small>สำหรับทดสอบโมเดลเดิมในห้องใหม่ · บันทึกแยกจาก 432 Scan</small>'; $('trp-root').before(launcher); $('trp-open').addEventListener('click', open); } if (launcher.parentElement !== host.parentElement || launcher.nextSibling !== host) { host.parentElement.insertBefore(launcher, host); } }
             function init() { mountLauncher(); const host = $('case-condition-controls'); if (host) { const parent = host.parentElement; if (parent) { const observer = new MutationObserver(() => { if (!$('trp-launcher') || $('trp-launcher').nextSibling !== host) mountLauncher(); }); observer.observe(parent, { childList: true }); } } }
