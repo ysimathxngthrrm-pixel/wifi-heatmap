@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wi-Fi Measurement &amp; Analysis Dashboard — v32 · Professional RSSI Heatmaps · Case1/2/3</title>
+    <title>Wi-Fi Measurement Dashboard · Case1/2/3 · TR01 iPad Firebase Sync Fix 20261103</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap"
@@ -24253,6 +24253,138 @@
         }
     </style>
 
+
+    <style id="trp-ipad-sync-rescue-v3">
+        body.trp-workspace-active #trp-root .trp-shell {
+            min-height: 0
+        }
+
+        #trp-root .trp-head .trp-view-tabs {
+            display: none !important
+        }
+
+        /* keep one clear nav near the plan on iPad */
+        #trp-root .trp-ipad-quicknav {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 1px 0 7px;
+            padding: 6px 8px;
+            border: 1px solid #d4e2e7;
+            border-radius: 10px;
+            background: #f0f8f7
+        }
+
+        #trp-root .trp-ipad-quicknav>* {
+            flex: 0 0 auto;
+            min-height: 34px;
+            box-sizing: border-box
+        }
+
+        #trp-root .trp-ipad-quicknav .trp-ipad-current {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 7px;
+            background: #287f7c;
+            color: #fff;
+            font: 800 11px Sarabun, Arial, sans-serif
+        }
+
+        #trp-root .trp-ipad-quicknav button {
+            background: #fff;
+            color: #23465b;
+            border: 1px solid #b7ced5;
+            border-radius: 7px;
+            padding: 7px 10px;
+            font: 750 11px Sarabun, Arial, sans-serif;
+            min-height: 38px
+        }
+
+        #trp-root .trp-ipad-quicknav button:active {
+            background: #d8ece9
+        }
+
+        #trp-root .trp-sync-banner {
+            font: 750 11px/1.5 Sarabun, Arial, sans-serif;
+            text-align: left;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 7px;
+            overflow-wrap: anywhere
+        }
+
+        #trp-root .trp-sync-banner.pending {
+            background: #eff6ff;
+            color: #1e4f81;
+            border: 1px solid #bfdbfe
+        }
+
+        #trp-root .trp-sync-banner.local {
+            background: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #fdba74
+        }
+
+        #trp-root .trp-sync-banner.remote {
+            background: #eafaf3;
+            color: #166534;
+            border: 1px solid #86efac
+        }
+
+        #trp-root .trp-sync-banner.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fca5a5
+        }
+
+        @media(max-width:1100px) {
+            body.trp-workspace-active #trp-root .trp-head {
+                min-height: 0;
+                height: auto;
+                align-items: flex-start
+            }
+
+            body.trp-workspace-active #trp-root .trp-view-tabs {
+                display: none !important
+            }
+
+            body.trp-workspace-active #trp-root .trp-head-actions {
+                order: 2
+            }
+
+            #trp-root .trp-ipad-quicknav {
+                gap: 5px;
+            }
+
+            #trp-root .trp-ipad-quicknav button {
+                font-size: 10px;
+                padding: 7px 8px
+            }
+        }
+
+        @media (max-height:900px) and (min-width:700px) {
+            body.trp-workspace-active #trp-root .trp-workspace {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch
+            }
+
+            body.trp-workspace-active #trp-root .trp-plan-wrap {
+                flex: 0 0 auto;
+                min-height: 530px;
+                height: min(76vh, 620px)
+            }
+        }
+
+        @media(max-width:630px) {
+            #trp-root .trp-ipad-quicknav {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch
+            }
+        }
+    </style>
     <style id="trp-case3-workflow-style">
         /* TR01 only. Case1/2/3 original controls and data are not modified. */
         #trp-sidebar-panel .trp-rssi-legend {
@@ -24705,6 +24837,15 @@
                     </section>
                 </aside>
                 <main class="trp-workspace">
+                    <nav class="trp-ipad-quicknav" aria-label="สลับแปลนบน iPad">
+                        <span class="trp-ipad-current">แปลนใหม่ TR01</span>
+                        <button type="button" id="trp-quick-testbed">Testbed 2D เดิม</button>
+                        <button type="button" id="trp-quick-floor2">แปลนชั้น 2 อ้างอิง</button>
+                        <button type="button" id="trp-quick-sync">โหลด TR01 จาก Firebase</button>
+                        <button type="button" id="trp-quick-profile" hidden>เปลี่ยนเป็นโปรไฟล์ Case3 final</button>
+                    </nav>
+                    <div id="trp-sync-banner" class="trp-sync-banner pending" role="status" aria-live="polite">
+                        กำลังตรวจแปลน TR01 และสถานะ Firebase…</div>
                     <div class="trp-workbar"><strong>แปลน 2D · หน่วยเมตร (X ขวา / Y ลง)</strong><span id="trp-status"
                             class="trp-status" role="status">แบบร่างในเครื่องยังไม่ใช่ข้อมูล Calibration</span></div>
                     <div class="trp-plan-wrap"><svg id="trp-svg" role="img"
@@ -24759,6 +24900,82 @@
             function path(id) { if (!validId(id)) throw Error('Room ID ต้องเป็น A–Z, 0–9, _ หรือ - เท่านั้น'); return 'HeatmapData/' + profile() + '/Case3/TransferRoomPlans/' + id; }
             function storageKey(id) { return 'wifi_Case3_TransferPlan_V1:' + profile() + ':' + id; }
             function defaults(id) { return { schema: 'Case3_TransferRoomPlan_V1', roomId: id || 'TR01', name: 'ห้องทดสอบใหม่', room: { width: 5.0, depth: 4.0, height: 3.0 }, corridor: { enabled: false, width: 1.8, depth: 4.0, offsetY: 0 }, ap: { x: 2.5, y: 1.2, z: 2.6, device: 'Same physical AP as original Case 3' }, rxHeight: 1.0, objects: [], points: [], protocol: { purpose: 'cross_room_zero_local_calibration', sourceTestbed: 'Case3/TestbedFloor2', model24: 'Calibrated FSPL', model5: 'Simplified COST231 Multi-Wall', parameters: 'USE_ORIGINAL_LOCKED_PARAMETERS_UNCHANGED', predictionsGenerated: false, measurementsCollected: false }, updatedAt: null }; }
+
+            // The operator supplied this TR01 JSON (3.50 × 8.35 m, 10 N points,
+            // 5 legitimate perimeter wall segments). This is an OFFLINE FALLBACK only.
+            // The matching Firebase plan wins whenever it exists; no auto-write occurs.
+            const TRP_EMBEDDED_TR01 = { "schema": "Case3_TransferRoomPlan_V1", "roomId": "TR01", "name": "ห้องทดสอบใหม่", "room": { "width": 3.5, "depth": 8.35, "height": 3 }, "corridor": { "enabled": false, "width": 1.8, "depth": 4, "offsetY": 0 }, "ap": { "x": 2.5, "y": 1.2, "z": 2.6, "device": "Same physical AP as original Case 3" }, "rxHeight": 1, "objects": [{ "id": "Fmw0ao7xvq72", "type": "furniture", "name": "เสา", "width": 0.14, "depth": 0.37, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 0.018, "y": 7.966 }, { "id": "Fmw0aonoz8nv", "type": "furniture", "name": "เสา", "width": 0.2, "depth": 0.37, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 3.288, "y": 7.967 }, { "id": "Fmw0ap2bua76", "type": "furniture", "name": "เสา", "width": 0.15, "depth": 0.35, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 0.012, "y": 0.005 }, { "id": "Fmw0apcwuggy", "type": "furniture", "name": "เสา", "width": 0.22, "depth": 0.35, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 3.259, "y": 0.012 }, { "id": "Fmw0as570cns", "type": "furniture", "name": "โต๊ะ", "width": 0.61, "depth": 2.23, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 0.008, "y": 4.859 }, { "id": "Dmw0bt46siwf", "type": "door", "name": "ประตู", "wall": "bottom", "width": 1.07, "height": 2.03, "hinge": "start", "material": "glass", "offset": 1.13, "x1": 1.13, "y1": 8.35, "x2": 2.2, "y2": 8.35, "zBottom": 0, "zTop": 2.03, "thickness": 0.03 }, { "id": "Fmw0dcx6uq9k", "type": "furniture", "name": "หนังสือ", "width": 0.3, "depth": 0.95, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 0.01, "y": 2.467 }, { "id": "Fmw0df6kwiwh", "type": "furniture", "name": "ตู้", "width": 0.52, "depth": 1.93, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 0.003, "y": 0.53 }, { "id": "Fmw0dfkfifwd", "type": "furniture", "name": "โซฟา", "width": 0.67, "depth": 2.64, "zBottom": 0, "zTop": null, "material": "unknown", "area": "room", "x": 0.529, "y": 0.24 }, { "id": "Fmw0ecpqs7qi", "type": "furniture", "name": "โต๊ะ", "width": 1.09, "depth": 3.1, "zBottom": 0, "zTop": 0.88, "material": "unknown", "area": "room", "x": 2.41, "y": 3.05 }, { "id": "Fmw0eeuvmlos", "type": "furniture", "name": "โต๊ะ", "width": 0.76, "depth": 2.7, "zBottom": 0, "zTop": 0.88, "material": "unknown", "area": "room", "x": 2.739, "y": 0.35 }, { "id": "Wmw0fwq9olnb", "type": "wall", "name": "ผนังรอบห้อง", "x1": 0, "y1": 0, "x2": 3.5, "y2": 0, "material": "concrete", "thickness": 0.12, "zBottom": 0, "zTop": 3, "perimeterAuto": true, "perimeterEdge": "top" }, { "id": "Wmw0fwq9olt5", "type": "wall", "name": "ผนังรอบห้อง", "x1": 3.5, "y1": 0, "x2": 3.5, "y2": 8.35, "material": "concrete", "thickness": 0.12, "zBottom": 0, "zTop": 3, "perimeterAuto": true, "perimeterEdge": "right" }, { "id": "Wmw0fwq9oab9", "type": "wall", "name": "ผนังรอบห้อง", "x1": 0, "y1": 8.35, "x2": 1.13, "y2": 8.35, "material": "concrete", "thickness": 0.12, "zBottom": 0, "zTop": 3, "perimeterAuto": true, "perimeterEdge": "bottom" }, { "id": "Wmw0fwq9ojyz", "type": "wall", "name": "ผนังรอบห้อง", "x1": 2.2, "y1": 8.35, "x2": 3.5, "y2": 8.35, "material": "concrete", "thickness": 0.12, "zBottom": 0, "zTop": 3, "perimeterAuto": true, "perimeterEdge": "bottom" }, { "id": "Wmw0fwq9obwb", "type": "wall", "name": "ผนังรอบห้อง", "x1": 0, "y1": 0, "x2": 0, "y2": 8.35, "material": "concrete", "thickness": 0.12, "zBottom": 0, "zTop": 3, "perimeterAuto": true, "perimeterEdge": "left" }], "points": [{ "id": "N01", "x": 2.2, "y": 0.8, "z": 1 }, { "id": "N02", "x": 1.65, "y": 1.65, "z": 1 }, { "id": "N03", "x": 2.15, "y": 2.5, "z": 1 }, { "id": "N04", "x": 1.4, "y": 3.35, "z": 1 }, { "id": "N05", "x": 1.95, "y": 4.1, "z": 1 }, { "id": "N06", "x": 1.25, "y": 5.05, "z": 1 }, { "id": "N07", "x": 1.92, "y": 5.75, "z": 1 }, { "id": "N08", "x": 2.7, "y": 6.75, "z": 1 }, { "id": "N09", "x": 0.85, "y": 7.55, "z": 1 }, { "id": "N10", "x": 1.75, "y": 7.7, "z": 1 }], "protocol": { "purpose": "cross_room_zero_local_calibration", "sourceTestbed": "Case3/TestbedFloor2", "model24": "Calibrated FSPL", "model5": "Simplified COST231 Multi-Wall", "parameters": "USE_ORIGINAL_LOCKED_PARAMETERS_UNCHANGED", "predictionsGenerated": false, "measurementsCollected": false }, "updatedAt": "2026-11-03T08:45:05.960Z" };
+            let trpLoadToken = 0, trpPlanLoadPending = false, trpLastRemoteGeometry = null;
+            let trpSyncSource = 'กำลังเตรียมแปลน';
+            let trpLoadPromise = null;
+            function trpEmbeddedPlan(id) { return id === 'TR01' ? clone(TRP_EMBEDDED_TR01) : null; }
+            function trpIsActualPlan(p) {
+                try { sane(p); return p.points.length > 0 && Number(p.room.width) > 0 && Number(p.room.depth) > 0; }
+                catch (e) { return false; }
+            }
+            function trpSyncBadge(message, kind = 'pending') {
+                trpSyncSource = message;
+                const el = $('trp-sync-banner');
+                if (el) { el.className = 'trp-sync-banner ' + kind; el.textContent = message; }
+            }
+            function trpRemoteGeometryMatches() { return !!(plan && trpLastRemoteGeometry && trpLastRemoteGeometry === trpGeometrySignature()); }
+            async function trpSyncFromFirebase(reason = 'automatic') {
+                if (!plan || root.hidden) return false;
+                const id = plan.roomId, pkey = profile(), token = ++trpLoadToken, geometryAtRequest = trpGeometrySignature();
+                trpPlanLoadPending = true;
+                if (profile() !== 'Case3 final') { trpPlanLoadPending = false; trpSyncBadge('เปิดอยู่ในโปรไฟล์ ' + profile() + ' ไม่ใช่ Case3 final · แสดงแปลนสำรอง TR01 แต่จะไม่บันทึกสแกน/แปลนลงโปรไฟล์ผิด กรุณากด “เปลี่ยนเป็นโปรไฟล์ Case3 final”', 'error'); return false; }
+                trpSyncBadge('กำลังโหลดแปลน ' + id + ' จาก Firebase · โปรไฟล์ ' + pkey + ' …', 'pending');
+                if (typeof db === 'undefined' || !db || typeof db.ref !== 'function') {
+                    trpPlanLoadPending = false;
+                    trpSyncBadge('Firebase ยังไม่พร้อม · ใช้แปลนสำรองในไฟล์นี้เท่านั้น ห้ามเริ่มวัดจนกว่าจะบันทึกสำเร็จ', 'error');
+                    return false;
+                }
+                try {
+                    const timed = new Promise((_, reject) => setTimeout(() => reject(new Error('หมดเวลารอ Firebase 9 วินาที')), 9000));
+                    const snapshot = await Promise.race([db.ref(path(id)).once('value'), timed]);
+                    if (token !== trpLoadToken || root.hidden || profile() !== pkey || !plan || plan.roomId !== id) return false;
+                    // If user edited while the network request was pending, do not overwrite work.
+                    if (trpGeometrySignature() !== geometryAtRequest) {
+                        trpSyncBadge('มีการแก้แปลนระหว่างโหลด · ไม่เขียนทับข้อมูลของคุณ ให้กดโหลด Firebase อีกครั้งหลังสำรอง', 'local');
+                        return false;
+                    }
+                    const payload = snapshot.exists() ? snapshot.val() : null;
+                    const remote = payload && (payload.plan || payload);
+                    const rev = payload ? Number(payload.revision) || 0 : 0;
+                    if (remote && trpIsActualPlan(remote)) {
+                        const cleaned = clone(remote), accidental = cleaned.objects.filter(o => o.type === 'wall' && TRP_ACCIDENTAL_WALL_IDS.includes(o.id));
+                        if (accidental.length) {
+                            cleaned.objects = cleaned.objects.filter(o => !accidental.some(w => w.id === o.id));
+                            changePlan(cleaned, rev);
+                            trpLastRemoteGeometry = null; // in-memory cleanup is NOT silently written back to Firebase
+                            trpSyncBadge('⚠ ลบผนังที่เผลอวาด ' + accidental.length + ' เส้นในแปลนที่แสดงแล้ว (เหลือ ' + plan.objects.filter(o => o.type === 'wall').length + ' ส่วน) · ต้องกดบันทึก Firebase เพื่อซิงค์การแก้ไข', 'local');
+                            setStatus('ลบผนังที่เผลอวาดออกในแปลนนี้แล้ว · กรุณาบันทึก Firebase ก่อนเริ่มวัด');
+                            return false;
+                        }
+                        changePlan(cleaned, rev);
+                        trpLastRemoteGeometry = trpGeometrySignature();
+                        // Predictions may be generated from the original locked model, never measured data.
+                        trpSyncBadge('✓ แปลน ' + id + ' จาก Firebase · โปรไฟล์ ' + pkey + ' · ' + plan.room.width.toFixed(2) + ' × ' + plan.room.depth.toFixed(2) + ' ม. · ' + plan.points.length + ' จุด N · revision ' + rev, 'remote');
+                        setStatus('โหลดแปลน ' + id + ' จาก Firebase สำเร็จ · พร้อมตรวจ AP และเริ่มทดลอง');
+                        return true;
+                    }
+                    // Preserve remote revision even if an older iPad wrote an empty placeholder.
+                    baseRevision = rev;
+                    trpLastRemoteGeometry = null;
+                    const emptyReason = payload ? 'Firebase มีแต่แปลนว่าง/ข้อมูลไม่ครบ' : 'ยังไม่มีแปลนนี้ใน Firebase';
+                    trpSyncBadge('⚠ ' + emptyReason + ' · แสดงแปลนสำรอง TR01 ' + plan.room.width.toFixed(2) + ' × ' + plan.room.depth.toFixed(2) + ' ม. / ' + plan.points.length + ' จุด · ต้องกด “บันทึก Firebase” ก่อนลงวัด', 'local');
+                    setStatus('ยังไม่ได้ซิงค์แปลนจาก Firebase · กรุณาบันทึก Firebase เพื่อใช้ข้ามอุปกรณ์');
+                    return false;
+                } catch (e) {
+                    if (token !== trpLoadToken) return false;
+                    trpLastRemoteGeometry = null;
+                    trpSyncBadge('⚠ โหลด Firebase ไม่สำเร็จ (' + e.message + ') · กำลังแสดงแปลนสำรองเท่านั้น ห้ามเริ่มวัดจนกว่าจะตรวจข้อมูลจาก Firebase', 'error');
+                    setStatus('โหลด Firebase ไม่สำเร็จ: ' + e.message);
+                    return false;
+                } finally {
+                    if (token === trpLoadToken) { trpPlanLoadPending = false; if (!root.hidden) renderWorkflow(); }
+                }
+            }
             function finite(n) { const x = Number(n); return Number.isFinite(x) ? x : null; }
             function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
             function rd(n) { return Math.round(n * 1000) / 1000; }
@@ -24770,7 +24987,7 @@
             function localDraft() { try { localStorage.setItem(storageKey(plan.roomId), JSON.stringify({ plan, baseRevision, at: Date.now() })); } catch (e) { console.warn('Local draft unavailable', e); } }
             function loadLocal(id) { try { const v = JSON.parse(localStorage.getItem(storageKey(id)) || 'null'); if (v && v.plan && v.plan.schema === 'Case3_TransferRoomPlan_V1') return v; } catch (e) { } return null; }
             function sane(p) { if (!p || p.schema !== 'Case3_TransferRoomPlan_V1' || !validId(p.roomId)) throw Error('ไฟล์แปลนหรือ Schema ไม่ถูกต้อง'); const w = finite(p.room && p.room.width), h = finite(p.room && p.room.depth); if (!(w >= 1 && w <= 50 && h >= 1 && h <= 50)) throw Error('ขนาดห้องต้องอยู่ระหว่าง 1–50 เมตร'); if (!Array.isArray(p.objects) || !Array.isArray(p.points) || p.objects.length > MAX_OBJECTS || p.points.length > 60) throw Error('ข้อมูลแปลนผิดรูปแบบหรือมีวัตถุมากเกินไป'); return p; }
-            function changePlan(p, rev = 0) { plan = sane(clone(p)); workData = {}; workPoint = (plan.points[0] && plan.points[0].id) || 'N01'; workArmedScan = ''; currentId = plan.roomId; baseRevision = rev; history = []; dirty = false; selected = null; pending = null; tool = 'select'; setStatus('เปิดแปลน ' + currentId + ' · ' + (rev ? 'ข้อมูล Firebase' : 'แบบร่างในเครื่อง')); render(); if (!root.hidden) { trpListen(); trpEnsurePredictions('เปิดแปลน'); } }
+            function changePlan(p, rev = 0) { trpLastRemoteGeometry = null; plan = sane(clone(p)); workData = {}; workPoint = (plan.points[0] && plan.points[0].id) || 'N01'; workArmedScan = ''; currentId = plan.roomId; baseRevision = rev; history = []; dirty = false; selected = null; pending = null; tool = 'select'; setStatus('เปิดแปลน ' + currentId + ' · ' + (rev ? 'ข้อมูล Firebase' : 'แบบร่างในเครื่อง')); render(); if (!root.hidden) { trpListen(); trpEnsurePredictions('เปิดแปลน'); } }
             function snapshot() { const p = clone(plan); p.schema = 'Case3_TransferRoomPlan_V1'; p.protocol = { ...p.protocol, purpose: 'cross_room_zero_local_calibration', sourceTestbed: 'Case3/TestbedFloor2', model24: 'Calibrated FSPL', model5: 'Simplified COST231 Multi-Wall', parameters: 'USE_ORIGINAL_LOCKED_PARAMETERS_UNCHANGED', predictionsGenerated: !!(p.predictions && p.predictions.points && p.predictions.points.length), measurementsCollected: trpAllCount() > 0 }; return p; }
             function modelJSON() { return { exportType: 'Case3_TransferRoom_ZeroLocalCalibration_PreMeasurement', profile: profile(), exportedAt: new Date().toISOString(), roomPlan: snapshot(), coordinateSystem: 'X right, Y down, origin top-left room corner, Z above floor, meters', predictionStatus: (trpPredValid() ? (plan.predictions.complete ? (plan.predictions.band5Status === 'CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED' ? 'GENERATED_BOTH_BANDS_WITH_5G_TX_ASSUMPTION' : 'GENERATED_LOCKED_BOTH_BANDS') : 'PARTIAL_2_4_ONLY') : 'NOT_GENERATED_OR_STALE'), parameterSource: 'Original Case3 locked Final Evaluation; 2.4 GHz A unchanged. 5 GHz legacy Case3 heatmap used TX 20 dBm ASSUMED, NOT MEASURED (only where fit5.A is absent). No fit on TR01.', warning: 'Plan geometry is user-entered and must be verified; perimeter guide is not a material wall until drawn as segments. Measured doors cut auto-generated perimeter walls, but hand-drawn continuous walls or windows must be inspected and split where necessary before prediction.' }; }
             function download(name, body, mime) { const b = new Blob([body], { type: mime || 'application/octet-stream' }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1500); }
@@ -25336,6 +25553,9 @@
                 if (workRound === 'AVG') return trpSetInfo('โหมด AVG ใช้ดูค่าเฉลี่ยเท่านั้น ต้องเลือก R1 / R2 / R3 ก่อนบันทึกสแกน');
                 if (typeof db === 'undefined' || !window.C3 || !window.C3.getFirebaseConnected()) return trpSetInfo('Firebase ไม่พร้อม ไม่บันทึก Scan');
                 if (typeof currentCase !== 'undefined' && currentCase !== 'Case3') return trpSetInfo('ต้องอยู่ใน Case 3 ก่อนวัด');
+                if (profile() !== 'Case3 final') return trpSetInfo('TR01 ต้องบันทึกในโปรไฟล์ Case3 final กรุณาสลับโปรไฟล์ก่อนวัด');
+                if (trpPlanLoadPending) return trpSetInfo('กำลังโหลดแปลนจาก Firebase กรุณารอจนยืนยันแปลนเสร็จก่อนบันทึกสแกน');
+                if (!trpRemoteGeometryMatches()) return trpSetInfo('แปลนยังไม่ซิงค์กับ Firebase หรือพิกัดเปลี่ยน · กด “บันทึก Firebase” ให้สำเร็จก่อนวัดจริง');
                 if (!trpApConfirmed()) return trpSetInfo('ต้องยืนยันตำแหน่ง AP ที่ติดตั้งจริงก่อน');
                 const p = plan.points.find(x => x.id === workPoint); if (!p) return trpSetInfo('เลือกจุดวัด N ก่อน');
                 if (!trpPredValid()) return trpSetInfo('ค่าทำนายไม่ตรง geometry ล่าสุด กรุณาสร้าง Predicted ใหม่ก่อน');
@@ -25488,8 +25708,9 @@
                 html += '</div>';
                 if (workRound === 'AVG') html += '<div class="trp-notice trp-good">มุม ' + workAngle + '° · ค่าเฉลี่ย R1–R3: 2.4G ' + trpNum(trpPointMeasuredForDisplay(workPoint, '24')) + ' dBm / 5G ' + trpNum(trpPointMeasuredForDisplay(workPoint, '5')) + ' dBm (คำนวณจากรอบที่บันทึกจริง)</div>';
                 html += '<div class="trp-measure-highlights" style="margin-top:8px"><div class="trp-work-stat"><span>2.4 GHz · สด</span><b>' + trpNum(transferLive.rssi_24g, 0) + ' dBm</b></div><div class="trp-work-stat"><span>5 GHz · สด</span><b>' + trpNum(transferLive.rssi_5g, 0) + ' dBm</b></div><div class="trp-mini">Channel ' + (transferLive.channel_24g ?? '—') + ' / ' + (transferLive.channel_5g ?? '—') + ' · Scan: ' + (transferLive.scan_sequence ?? '—') + '</div></div>';
+                if (!trpRemoteGeometryMatches()) html += '<div class="trp-notice trp-warn">⚠ แปลนนี้ยังไม่ยืนยันการซิงค์กับ Firebase · กดบันทึก Firebase ให้สำเร็จก่อนเก็บ Scan จริง</div>';
                 html += '<div class="trp-notice ' + (ready.ok ? 'trp-good' : 'trp-warn') + '">' + (ready.ok ? '✓ Firebase scan สด / BSSID / Channel ถูกต้อง · พร้อมบันทึก' : 'รอข้อมูล Scan ที่ถูกต้อง: ' + safeText(ready.reason)) + '</div>';
-                html += '<button type="button" class="trp-strong-btn" data-trp="capture" ' + (trpBusy || !ready.ok || !trpApConfirmed() || !valid || workRound === 'AVG' ? 'disabled' : '') + '>' + (workRound === 'AVG' ? 'โหมดเฉลี่ย R1–R3 · เลือก R1 / R2 / R3 เพื่อบันทึก' : 'บันทึก Scan สด · ' + workPoint + ' ' + workAngle + '° ' + workRound) + '</button>';
+                html += '<button type="button" class="trp-strong-btn" data-trp="capture" ' + (trpBusy || !ready.ok || !trpApConfirmed() || !trpRemoteGeometryMatches() || trpPlanLoadPending || !valid || workRound === 'AVG' ? 'disabled' : '') + '>' + (workRound === 'AVG' ? 'โหมดเฉลี่ย R1–R3 · เลือก R1 / R2 / R3 เพื่อบันทึก' : 'บันทึก Scan สด · ' + workPoint + ' ' + workAngle + '° ' + workRound) + '</button>';
                 html += '<div class="trp-mini">หนึ่งคลิก = 1 Scan จริงของทั้ง 2 ความถี่ · ห้ามใช้ Scan เดิมซ้ำ · ' + pc + '/12 ที่จุดนี้ · เลือกมุมและรอบเพื่อดูค่า Measured ของแต่ละชุด</div>';
                 if (r) html += '<div class="trp-notice trp-good">บันทึกรอบนี้: 2.4G ' + r.rssi24 + ' / 5G ' + r.rssi5 + ' dBm · ID ' + safeText(r.sourceScanId) + '</div>';
                 // Per-slot delete: visible under the scan details, never deletes a whole point or room.
@@ -25639,14 +25860,21 @@
                 root.hidden = false;
                 setEditorMode(false);  // read-only when first opened, same as Case1/2
                 const id = currentId || 'TR01';
+                $('trp-quick-profile').hidden = (profile() === 'Case3 final');
                 if (!plan || currentProfileKey !== profile()) {
-                    const d = loadLocal(id); currentProfileKey = profile();
-                    changePlan(d ? d.plan : defaults(id), d ? Number(d.baseRevision) || 0 : 0);
-                    if (d) setStatus('โหลดแบบร่างจากเครื่องนี้ · ตรวจแล้วกดบันทึก Firebase เมื่อพร้อม');
+                    const d = loadLocal(id), embedded = trpEmbeddedPlan(id);
+                    currentProfileKey = profile();
+                    const localValid = !!(d && trpIsActualPlan(d.plan));
+                    const initial = localValid ? d.plan : (embedded || defaults(id));
+                    changePlan(initial, localValid ? (Number(d.baseRevision) || 0) : 0);
+                    trpSyncBadge(localValid ? 'กำลังใช้แบบร่างจากเครื่องนี้ระหว่างตรวจ Firebase …' : (embedded ? 'กำลังใช้แปลนสำรอง TR01 ที่อยู่ในไฟล์ระหว่างตรวจ Firebase …' : 'กำลังใช้แปลนเริ่มต้น · กรุณาตรวจโปรไฟล์และ Firebase'), 'pending');
                 } else render();
                 trpListen(); trpArm(); trpEnsurePredictions('เปิด TR01'); renderWorkflow();
+                trpLoadPromise = trpSyncFromFirebase('open');
+                await trpLoadPromise;
             }
             function close() {
+                trpLoadToken++; trpPlanLoadPending = false; trpLastRemoteGeometry = null;
                 trpDetach(); setEditorMode(false);
                 root.hidden = true;
                 document.body.classList.remove('trp-workspace-active');
@@ -25811,11 +26039,13 @@
             $('trp-perimeter').onclick = () => { if (!confirm('สร้างผนังรอบห้องแบบมีช่องเว้นตรงประตูที่วางแล้ว? (ผนังที่วาดเองจะไม่ถูกแก้)')) return; tracked(() => { const old = plan.objects.filter(o => o.perimeterAuto); plan.objects = plan.objects.filter(o => !o.perimeterAuto); plan.objects.push({ id: newId('wall'), type: 'wall', name: 'ผนังรอบห้อง', material: old[0]?.material || $('trp-material').value, perimeterAuto: true, perimeterEdge: 'top', x1: 0, y1: 0, x2: 0, y2: 0, thickness: .12, zBottom: 0, zTop: plan.room.height }); regenerateAutoPerimeter(); }); setStatus('สร้างผนังรอบห้องพร้อมเว้นช่องประตูแล้ว · ผนังที่วาดเองไม่ถูกเปลี่ยน'); };
             $('trp-door-add').addEventListener('click', () => addMeasuredDoor());
             $('trp-new').onclick = () => { const id = $('trp-room-id').value.trim(); if (!validId(id)) return setStatus('รหัสห้องไม่ถูกต้อง'); if (dirty && !confirm('สร้างแปลนใหม่? ข้อมูลที่ยังไม่บันทึกบน Firebase จะถูกเก็บเป็นแบบร่างเฉพาะในเครื่องนี้')) return; if (id === currentId && !confirm('เริ่มแปลน ' + id + ' ใหม่? ระบบจะไม่ลบข้อมูลบน Firebase จนกว่าจะกดบันทึก')) return; changePlan(defaults(id), 0); currentId = id; localDraft(); };
-            $('trp-load').onclick = async () => { const id = $('trp-room-id').value.trim(); if (!validId(id)) return setStatus('รหัสห้องไม่ถูกต้อง'); if (dirty && !confirm('โหลดข้อมูล Firebase ทับแบบร่างที่กำลังแสดง? (แบบร่างยังเก็บไว้ในเครื่อง)')) return; if (typeof db === 'undefined') return setStatus('Firebase ยังไม่พร้อม'); try { setStatus('กำลังอ่านแปลนจาก Firebase...'); const s = await db.ref(path(id)).once('value'); if (!s.exists()) return setStatus('ยังไม่มีแปลน ' + id + ' บน Firebase · สร้างใหม่และบันทึกได้'); const r = s.val(); changePlan(r.plan || r, Number(r.revision) || 0); localDraft(); setStatus('โหลดแปลน ' + id + ' จาก Firebase สำเร็จ'); } catch (e) { console.error('Transfer room load', e); setStatus('โหลด Firebase ไม่สำเร็จ: ' + e.message); } };
+            $('trp-load').onclick = async () => { const id = $('trp-room-id').value.trim(); if (!validId(id)) return setStatus('รหัสห้องไม่ถูกต้อง'); if (dirty && !confirm('โหลด Firebase ทับแบบร่างในเครื่องนี้? กรุณาส่งออก JSON สำรองก่อน')) return; if (id !== plan.roomId) changePlan(trpEmbeddedPlan(id) || defaults(id), 0); dirty = false; trpLoadPromise = trpSyncFromFirebase('manual'); await trpLoadPromise; };
             $('trp-save').onclick = async () => {
+                if (profile() !== 'Case3 final') return setStatus('โปรไฟล์ไม่ตรง: กรุณาเปิดโปรไฟล์ Case3 final ก่อนบันทึก TR01');
+                if (trpPlanLoadPending) return setStatus('กำลังเช็ก Firebase อยู่ · กรุณารอให้แสดงแปลนและ revision ก่อนบันทึก');
                 if (typeof currentCase !== 'undefined' && currentCase !== 'Case3') return setStatus('เปิด Case 3 ก่อน'); if (typeof db === 'undefined') return setStatus('Firebase ยังไม่พร้อม'); try {
                     sane(plan); const id = plan.roomId, ref = db.ref(path(id)), baseline = baseRevision; const saved = snapshot(); const result = await ref.transaction(current => { const revision = current && Number(current.revision) || 0; if (revision !== baseline) return; return { schema: 'Case3_TransferRoomPlan_V1', roomId: id, profile: profile(), revision: revision + 1, savedAt: new Date().toISOString(), plan: saved }; }, undefined, false);
-                    if (!result.committed) return setStatus('ไม่บันทึก: แปลน Firebase ถูกแก้จากเครื่องอื่นแล้ว · โหลดตรวจสอบก่อน'); baseRevision = Number(result.snapshot.val().revision) || baseline + 1; dirty = false; localDraft(); setStatus('บันทึกเฉพาะ TransferRoomPlans/' + id + ' สำเร็จ · revision ' + baseRevision);
+                    if (!result.committed) return setStatus('ไม่บันทึก: แปลน Firebase ถูกแก้จากเครื่องอื่นแล้ว · โหลดตรวจสอบก่อน'); baseRevision = Number(result.snapshot.val().revision) || baseline + 1; dirty = false; localDraft(); trpLastRemoteGeometry = trpGeometrySignature(); trpSyncBadge('✓ บันทึกแปลน ' + id + ' ลง Firebase แล้ว · โปรไฟล์ ' + profile() + ' · ' + plan.points.length + ' จุด N · revision ' + baseRevision, 'remote'); setStatus('บันทึกเฉพาะ TransferRoomPlans/' + id + ' สำเร็จ · revision ' + baseRevision); renderWorkflow();
                 } catch (e) { console.error('Transfer room save', e); setStatus('บันทึก Firebase ไม่สำเร็จ: ' + e.message); }
             };
             $('trp-export-json').onclick = () => { if (!plan) return; download('Case3_TransferRoom_' + plan.roomId + '_Plan.json', JSON.stringify(modelJSON(), null, 2), 'application/json;charset=utf-8'); };
@@ -25827,6 +26057,16 @@
                     window.C3.setView(view);
                 }
             }
+            $('trp-quick-testbed').addEventListener('click', () => trpNavigateLegacy('testbed'));
+            $('trp-quick-floor2').addEventListener('click', () => trpNavigateLegacy('floor2'));
+            $('trp-quick-profile').addEventListener('click', () => {
+                const u = new URL(window.location.href); u.searchParams.set('profile', 'Case3 final'); u.searchParams.set('case', 'Case3'); u.searchParams.set('locked', '1');
+                window.location.assign(u.toString());
+            });
+            $('trp-quick-sync').addEventListener('click', async () => {
+                if (dirty && !confirm('แปลนในเครื่องมีการเปลี่ยนแปลง กดตกลงเพื่อโหลดข้อมูล Firebase ทับ (ควรสำรอง JSON ก่อน)')) return;
+                dirty = false; trpLoadPromise = trpSyncFromFirebase('quick-sync'); await trpLoadPromise;
+            });
             $('trp-tab-testbed').addEventListener('click', () => trpNavigateLegacy('testbed'));
             $('trp-tab-floor2').addEventListener('click', () => trpNavigateLegacy('floor2'));
             // Same controls in sidebar: usable when the tablet's sidebar overlays the plan.
@@ -25841,6 +26081,8 @@
                 getEditorMode: () => editorEnabled,
                 getPlan: () => plan ? clone(plan) : null,
                 getPath: () => plan ? path(plan.roomId) : null,
+                getSyncStatus: () => ({ source: trpSyncSource, loading: trpPlanLoadPending, remoteGeometryMatches: trpRemoteGeometryMatches(), revision: baseRevision, profile: profile(), roomId: plan?.roomId || null }),
+                syncFromFirebase: () => trpSyncFromFirebase('api'),
                 getPredictionStatus: () => ({
                     valid: trpPredValid(), fitReady: !!trpFitParams(),
                     accidentalWalls: trpAccidentalWalls().map(o => o.id),
