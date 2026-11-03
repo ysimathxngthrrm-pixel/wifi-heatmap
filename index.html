@@ -11657,7 +11657,7 @@
             // because those profiles already contain Firebase scans under them.
             // This is a real point-id mapping, NOT a cosmetic label substitution.
             // ===============================================================
-            var C3_EVAL_RENUMBER_FOR_FINAL = String(window.__WIFI_BOOT_PROFILE__ || '') === 'Case3 final';
+            var C3_EVAL_RENUMBER_FOR_FINAL = false;
             var C3_EVAL_ORIGINAL_MAP = Object.assign({}, C3_EVAL_TO_VAL_MAP);
             var C3_EVAL_ORIGINAL_DEFS = Object.assign({}, C3_EVAL_REV3_POINTS);
             var C3_EVAL_ID_TO_OLD = {};
@@ -13527,6 +13527,10 @@
             }
             function savePoint(pt, notify, candidate) {
                 if (typeof db === 'undefined') return Promise.resolve(false);
+                if (profile() === 'Case3 final' && isEvaluationPoint(pt) && !window.c3FinalEvaluationEditUnlocked) {
+                    console.warn('Case3 final evaluation is locked and protected against writes/overwrites');
+                    return Promise.resolve(true);
+                }
                 candidate = isEvaluationPoint(pt) ? evalCandidate(candidate) : null;
                 return db.ref(pointPath(pt, candidate)).set(payload(pt, candidate)).then(function () { if (notify) toast('✅ บันทึก ' + (candidate ? ('AP-' + candidate + ' ') : '') + pt.pointId + ' แล้ว', 'success'); return true; }).catch(function (e) { console.error(e); toast('❌ บันทึก ' + pt.pointId + ' ไม่สำเร็จ', 'error'); return false; });
             }
@@ -13538,22 +13542,49 @@
                 if (src.measurements) pt.measurements = { R1: src.measurements.R1 || {}, R2: src.measurements.R2 || {}, R3: src.measurements.R3 || {} };
                 recalc(pt);
             }
-            function mergeEvaluationPoint(pt, src, candidate) {
-                if (!src || !pt) return;
-                if (C3_EVAL_RENUMBER_FOR_FINAL) {
-                    var expectedSource = C3_EVAL_TO_VAL_MAP[pt.pointId] || '';
-                    var storedSource = String(src.sourceValidationPoint || src.sourcePoint || src.referenceP || '').trim();
-                    var storedX = Number(src.xMeters), storedY = Number(src.yMeters);
-                    var spec = C3_EVAL_REV3_POINTS[pt.pointId];
-                    var xyMismatch = spec && Number.isFinite(storedX) && Number.isFinite(storedY) &&
-                        (Math.abs(storedX - spec.x) > .01 || Math.abs(storedY - spec.y) > .01);
-                    if ((storedSource && storedSource !== expectedSource) || xyMismatch) {
-                        c3EvaluationMappingConflict = true;
-                        console.error('Case3 Evaluation point mapping conflict: refusing to relabel existing Firebase data',
-                            { pointId: pt.pointId, expectedSource: expectedSource, storedSource: storedSource });
-                        return;
+
+            function resolveEvaluationTargetPoint(chKey, record) {
+                if (!record || typeof record !== 'object') return null;
+                // 1. Explicit Validation source ID
+                var explicit = String(record.sourceValidationPoint || record.sourcePoint || record.referenceP || '').trim();
+                if (explicit) {
+                    var ptBySource = Object.values(points).find(function (p) {
+                        return isEvaluationPoint(p) && (p.sourceValidationPoint === explicit || p.sourcePoint === explicit || (typeof C3_EVAL_TO_VAL_MAP !== 'undefined' && C3_EVAL_TO_VAL_MAP[p.pointId] === explicit));
+                    });
+                    if (ptBySource) return ptBySource;
+                }
+                // 2. Match physical coordinates against active evaluation points
+                var recX = Number(record.xMeters), recY = Number(record.yMeters);
+                if (Number.isFinite(recX) && Number.isFinite(recY)) {
+                    var matchedDef = EVAL_POINT_DEFS.find(function (d) {
+                        var spec = C3_EVAL_REV3_POINTS[d.id];
+                        return spec && Math.hypot(recX - spec.x, recY - spec.y) < 0.08;
+                    });
+                    if (matchedDef && points[matchedDef.id]) {
+                        return points[matchedDef.id];
+                    }
+                    if (typeof C3_EVAL_ORIGINAL_DEFS !== 'undefined') {
+                        var origId = Object.keys(C3_EVAL_ORIGINAL_DEFS).find(function (oid) {
+                            var spec = C3_EVAL_ORIGINAL_DEFS[oid];
+                            return spec && Math.hypot(recX - spec.x, recY - spec.y) < 0.08;
+                        });
+                        if (origId) {
+                            var targetDef = EVAL_POINT_DEFS.find(function (d) {
+                                return d.source === C3_EVAL_ORIGINAL_MAP[origId] || d.id === origId;
+                            });
+                            if (targetDef && points[targetDef.id]) return points[targetDef.id];
+                        }
                     }
                 }
+                // 3. Fallback: match by point key directly if present in points
+                if (points[chKey] && isEvaluationPoint(points[chKey])) {
+                    return points[chKey];
+                }
+                return null;
+            }
+
+            function mergeEvaluationPoint(pt, src, candidate) {
+                if (!src || !pt) return;
                 candidate = evalCandidate(candidate);
                 ensureEvaluationPointStructure(pt, candidate);
                 if (src.e08Variant) {
@@ -13770,7 +13801,16 @@
                     syncEvaluationCoordinates();
                     ['A', 'B', 'C'].forEach(function (c, idx) {
                         var snap = sn[8 + idx]; if (!snap.exists()) return;
-                        snap.forEach(function (ch) { if (points[ch.key] && isEvaluationPoint(points[ch.key])) mergeEvaluationPoint(points[ch.key], ch.val(), c); });
+                        snap.forEach(function (ch) {
+                            var record = ch.val();
+                            if (!record || typeof record !== 'object') return;
+                            var targetPt = resolveEvaluationTargetPoint(ch.key, record);
+                            if (targetPt && isEvaluationPoint(targetPt)) {
+                                mergeEvaluationPoint(targetPt, record, c);
+                            } else {
+                                console.warn('Unresolvable evaluation record:', ch.key, record);
+                            }
+                        });
                     });
                     [sn[8], sn[9], sn[10]].forEach(function (snap) {
                         if (!snap.exists()) return;
@@ -14740,6 +14780,10 @@
                 if (c3MeasurementPending) { toast('⏳ ระบบกำลังบันทึกจุดก่อนหน้าอยู่', 'info'); return; }
                 if (c3EvaluationMappingConflict) { toast('⛔ ข้อมูล Firebase ในโปรไฟล์นี้ใช้เลข E01–E12 คนละ Mapping — หยุดบันทึกเพื่อป้องกันสลับจุด', 'warning'); return; }
                 if (legacyGeometryBlocked) { toast('⛔ ข้อมูล Case 3 รุ่นพิกัดเดิมอยู่ในโปรไฟล์นี้ กรุณาสร้างโปรไฟล์ใหม่ ห้ามรวมชุดวัด', 'warning'); return; }
+                if (profile() === 'Case3 final' && isEvaluationPoint(points[selectedPoint]) && !window.c3FinalEvaluationEditUnlocked) {
+                    toast('🔒 Case3 final มีข้อมูลวัดจริงครบ 432 Scans แล้ว และถูกป้องกันการบันทึกทับ (Read-Only Mode)', 'info');
+                    return;
+                }
                 if (c3AverageMode) { toast('โหมดเฉลี่ยใช้ดูผลจาก R1–R3 และไม่บันทึกข้อมูลใหม่', 'info'); return; }
                 syncEvaluationCoordinates();
                 var pt = points[selectedPoint], candidate = isEvaluationPoint(pt) ? selectedEvalAp : null;
@@ -17460,6 +17504,7 @@
             C3.pointRoundDone = pointRoundDone;
             C3.evalPointTotalRounds = evalPointTotalRounds;
             C3.syncEvaluationCoordinates = syncEvaluationCoordinates;
+            C3.resolveEvaluationTargetPoint = resolveEvaluationTargetPoint;
             C3.mergeEvaluationPoint = mergeEvaluationPoint;
             C3.db = (typeof db !== 'undefined') ? db : null;
             C3.enterCase3 = enterCase3;
@@ -22448,6 +22493,2878 @@
                 setTimeout(schedule, 450); setTimeout(schedule, 1300);
             }
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
+        })();
+    </script>
+
+    <!-- CASE 3 ONLY: visual alignment with the finished Case 1 / 2 sidebar. -->
+    <style id="case3-only-match-case1-case2-20261102">
+        /*
+         * Presentation-only layer. No changes to Case 1/2, mapping, Firebase,
+         * measurement gates, event handlers, or research calculations.
+         */
+        body.c3-active #case-condition-controls,
+        body.c3-active #c3-control-root,
+        body.c3-active #c3-control-root .c3-field-container {
+            font-family: 'Sarabun', sans-serif !important;
+            color: #334155;
+        }
+
+        body.c3-active #c3-control-root .c3-v9-compact {
+            padding: 0 !important;
+            margin-top: 5px !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-container {
+            gap: 7px !important;
+            margin-top: 7px !important;
+            line-height: 1.45 !important;
+            min-width: 0 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-stage-row {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            margin: 5px 0 8px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-stage-btn {
+            min-width: 0 !important;
+            min-height: 35px !important;
+            padding: 6px 2px !important;
+            border: 1px solid #DEE6ED !important;
+            border-radius: 9px !important;
+            background: #F8FAFC !important;
+            color: #475569 !important;
+            box-shadow: none !important;
+            font-family: 'Sarabun', sans-serif !important;
+            font-size: 9px !important;
+            font-weight: 700 !important;
+            line-height: 1.14 !important;
+            text-wrap: balance;
+            overflow-wrap: anywhere;
+        }
+
+        body.c3-active #c3-control-root .c3-stage-btn.active {
+            color: #fff !important;
+            border-color: #2B7A78 !important;
+            background: #2B7A78 !important;
+            box-shadow: none !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-section-title,
+        body.c3-active #c3-control-root .c3-v9-label,
+        body.c3-active #c3-control-root .c3-round-global-label {
+            margin: 10px 0 5px !important;
+            color: #475569 !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0 !important;
+            line-height: 1.3 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-section-title small {
+            color: #7B8796 !important;
+            font-size: 9px !important;
+            font-weight: 600 !important;
+            text-align: right;
+        }
+
+        body.c3-active #c3-control-root .c3-field-ap-row,
+        body.c3-active #c3-control-root .c3-field-point-grid,
+        body.c3-active #c3-control-root .c3-field-angle-row,
+        body.c3-active #c3-control-root .c3-field-round-row {
+            gap: 5px !important;
+        }
+
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn) {
+            min-width: 0 !important;
+            min-height: 40px !important;
+            padding: 5px 3px !important;
+            border: 1px solid #DCE4EC !important;
+            border-radius: 9px !important;
+            background: #F8FAFC !important;
+            color: #475569 !important;
+            box-shadow: none !important;
+            transform: none !important;
+            font-family: 'Sarabun', sans-serif !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            line-height: 1.2 !important;
+            transition: background-color .12s ease, border-color .12s ease !important;
+        }
+
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn) small {
+            font-size: 9px !important;
+            color: #7B8796 !important;
+            font-weight: 600 !important;
+            margin-top: 2px !important;
+        }
+
+        /* Completed is an understated status. Active is teal, not a fifth color. */
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn).done {
+            border-color: #CDE7D9 !important;
+            background: #F5FBF7 !important;
+            color: #276749 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-point-btn.part {
+            border-color: #EBD9A9 !important;
+            background: #FFFCF5 !important;
+            color: #925F23 !important;
+        }
+
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn).active,
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn).active.done {
+            border-color: #2B7A78 !important;
+            background: #2B7A78 !important;
+            color: #fff !important;
+            box-shadow: none !important;
+        }
+
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn).active small,
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn).active.done small {
+            color: #DDF4F0 !important;
+        }
+
+        body.c3-active #c3-control-root :is(.c3-field-ap-btn, .c3-field-point-btn, .c3-field-angle-btn, .c3-field-round-btn):focus-visible,
+        body.c3-active #c3-control-root .c3-stage-btn:focus-visible {
+            outline: 2px solid #2B7A78 !important;
+            outline-offset: 2px;
+        }
+
+        body.c3-active #c3-control-root .c3-field-model-badge,
+        body.c3-active #c3-control-root .c3-field-ap-status.confirmed {
+            background: #F3FAF8 !important;
+            color: #236865 !important;
+            border: 1px solid #D6ECE6 !important;
+            border-radius: 9px !important;
+            padding: 7px 9px !important;
+            font-size: 10px !important;
+            font-weight: 650 !important;
+            box-shadow: none !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-ap-status.unconfirmed,
+        body.c3-active #c3-control-root .c3-field-pilot-badge {
+            border-radius: 9px !important;
+            padding: 7px 9px !important;
+            font-size: 10px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-measure-summary,
+        body.c3-active #c3-control-root .c3-v9-current {
+            border: 1px solid #D8EBE7 !important;
+            background: #F6FAF9 !important;
+            color: #365C5B !important;
+            border-radius: 9px !important;
+            box-shadow: none !important;
+            padding: 7px 9px !important;
+            font-size: 10px !important;
+            gap: 6px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-measure-summary b {
+            color: #246B69 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-rssi-card {
+            border: 1px solid #E1E8EF !important;
+            border-radius: 11px !important;
+            box-shadow: none !important;
+            padding: 8px !important;
+            background: #fff !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-rssi-box {
+            border: 1px solid #E6EBF0 !important;
+            border-radius: 9px !important;
+            background: #F8FAFC !important;
+            box-shadow: none !important;
+            padding: 8px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-rssi-box .rssi-num {
+            font-size: 20px !important;
+            font-weight: 800 !important;
+            letter-spacing: -.3px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-rssi-box .band-head {
+            font-size: 10px !important;
+            font-weight: 700 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-band-note {
+            font-size: 9px !important;
+            color: #788597 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-status-pills {
+            gap: 4px !important;
+            margin-top: 7px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-pill {
+            border-radius: 6px !important;
+            font-size: 9px !important;
+            font-weight: 650 !important;
+            padding: 3px 6px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-progress-box {
+            padding: 8px 9px !important;
+            border: 1px solid #E1E8EF !important;
+            border-radius: 9px !important;
+            background: #F8FAFC !important;
+            box-shadow: none !important;
+            font-size: 10px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-progress-line {
+            height: 5px !important;
+            border-radius: 20px !important;
+            overflow: hidden;
+        }
+
+        body.c3-active #c3-control-root .c3-progress-line>div {
+            background: #2B7A78 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-sticky-action-bar {
+            position: relative !important;
+            bottom: auto !important;
+            z-index: 1 !important;
+            margin: 9px 0 2px !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-save-btn {
+            min-height: 40px !important;
+            border-radius: 10px !important;
+            border: 1px solid #2B7A78 !important;
+            background: #2B7A78 !important;
+            color: #fff !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            box-shadow: none !important;
+            letter-spacing: 0 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-save-btn:disabled {
+            background: #F1F5F9 !important;
+            border-color: #E2E8F0 !important;
+            color: #94A3B8 !important;
+            box-shadow: none !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-block-reason {
+            padding: 7px 8px !important;
+            border-radius: 8px !important;
+            font-size: 9.5px !important;
+            line-height: 1.4 !important;
+            box-shadow: none !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-accordion {
+            margin-top: 4px !important;
+            border: 1px solid #E1E8EF !important;
+            border-radius: 9px !important;
+            box-shadow: none !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-accordion summary {
+            padding: 9px 10px !important;
+            background: #F8FAFC !important;
+            color: #475569 !important;
+            font-family: 'Sarabun', sans-serif !important;
+            font-size: 10.5px !important;
+            font-weight: 700 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-accordion[open] summary {
+            background: #F1F5F9 !important;
+            border-bottom: 1px solid #E1E8EF !important;
+        }
+
+        body.c3-active #c3-control-root .c3-field-accordion-body {
+            padding: 9px !important;
+            font-size: 10px !important;
+        }
+
+        body.c3-active #c3-control-root .c3-secondary-btn,
+        body.c3-active #c3-control-root .c3-band-btn {
+            border: 1px solid #DCE4EC !important;
+            border-radius: 9px !important;
+            background: #F8FAFC !important;
+            color: #475569 !important;
+            box-shadow: none !important;
+            font-family: 'Sarabun', sans-serif !important;
+            font-size: 10.5px !important;
+            font-weight: 700 !important;
+        }
+
+        body.c3-active #c3-control-root .c3-band-btn.active {
+            border-color: #2B7A78 !important;
+            background: #2B7A78 !important;
+            color: #fff !important;
+        }
+
+        body.c3-active #c3-control-root .c3-open-editor-btn {
+            background: #2B7A78 !important;
+            border: 1px solid #2B7A78 !important;
+            border-radius: 10px !important;
+            color: white !important;
+            box-shadow: none !important;
+        }
+
+        /* Preserve 4-column scan controls on iPad; make labels fit narrow desktop sidebars. */
+        @media (max-width: 460px) {
+            body.c3-active #c3-control-root .c3-stage-btn {
+                font-size: 8.5px !important;
+            }
+
+            body.c3-active #c3-control-root .c3-field-section-title small {
+                max-width: 45%;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body.c3-active #c3-control-root button {
+                transition: none !important;
+            }
+        }
+    </style>
+
+    <!-- CASE 3 / TRANSFER ROOM PLAN BUILDER V1.0
+     Isolated from Case3/TestbedFloor2. Writes ONLY after explicit Save to
+     HeatmapData/{profile}/Case3/TransferRoomPlans/{roomId}.
+     NO calibration/prediction/measurement writes, no Case 1/2 changes. -->
+    <style id="trp-transfer-room-style">
+        #trp-launcher {
+            display: none;
+            margin: 9px 0 12px;
+            padding: 10px;
+            border: 1px solid #d5e2e3;
+            border-radius: 11px;
+            background: #f7fbfb;
+            text-align: left
+        }
+
+        body.c3-active #trp-launcher {
+            display: block
+        }
+
+        #trp-launcher .trp-launch {
+            width: 100%;
+            min-height: 37px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            background: #fff;
+            color: #276f70;
+            border: 1px solid #b8dad8;
+            border-radius: 9px;
+            font: 700 11px Sarabun, sans-serif;
+            cursor: pointer
+        }
+
+        #trp-launcher .trp-launch:hover {
+            background: #e8f7f5
+        }
+
+        #trp-launcher small {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 10px;
+            line-height: 1.4
+        }
+
+        #trp-root[hidden] {
+            display: none !important
+        }
+
+        #trp-root {
+            position: fixed;
+            inset: 0;
+            z-index: 12000;
+            background: rgba(15, 23, 42, .42);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            box-sizing: border-box;
+            font-family: Sarabun, sans-serif;
+            text-align: left
+        }
+
+        #trp-root * {
+            box-sizing: border-box
+        }
+
+        #trp-root .trp-shell {
+            width: min(1450px, 100%);
+            height: min(940px, 100%);
+            display: flex;
+            flex-direction: column;
+            background: #f7f9fb;
+            border-radius: 17px;
+            box-shadow: 0 26px 80px rgba(15, 23, 42, .27);
+            overflow: hidden;
+            color: #20334b
+        }
+
+        #trp-root .trp-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 17px 20px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0
+        }
+
+        #trp-root .trp-head h2 {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.3;
+            font-weight: 800
+        }
+
+        #trp-root .trp-head p {
+            margin: 3px 0 0;
+            font-size: 11px;
+            color: #64748b
+        }
+
+        #trp-root .trp-head-actions {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            justify-content: flex-end
+        }
+
+        #trp-root button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        #trp-root button:focus-visible,
+        #trp-root input:focus-visible,
+        #trp-root select:focus-visible {
+            outline: 2px solid #1d8583;
+            outline-offset: 2px
+        }
+
+        #trp-root .trp-btn {
+            padding: 9px 11px;
+            border: 1px solid #d8e2e9;
+            border-radius: 9px;
+            background: #fff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap
+        }
+
+        #trp-root .trp-btn:hover {
+            background: #f0f8f8
+        }
+
+        #trp-root .trp-btn-primary {
+            background: #287c79;
+            color: white;
+            border-color: #287c79
+        }
+
+        #trp-root .trp-btn-primary:hover {
+            background: #196763
+        }
+
+        #trp-root .trp-btn-danger {
+            color: #b42318;
+            border-color: #f1c9c7
+        }
+
+        #trp-root .trp-body {
+            display: grid;
+            grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+            min-height: 0;
+            flex: 1
+        }
+
+        #trp-root .trp-tools {
+            overflow: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-right: 1px solid #e2e8f0;
+            background: #fff
+        }
+
+        #trp-root .trp-section {
+            border: 1px solid #e3eaf0;
+            border-radius: 11px;
+            padding: 11px;
+            background: #fff
+        }
+
+        #trp-root .trp-section h3 {
+            font-size: 12px;
+            margin: 0 0 9px;
+            font-weight: 800;
+            color: #32465d
+        }
+
+        #trp-root .trp-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px
+        }
+
+        #trp-root label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 700
+        }
+
+        #trp-root input,
+        #trp-root select {
+            width: 100%;
+            min-width: 0;
+            border: 1px solid #dce4ec;
+            border-radius: 8px;
+            background: #fff;
+            padding: 7px 8px;
+            color: #24364b;
+            font-family: inherit;
+            font-size: 12px
+        }
+
+        #trp-root input[type=checkbox] {
+            width: auto;
+            min-width: 0
+        }
+
+        #trp-root .trp-check {
+            flex-direction: row;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px
+        }
+
+        #trp-root .trp-row {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        #trp-root .trp-row .trp-btn {
+            flex: 1
+        }
+
+        #trp-root .trp-tools-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 5px
+        }
+
+        #trp-root .trp-tool {
+            border: 1px solid #dae5eb;
+            border-radius: 8px;
+            background: #f8fafc;
+            padding: 8px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #43566e
+        }
+
+        #trp-root .trp-tool.active {
+            color: white;
+            background: #287c79;
+            border-color: #287c79
+        }
+
+        #trp-root .trp-hint {
+            color: #64748b;
+            font-size: 10px;
+            line-height: 1.6;
+            margin: 8px 0 0
+        }
+
+        #trp-root .trp-workspace {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 13px;
+            gap: 9px
+        }
+
+        #trp-root .trp-workbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        #trp-root .trp-workbar strong {
+            font-size: 13px;
+            color: #203b4d
+        }
+
+        #trp-root .trp-status {
+            font-size: 11px;
+            color: #576d7a;
+            max-width: 65%;
+            line-height: 1.45
+        }
+
+        #trp-root .trp-plan-wrap {
+            min-height: 0;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            padding: 8px
+        }
+
+        #trp-root #trp-svg {
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            touch-action: none;
+            user-select: none;
+            display: block
+        }
+
+        #trp-root .trp-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            color: #5b7083;
+            font-size: 11px;
+            background: white;
+            border: 1px solid #e4ebf2;
+            padding: 9px 12px;
+            border-radius: 9px
+        }
+
+        #trp-root .trp-summary strong {
+            color: #334155
+        }
+
+        #trp-root .trp-objects {
+            max-height: 145px;
+            overflow: auto;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap
+        }
+
+        #trp-root .trp-item {
+            border: 1px solid #dce5ed;
+            border-radius: 7px;
+            background: #f8fafc;
+            padding: 5px 7px;
+            font-size: 10px;
+            color: #42556d
+        }
+
+        #trp-root .trp-item.active {
+            border-color: #287c79;
+            background: #e6f4f3;
+            color: #17645f;
+            font-weight: 800
+        }
+
+        #trp-root .trp-note {
+            background: #f0faf8;
+            border: 1px solid #c6e4df;
+            border-radius: 9px;
+            padding: 8px 10px;
+            color: #2b6763;
+            font-size: 11px;
+            line-height: 1.5
+        }
+
+        #trp-root .trp-warning {
+            background: #fff8ec;
+            border-color: #f5deb3;
+            color: #8b5916
+        }
+
+        #trp-root .trp-selected-none {
+            font-size: 11px;
+            color: #64748b;
+            line-height: 1.5
+        }
+
+        #trp-root .trp-overflow-warning {
+            color: #aa3c24
+        }
+
+        @media(max-width:850px) {
+            #trp-root {
+                padding: 5px
+            }
+
+            #trp-root .trp-shell {
+                height: 100%;
+                border-radius: 10px
+            }
+
+            #trp-root .trp-body {
+                grid-template-columns: minmax(225px, 270px) minmax(0, 1fr)
+            }
+
+            #trp-root .trp-head {
+                padding: 10px 12px
+            }
+
+            #trp-root .trp-head h2 {
+                font-size: 16px
+            }
+
+            #trp-root .trp-workspace {
+                padding: 7px
+            }
+
+            #trp-root .trp-tools {
+                padding: 8px
+            }
+        }
+
+        @media(max-width:630px) {
+            #trp-root .trp-body {
+                display: flex;
+                flex-direction: column
+            }
+
+            #trp-root .trp-tools {
+                flex: 0 0 auto;
+                max-height: 44%;
+                border-right: 0;
+                border-bottom: 1px solid #e2e8f0
+            }
+
+            #trp-root .trp-workspace {
+                flex: 1;
+                min-height: 260px
+            }
+
+            #trp-root .trp-head-actions .trp-btn {
+                padding: 7px 8px;
+                font-size: 10px
+            }
+
+            #trp-root .trp-status {
+                max-width: 100%
+            }
+        }
+    </style>
+    <style id="trp-case1-style-docked-editor">
+        /* Transfer-room only: dock the plan on the right and put Editor controls in the ORIGINAL sidebar.
+   Does not modify Case 1 / Case 2, TestbedFloor2, prediction model or Firebase measurements. */
+        body.trp-workspace-active #trp-root {
+            position: fixed;
+            inset: 14px 14px 14px 354px;
+            z-index: 998;
+            display: block;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            pointer-events: none;
+        }
+
+        body.trp-workspace-active:not(.panel-open) #trp-root {
+            left: 14px
+        }
+
+        body.trp-workspace-active #trp-root .trp-shell {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            border: 1px solid #e1e7ee;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, .08);
+            background: #f8fafb;
+            pointer-events: auto;
+        }
+
+        body.trp-workspace-active #trp-root .trp-body {
+            display: flex;
+            flex: 1;
+            min-height: 0
+        }
+
+        body.trp-workspace-active #trp-root .trp-workspace {
+            flex: 1;
+            width: 100%;
+            min-width: 0;
+            min-height: 0
+        }
+
+        body.trp-workspace-active #trp-root .trp-head {
+            padding: 14px 17px
+        }
+
+        body.trp-workspace-active #trp-root .trp-head h2 {
+            font-size: 17px
+        }
+
+        body.trp-workspace-active #trp-root .trp-head-actions .trp-btn {
+            font-size: 11px
+        }
+
+        /* Preserve the native sidebar toggle button and original styling, hide other case controls only WHILE viewing transfer plan. */
+        body.trp-workspace-active #controls-dropdown> :not(#trp-sidebar-panel):not(#final-floating-toolbar) {
+            display: none !important
+        }
+
+        body.trp-workspace-active #controls-dropdown {
+            background: #fff
+        }
+
+        body.trp-workspace-active .profile-container {
+            display: none !important
+        }
+
+        body.trp-workspace-active #controls-dropdown #trp-sidebar-panel {
+            display: block !important;
+            padding-bottom: 38px;
+            text-align: left
+        }
+
+        #trp-sidebar-panel[hidden],
+        #trp-sidebar-tools-host[hidden],
+        #trp-readonly-info[hidden] {
+            display: none !important
+        }
+
+        #trp-sidebar-panel .trp-side-heading {
+            padding: 0 0 12px;
+            border-bottom: 1px solid #e2e8f0
+        }
+
+        #trp-sidebar-panel .trp-side-heading h3 {
+            font-size: 14px;
+            line-height: 1.45;
+            color: #2b7a78;
+            font-weight: 800;
+            margin: 0 0 4px
+        }
+
+        #trp-sidebar-panel .trp-side-heading p {
+            font-size: 10px;
+            line-height: 1.5;
+            color: #64748b;
+            margin: 0
+        }
+
+        #trp-sidebar-panel .trp-side-toggle {
+            display: block;
+            width: 100%;
+            min-height: 40px;
+            margin: 13px 0 12px;
+            border: 1px solid #b9d5d3;
+            background: #f4f9f8;
+            color: #246a68;
+            font-weight: 800;
+            font-size: 12px;
+            border-radius: 10px;
+            cursor: pointer
+        }
+
+        #trp-sidebar-panel .trp-side-toggle.active {
+            color: #fff;
+            background: #2b7a78;
+            border-color: #2b7a78
+        }
+
+        #trp-sidebar-panel .trp-side-return {
+            display: block;
+            width: 100%;
+            min-height: 37px;
+            margin-top: 14px;
+            background: #fff;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid #cdd9e3;
+            border-radius: 9px;
+            cursor: pointer
+        }
+
+        #trp-sidebar-panel .trp-side-readonly {
+            border: 1px solid #d5e7e4;
+            border-radius: 9px;
+            padding: 10px;
+            background: #f6fbfa;
+            color: #55706c;
+            font-size: 11px;
+            line-height: 1.6;
+            margin: 8px 0
+        }
+
+        #trp-sidebar-panel .trp-tools {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow: visible;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            width: 100%
+        }
+
+        #trp-sidebar-panel .trp-section {
+            margin: 0;
+            padding: 14px 0;
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            background: transparent;
+            border-radius: 0
+        }
+
+        #trp-sidebar-panel .trp-section h3 {
+            font-size: 11px;
+            line-height: 1.45;
+            font-weight: 700;
+            color: #475569;
+            margin: 0 0 10px
+        }
+
+        #trp-sidebar-panel .trp-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px
+        }
+
+        #trp-sidebar-panel label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.45
+        }
+
+        #trp-sidebar-panel label.trp-check {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px
+        }
+
+        #trp-sidebar-panel input,
+        #trp-sidebar-panel select {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            padding: 8px 7px;
+            color: #334155;
+            font-family: inherit;
+            font-size: 11px
+        }
+
+        #trp-sidebar-panel input[type=checkbox] {
+            width: auto;
+            min-width: 0
+        }
+
+        #trp-sidebar-panel .trp-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center
+        }
+
+        #trp-sidebar-panel .trp-row .trp-btn {
+            flex: 1
+        }
+
+        #trp-sidebar-panel .trp-btn {
+            padding: 8px 9px;
+            border: 1px solid #d6e0e8;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font: 700 11px Sarabun, sans-serif;
+            cursor: pointer
+        }
+
+        #trp-sidebar-panel .trp-btn:hover {
+            background: #edf6f5
+        }
+
+        #trp-sidebar-panel .trp-btn-primary {
+            background: #2b7a78;
+            color: #fff;
+            border-color: #2b7a78
+        }
+
+        #trp-sidebar-panel .trp-btn-danger {
+            background: #fff6f6;
+            color: #c23838;
+            border-color: #f5cece
+        }
+
+        #trp-sidebar-panel .trp-tools-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 5px
+        }
+
+        #trp-sidebar-panel .trp-tool {
+            min-height: 35px;
+            border: 1px solid #dae3e8;
+            border-radius: 9px;
+            background: #f8fafc;
+            padding: 7px 3px;
+            font: 700 10px Sarabun, sans-serif;
+            color: #475569;
+            cursor: pointer
+        }
+
+        #trp-sidebar-panel .trp-tool.active {
+            background: #2b7a78;
+            border-color: #2b7a78;
+            color: #fff
+        }
+
+        #trp-sidebar-panel .trp-hint {
+            color: #64748b;
+            font-size: 10px;
+            line-height: 1.5;
+            margin: 8px 0 0
+        }
+
+        #trp-sidebar-panel .trp-selected-none {
+            font-size: 11px;
+            line-height: 1.5;
+            color: #64748b
+        }
+
+        #trp-sidebar-panel .trp-objects {
+            max-height: 190px;
+            overflow: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px
+        }
+
+        #trp-sidebar-panel .trp-item {
+            border: 1px solid #dce5ed;
+            border-radius: 7px;
+            background: #f8fafc;
+            padding: 6px 7px;
+            font: 700 10px Sarabun, sans-serif;
+            color: #42556d;
+            cursor: pointer
+        }
+
+        #trp-sidebar-panel .trp-item.active {
+            border-color: #287c79;
+            background: #e6f4f3;
+            color: #17645f
+        }
+
+        #trp-sidebar-panel button:focus-visible,
+        #trp-sidebar-panel input:focus-visible,
+        #trp-sidebar-panel select:focus-visible {
+            outline: 2px solid #2b7a78;
+            outline-offset: 2px
+        }
+
+        @media (max-width:800px) {
+            body.trp-workspace-active #trp-root {
+                left: 14px;
+                right: 14px;
+                top: 75px;
+                bottom: 12px
+            }
+
+            body.trp-workspace-active #controls-dropdown {
+                z-index: 1100
+            }
+
+            body.trp-workspace-active #trp-root .trp-head {
+                flex-wrap: wrap;
+                padding: 10px 12px
+            }
+
+            body.trp-workspace-active #trp-root .trp-workspace {
+                padding: 7px
+            }
+        }
+
+        @media (max-width:490px) {
+            body.trp-workspace-active #trp-root {
+                top: 75px
+            }
+
+            body.trp-workspace-active #trp-root .trp-head-actions {
+                width: 100%;
+                justify-content: flex-start
+            }
+
+            body.trp-workspace-active #trp-root .trp-head-actions .trp-btn {
+                padding: 6px 7px;
+                font-size: 10px
+            }
+
+            body.trp-workspace-active #trp-root .trp-head h2 {
+                font-size: 14px
+            }
+        }
+    </style>
+
+    <style id="trp-editor-match-existing-case123-v2">
+        /* Same compact visual system as the existing Case 1 / 2 / 3 sidebar Editors.
+           Scoped to Transfer Room only; no global editor, model or Firebase changes. */
+        body.trp-workspace-active #controls-dropdown {
+            background: #fff !important;
+        }
+
+        #trp-sidebar-panel {
+            font-size: 11px;
+            line-height: 1.4;
+            color: #334155;
+        }
+
+        #trp-sidebar-panel .trp-side-heading {
+            padding: 0 0 9px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        #trp-sidebar-panel .trp-side-heading h3.editor-title {
+            display: block;
+            margin: 2px 0 4px;
+            color: #334155;
+            font-size: 13px;
+            line-height: 1.35;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        #trp-sidebar-panel .trp-side-heading p {
+            color: #64748B;
+            font-size: 9.5px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        #trp-sidebar-panel #trp-toggle-editor {
+            display: block;
+            width: 100%;
+            min-height: 40px;
+            padding: 8px 12px;
+            margin: 9px 0 0;
+            border: 1px solid #2B7A78;
+            border-radius: 10px;
+            background: #2B7A78;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: none;
+            cursor: pointer;
+        }
+
+        #trp-sidebar-panel #trp-toggle-editor.active {
+            border-color: #BFD7D5;
+            background: #F6FAFA;
+            color: #246B69;
+        }
+
+        #trp-sidebar-panel #trp-toggle-editor:hover {
+            border-color: #2B7A78;
+        }
+
+        #trp-sidebar-panel .trp-side-return {
+            width: 100%;
+            min-height: 36px;
+            margin: 9px 0 0;
+            border: 1px solid #D8E0E8;
+            background: #F8FAFC;
+            color: #475569;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: none;
+        }
+
+        #trp-sidebar-panel .trp-side-readonly {
+            padding: 8px 10px;
+            margin: 10px 0 0;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            background: #F8FAFC;
+            color: #64748B;
+            font-size: 10px;
+            line-height: 1.45;
+        }
+
+        #trp-sidebar-panel #trp-sidebar-tools-host {
+            min-width: 0;
+        }
+
+        #trp-sidebar-panel .trp-tools {
+            gap: 0;
+            padding: 0;
+            background: transparent;
+            border: 0;
+        }
+
+        #trp-sidebar-panel .trp-section {
+            padding: 10px 0 11px;
+            margin: 0;
+            border: 0;
+            border-top: 1px solid #E5E7EB;
+            background: transparent;
+        }
+
+        #trp-sidebar-panel .trp-section-first {
+            border-top: none;
+        }
+
+        #trp-sidebar-panel .editor-sub-title {
+            display: block;
+            margin: 0 0 7px;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        #trp-sidebar-panel .editor-input-row {
+            display: grid;
+            grid-template-columns: 94px minmax(0, 1fr) 21px;
+            column-gap: 5px;
+            align-items: center;
+            width: 100%;
+            min-height: 30px;
+            margin: 0 0 5px;
+            font-size: 11px;
+            color: #334155;
+        }
+
+        #trp-sidebar-panel .editor-input-row>span:first-child {
+            white-space: nowrap;
+        }
+
+        #trp-sidebar-panel .editor-input-row>input,
+        #trp-sidebar-panel .editor-input-row>select {
+            box-sizing: border-box;
+            display: block;
+            min-width: 0;
+            width: 100%;
+            height: 30px;
+            padding: 4px 7px;
+            margin: 0;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 8px;
+            background: #fff;
+            color: #334155;
+            font: 500 11px Sarabun, sans-serif;
+            text-align: left;
+            box-shadow: none;
+        }
+
+        #trp-sidebar-panel .editor-input-row>select {
+            grid-column: 2 / 4;
+        }
+
+        #trp-sidebar-panel .editor-input-row>input:focus,
+        #trp-sidebar-panel .editor-input-row>select:focus {
+            border-color: #2B7A78 !important;
+            box-shadow: 0 0 0 2px rgba(43, 122, 120, .10) !important;
+        }
+
+        #trp-sidebar-panel .trp-unit {
+            font-size: 10px;
+            color: #64748B;
+            text-align: left;
+        }
+
+        #trp-sidebar-panel .trp-action-pair {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            margin: 7px 0 0;
+        }
+
+        #trp-sidebar-panel .trp-action-pair>button {
+            min-width: 0;
+            width: 100%;
+        }
+
+        #trp-sidebar-panel .trp-categorized-tools {
+            display: block;
+            margin: 0;
+        }
+
+        #trp-sidebar-panel .trp-tool-trio {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 5px;
+            margin: 4px 0 8px;
+        }
+
+        #trp-sidebar-panel .trp-tool,
+        #trp-sidebar-panel .trp-btn {
+            box-sizing: border-box;
+            display: block;
+            min-width: 0;
+            width: 100%;
+            min-height: 35px;
+            padding: 7px 8px;
+            margin: 0;
+            border: 1px solid #D8E0E8;
+            border-radius: 9px;
+            background: #F8FAFC;
+            color: #475569;
+            font: 700 11px Sarabun, sans-serif;
+            line-height: 1.25;
+            text-align: center;
+            white-space: normal;
+            box-shadow: none;
+            cursor: pointer;
+        }
+
+        #trp-sidebar-panel .trp-tool {
+            margin-top: 3px;
+        }
+
+        #trp-sidebar-panel .trp-tool.active {
+            background: #2B7A78;
+            border-color: #2B7A78;
+            color: #fff;
+        }
+
+        #trp-sidebar-panel .trp-tool:hover:not(.active),
+        #trp-sidebar-panel .trp-btn:hover {
+            background: #EDF6F5;
+            border-color: #BFD7D5;
+        }
+
+        #trp-sidebar-panel .trp-btn.trp-wide-secondary {
+            margin-top: 6px;
+            background: #fff;
+        }
+
+        #trp-sidebar-panel .trp-btn.trp-btn-danger {
+            margin-top: 8px;
+            background: #FFF7F7;
+            border-color: #FECACA;
+            color: #DC2626;
+        }
+
+        #trp-sidebar-panel .trp-btn.trp-btn-danger:hover {
+            background: #FEF2F2;
+            border-color: #FCA5A5;
+        }
+
+        #trp-sidebar-panel label.trp-check {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 7px;
+            margin: 8px 0 4px;
+            color: #475569;
+            font-size: 10.5px;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
+        #trp-sidebar-panel label.trp-check>input {
+            display: block;
+            flex: none;
+            width: 15px;
+            height: 15px;
+            margin: 0;
+            padding: 0;
+            accent-color: #2B7A78;
+        }
+
+        #trp-sidebar-panel .trp-corridor-fields {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0;
+            padding: 5px 0 0 8px;
+        }
+
+        #trp-sidebar-panel .trp-hint {
+            margin: 6px 0 10px;
+            color: #64748B;
+            font-size: 9.5px;
+            line-height: 1.45;
+        }
+
+        #trp-sidebar-panel #trp-selected .trp-form-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 5px;
+        }
+
+        #trp-sidebar-panel #trp-selected .trp-form-grid label {
+            display: grid;
+            grid-template-columns: 94px minmax(0, 1fr);
+            align-items: center;
+            gap: 5px;
+            color: #334155;
+            font-size: 10.5px;
+            font-weight: 600;
+        }
+
+        #trp-sidebar-panel #trp-selected input,
+        #trp-sidebar-panel #trp-selected select {
+            box-sizing: border-box;
+            display: block;
+            min-width: 0;
+            width: 100%;
+            height: 30px;
+            margin: 0;
+            padding: 5px 7px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            background: #fff;
+            color: #334155;
+            font: 500 11px Sarabun, sans-serif;
+        }
+
+        #trp-sidebar-panel #trp-objects {
+            max-height: 190px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 0;
+        }
+
+        #trp-sidebar-panel #trp-objects .trp-item {
+            width: auto;
+            min-height: 28px;
+            padding: 5px 8px;
+            border: 1px solid #D8E0E8;
+            border-radius: 7px;
+            background: #F8FAFC;
+            color: #475569;
+            font: 700 10px Sarabun, sans-serif;
+        }
+
+        #trp-sidebar-panel #trp-objects .trp-item.active {
+            border-color: #2B7A78;
+            background: #E6F4F3;
+            color: #17645F;
+        }
+
+        #trp-sidebar-panel .trp-selected-none {
+            color: #64748B;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        #trp-sidebar-panel button:focus-visible,
+        #trp-sidebar-panel input:focus-visible,
+        #trp-sidebar-panel select:focus-visible {
+            outline: 2px solid #2B7A78;
+            outline-offset: 2px;
+        }
+
+        @media (max-width:380px) {
+            #trp-sidebar-panel .editor-input-row {
+                grid-template-columns: 88px minmax(0, 1fr) 17px;
+            }
+
+            #trp-sidebar-panel .trp-unit {
+                font-size: 9px;
+            }
+        }
+    </style>
+
+    <style id="trp-furniture-parity-case123-20261103">
+        /* Uses the same Case 3 Editor field order, units, and add/delete action layout. */
+        #trp-sidebar-panel #trp-furniture-editor .editor-input-row {
+            grid-template-columns: 120px minmax(0, 1fr) 25px;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .editor-input-row>span:first-child {
+            white-space: normal;
+            line-height: 1.25;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .editor-input-row input {
+            font-variant-numeric: tabular-nums;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .trp-furn-unit {
+            color: #64748B;
+            font-size: 10px;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .trp-furn-actions {
+            margin-top: 8px;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .editor-btn-add {
+            background: #2B7A78;
+            color: white;
+            border-color: #2B7A78;
+            min-height: 36px;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .editor-btn-del {
+            background: #FFF7F7;
+            color: #DC2626;
+            border-color: #FECACA;
+            min-height: 36px;
+        }
+
+        #trp-sidebar-panel #trp-furn-selected-info {
+            min-height: 18px;
+            margin: 6px 0 0;
+            text-align: center;
+            color: #64748B;
+            font-size: 10px;
+            line-height: 1.45;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .trp-furn-quick-tools {
+            margin-top: 8px;
+        }
+
+        #trp-sidebar-panel #trp-furniture-editor .trp-furn-quick-tools .trp-tool {
+            margin-top: 0;
+        }
+
+        @media(max-width:380px) {
+            #trp-sidebar-panel #trp-furniture-editor .editor-input-row {
+                grid-template-columns: 112px minmax(0, 1fr) 23px;
+            }
+        }
+    </style>
+
+
+    <style id="trp-door-match-case3-styles">
+      #trp-sidebar-panel #trp-door-editor .editor-input-row { grid-template-columns: 94px minmax(0,1fr) 21px; }
+      #trp-sidebar-panel #trp-door-editor #trp-door-add { display:block; width:100%; margin-top:9px; min-height:38px; background:#2B7A78; color:#fff; border-color:#2B7A78; }
+      #trp-sidebar-panel #trp-door-editor #trp-door-add:hover { background:#236965; }
+      #trp-sidebar-panel #trp-door-editor #trp-door-feedback { min-height:14px; color:#2B7A78; }
+      #trp-svg [data-obj][data-door="true"] { cursor:grab; touch-action:none; }
+    </style>
+
+    <style id="trp-case3-workflow-style">
+    /* TR01 only. Case1/2/3 original controls and data are not modified. */
+    #trp-sidebar-panel .trp-rssi-legend {margin:8px 0 5px;padding:6px 7px;border:1px solid #dce6eb;border-radius:8px;background:#f8fbfc}
+    #trp-sidebar-panel .trp-rssi-legend-title {font-size:10px;font-weight:700;color:#435568;margin-bottom:4px}
+    #trp-sidebar-panel .trp-rssi-legend-bar {height:10px;border-radius:999px;background:linear-gradient(to right,#27317b 0%,#2485cb 18%,#32cbb2 37%,#a5d45e 53%,#f6e65f 69%,#ff963f 85%,#e63d3c 100%)}
+    #trp-sidebar-panel .trp-rssi-legend-ticks {display:flex;justify-content:space-between;gap:1px;color:#64748b;font-size:8px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+    #trp-sidebar-panel .trp-rssi-legend-foot {font-size:9px;color:#64748b;margin-top:4px}
+
+    #trp-sidebar-panel.trp-measure-panel {font-family:Sarabun,Arial,sans-serif; color:#1e293b}
+    #trp-sidebar-panel .trp-work-section {padding:10px 0;border-bottom:1px solid #e2e8f0}
+    #trp-sidebar-panel .trp-work-section strong {font-size:11px}
+    #trp-sidebar-panel .trp-mini {font-size:10px;color:#64748b;line-height:1.5}
+    #trp-sidebar-panel .trp-work-pill {border:1px solid #cbd5e1;background:#fff;color:#334155;padding:8px 3px;border-radius:8px;font:700 11px Sarabun,Arial,sans-serif;cursor:pointer;min-width:0}
+    #trp-sidebar-panel .trp-work-pill.active {color:white;background:#2b7a78;border-color:#2b7a78}
+    #trp-sidebar-panel .trp-work-pill:disabled {opacity:.5;cursor:not-allowed}
+    #trp-sidebar-panel .trp-work-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:6px}
+    #trp-sidebar-panel .trp-work-grid.points {grid-template-columns:repeat(4,minmax(0,1fr))}
+    #trp-sidebar-panel .trp-work-grid.modes {grid-template-columns:repeat(3,minmax(0,1fr))}
+    #trp-sidebar-panel .trp-work-pill small {display:block;font-size:9px;font-weight:600;opacity:.85}
+    #trp-sidebar-panel .trp-work-stat {display:flex;justify-content:space-between;gap:8px;font-size:11px;margin:5px 0;align-items:baseline}
+    #trp-sidebar-panel .trp-work-stat b {font-size:12px;color:#0f766e}
+    #trp-sidebar-panel .trp-strong-btn {width:100%;background:#2b7a78;color:white;border:0;border-radius:9px;padding:10px 8px;font:800 12px Sarabun,Arial,sans-serif;cursor:pointer;margin-top:7px}
+    #trp-sidebar-panel .trp-strong-btn:disabled {background:#a9b8bd;cursor:not-allowed}
+    #trp-sidebar-panel .trp-secondary-btn {display:inline-block;padding:7px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;font-size:10px;color:#334155;cursor:pointer}
+    #trp-sidebar-panel .trp-danger-btn {display:block;width:100%;margin-top:7px;border:1px solid #e0a5a5;background:#fff5f5;color:#a32828;font-weight:750;text-align:center}
+    #trp-sidebar-panel .trp-danger-btn:hover:not(:disabled) {background:#ffe4e4;border-color:#c45b5b}
+    #trp-sidebar-panel .trp-danger-btn:disabled {opacity:.55;cursor:not-allowed}
+    #trp-sidebar-panel .trp-notice {border:1px solid #d9e5e8;border-radius:8px;padding:7px 8px;background:#f8fbfb;font-size:10px;line-height:1.55;margin-top:6px;white-space:pre-line}
+    #trp-sidebar-panel .trp-warn {background:#fffbeb;border-color:#fcd34d;color:#92400e}
+    #trp-sidebar-panel .trp-error {background:#fef2f2;border-color:#fecaca;color:#991b1b}
+    #trp-sidebar-panel .trp-good {background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+    #trp-sidebar-panel .trp-work-input {width:100%;background:white;border:1px solid #cbd5e1;border-radius:7px;padding:6px 8px;font-size:11px}
+    #trp-sidebar-panel .trp-side-heading {padding-bottom:8px;border-bottom:1px solid #e2e8f0}
+    #trp-sidebar-panel .trp-side-heading h3 {margin:0 0 3px;font-size:14px;font-weight:900}
+    #trp-sidebar-panel .trp-side-heading p {font-size:10px;color:#64748b;margin:0}
+    #trp-sidebar-panel .trp-subline {font-size:10px;color:#64748b;line-height:1.45}
+    #trp-sidebar-panel .trp-measure-highlights {padding:8px;border-radius:9px;background:#f1f5f9;border:1px solid #dbe5ef}
+    #trp-sidebar-panel .trp-progress {height:8px;border-radius:99px;background:#e2e8f0;margin-top:6px;overflow:hidden}
+    #trp-sidebar-panel .trp-progress>div {height:100%;background:#2b7a78}
+    #trp-sidebar-panel label.trp-label {display:block;font-size:10px;font-weight:700;margin:6px 0}
+    #trp-sidebar-panel input[type="checkbox"] {accent-color:#2b7a78}
+    #trp-root .trp-workbar-note {font-size:10px;color:#0369a1;margin:4px 0}
+    body.trp-workspace-active #trp-sidebar-panel .trp-work-section[hidden] {display:none !important}
+    </style>
+
+    <div id="trp-root" hidden role="region" aria-label="Case 3 แปลนห้องทดสอบใหม่">
+        <div class="trp-shell">
+            <header class="trp-head">
+                <div>
+                    <h2>Case 3 · แปลนห้องทดสอบใหม่</h2>
+                    <p>Zero Local Calibration · แยกจากห้องเดิมและ Final Evaluation อย่างสมบูรณ์</p>
+                </div>
+                <div class="trp-head-actions">
+                    <button type="button" class="trp-btn" id="trp-export-json">ส่งออก JSON</button>
+                    <button type="button" class="trp-btn" id="trp-export-csv">CSV จุดวัด</button>
+                    <button type="button" class="trp-btn trp-btn-primary" id="trp-save">บันทึก Firebase</button>
+                    <button type="button" class="trp-btn" id="trp-close">กลับ Case 3</button>
+                </div>
+            </header>
+            <div class="trp-body">
+                <aside class="trp-tools" aria-label="เครื่องมือ Editor แปลนห้องทดสอบใหม่">
+                    <section class="trp-section trp-section-first">
+                        <div class="editor-sub-title">แปลนห้องทดสอบใหม่</div>
+                        <div class="editor-input-row"><span>รหัสห้อง:</span><input id="trp-room-id" value="TR01"
+                                maxlength="24" autocomplete="off" aria-label="รหัสห้อง (A–Z, 0–9, _ หรือ -)"></div>
+                        <div class="editor-input-row"><span>ชื่อห้อง:</span><input id="trp-room-name"
+                                value="ห้องทดสอบใหม่" maxlength="80" aria-label="ชื่อห้อง"></div>
+                        <div class="trp-action-pair">
+                            <button type="button" class="trp-btn" id="trp-new">สร้างแปลนใหม่</button>
+                            <button type="button" class="trp-btn" id="trp-load">โหลด Firebase</button>
+                        </div>
+                        <button type="button" class="trp-btn trp-wide-secondary" id="trp-undo">ย้อนกลับการแก้ไข</button>
+                    </section>
+                    <section class="trp-section">
+                        <div class="editor-sub-title">ขนาดพื้นที่</div>
+                        <div class="editor-input-row"><span>กว้าง X:</span><input type="number" id="trp-width" min="1"
+                                max="50" step="0.01" aria-label="ความกว้างห้อง X"><span class="trp-unit">ม.</span></div>
+                        <div class="editor-input-row"><span>ยาว Y:</span><input type="number" id="trp-depth" min="1"
+                                max="50" step="0.01" aria-label="ความยาวห้อง Y"><span class="trp-unit">ม.</span></div>
+                        <div class="editor-input-row"><span>สูงห้อง Z:</span><input type="number" id="trp-height"
+                                min="1.5" max="12" step="0.01" aria-label="ความสูงห้อง Z"><span
+                                class="trp-unit">ม.</span></div>
+                        <div class="editor-input-row"><span>สูงเครื่องรับ:</span><input type="number" id="trp-rxheight"
+                                min="0.1" max="5" step="0.01" aria-label="ความสูงเครื่องรับ Z"><span
+                                class="trp-unit">ม.</span></div>
+                        <label class="trp-check"><input type="checkbox" id="trp-corridor-enabled">
+                            มีทางเดินด้านขวาของห้อง</label>
+                        <div id="trp-corridor-fields" class="trp-corridor-fields">
+                            <div class="editor-input-row"><span>ทางเดินกว้าง:</span><input type="number"
+                                    id="trp-corridor-width" min="0.1" max="20" step="0.01"
+                                    aria-label="ความกว้างทางเดิน"><span class="trp-unit">ม.</span></div>
+                            <div class="editor-input-row"><span>ทางเดินยาว:</span><input type="number"
+                                    id="trp-corridor-depth" min="0.1" max="50" step="0.01"
+                                    aria-label="ความยาวทางเดิน"><span class="trp-unit">ม.</span></div>
+                            <div class="editor-input-row"><span>เริ่มที่ Y:</span><input type="number"
+                                    id="trp-corridor-offset" min="-20" max="50" step="0.01"
+                                    aria-label="จุดเริ่มทางเดินแกน Y"><span class="trp-unit">ม.</span></div>
+                        </div>
+                    </section>
+                    <div id="trp-tools-grid" class="trp-categorized-tools">
+                        <section class="trp-section">
+                            <div class="editor-sub-title">เลือก / ย้ายวัตถุ</div>
+                            <button type="button" class="trp-tool active"
+                                data-tool="select">เลือกวัตถุและลากย้าย</button>
+                        </section>
+                        <section class="trp-section">
+                            <div class="editor-sub-title">Access Point (AP)</div>
+                            <div class="editor-input-row"><span>ความสูง AP:</span><input type="number" id="trp-apheight"
+                                    min="0.2" max="10" step="0.01" value="2.6" aria-label="ความสูง Access Point"><span
+                                    class="trp-unit">ม.</span></div>
+                            <button type="button" class="trp-tool" data-tool="ap">วาง / ย้ายตำแหน่ง AP</button>
+                        </section>
+                        <section class="trp-section">
+                            <div class="editor-sub-title">จุดวัด</div>
+                            <button type="button" class="trp-tool" data-tool="point">เพิ่มจุดวัด N</button>
+                            <button type="button" class="trp-btn trp-wide-secondary" id="trp-auto-points">สร้างจุดวัด 12
+                                จุดอัตโนมัติ</button>
+                        </section>
+                        <section class="trp-section">
+                            <div class="editor-sub-title">ผนัง / ประตู / หน้าต่าง</div>
+                            <div class="trp-tool-trio">
+                                <button type="button" class="trp-tool" data-tool="wall">ผนัง</button>
+                                <button type="button" class="trp-tool" data-tool="door">ประตู</button>
+                                <button type="button" class="trp-tool" data-tool="window">หน้าต่าง</button>
+                            </div>
+                            <div class="editor-input-row"><span>วัสดุ:</span><select id="trp-material"
+                                    aria-label="วัสดุของวัตถุที่จะสร้าง">
+                                    <option value="concrete">คอนกรีต</option>
+                                    <option value="glass">กระจก</option>
+                                    <option value="wood">ไม้</option>
+                                    <option value="steel">เหล็ก</option>
+                                    <option value="unknown">ไม่ระบุ</option>
+                                </select></div>
+                            <button type="button" class="trp-btn trp-wide-secondary"
+                                id="trp-perimeter">สร้างผนังรอบห้อง</button>
+                        </section>
+                        <section class="trp-section" id="trp-door-editor">
+                            <div class="editor-sub-title">ประตู · แบบเดียวกับ Case 3 เดิม</div>
+                            <div class="editor-input-row"><span>ชื่อ:</span><input id="trp-door-name" type="text" value="ประตู" maxlength="60" aria-label="ชื่อประตู"></div>
+                            <div class="editor-input-row"><span>กว้างช่อง:</span><input id="trp-door-width" type="number" min="0.30" max="5" step="0.01" value="0.90"><span class="trp-unit">ม.</span></div>
+                            <div class="editor-input-row"><span>สูงจริง:</span><input id="trp-door-height" type="number" min="0.5" max="5" step="0.01" value="2.00"><span class="trp-unit">ม.</span></div>
+                            <div class="editor-input-row"><span>ผนัง:</span><select id="trp-door-wall"><option value="bottom">ล่าง</option><option value="right">ขวา</option><option value="left">ซ้าย</option><option value="top">บน</option></select></div>
+                            <div class="editor-input-row"><span>บานพับ:</span><select id="trp-door-hinge"><option value="start">ด้านต้น</option><option value="end">ด้านปลาย</option></select></div>
+                            <button type="button" class="trp-btn trp-btn-primary trp-wide-secondary" id="trp-door-add">เพิ่มประตู</button>
+                            <p class="trp-hint">กดเพิ่มเพื่อวางประตูตรงกลางผนังที่เลือก แล้วลากตามแนวผนังเพื่อจัดตำแหน่ง หรือกดเครื่องมือ “ประตู” แล้วคลิกตำแหน่งในแปลนได้ทันที</p>
+                            <p class="trp-hint" id="trp-door-feedback" role="status" aria-live="polite"></p>
+                        </section>
+                        <section class="trp-section" id="trp-furniture-editor">
+                            <div class="editor-sub-title">เฟอร์นิเจอร์</div>
+                            <div class="editor-input-row"><span>ชื่อ:</span><input type="text" id="trp-furn-name"
+                                    maxlength="60" placeholder="เช่น เสา โต๊ะ ตู้ หรือชั้นวาง"></div>
+                            <div class="editor-input-row"><span>พื้นที่:</span><select id="trp-furn-area">
+                                    <option value="room">ภายในห้อง</option>
+                                    <option value="corridor">ทางเดินนอกห้อง</option>
+                                </select></div>
+                            <div class="editor-input-row"><span>วัสดุ:</span><select id="trp-furn-material">
+                                    <option value="unknown">ไม่ระบุ</option>
+                                    <option value="steel">เหล็ก / Steel</option>
+                                    <option value="wood">ไม้</option>
+                                    <option value="glass">กระจก</option>
+                                    <option value="concrete">คอนกรีต</option>
+                                </select></div>
+                            <div class="editor-input-row"><span>หน่วย:</span><select id="trp-furn-unit"
+                                    aria-label="หน่วยขนาดเฟอร์นิเจอร์">
+                                    <option value="cm">เซนติเมตร (cm)</option>
+                                    <option value="m">เมตร (m)</option>
+                                </select></div>
+                            <div class="editor-input-row"><span>ขนาด X บนพื้น:</span><input type="number"
+                                    id="trp-furn-width" min="1" max="2000" step="1" value="100"><span
+                                    class="trp-furn-unit">cm</span></div>
+                            <div class="editor-input-row"><span>ขนาด Y บนพื้น:</span><input type="number"
+                                    id="trp-furn-depth" min="1" max="2000" step="1" value="50"><span
+                                    class="trp-furn-unit">cm</span></div>
+                            <div class="editor-input-row"><span>ฐานจากพื้น (Z Bottom):</span><input type="number"
+                                    id="trp-furn-zbottom" min="0" max="1200" step="0.1" value="0"><span>cm</span></div>
+                            <div class="editor-input-row"><span>ยอดจากพื้น (Z Top):</span><input type="number"
+                                    id="trp-furn-ztop" min="0" max="1200" step="0.1" value=""
+                                    placeholder="ยังไม่วัด"><span>cm</span></div>
+                            <p class="trp-hint">กรอกชื่อ ขนาด X/Y และวัสดุ แล้วกดเพิ่มได้เลย · หากยังไม่ทราบความสูง เว้น
+                                Z Top ว่างหรือใส่ 0 ได้ ระบบจะแสดงวัตถุบนแปลน 2D แต่จะระบุว่า Z ยังไม่วัด
+                                (ต้องเติมก่อนทำนายแบบ 3D)</p>
+                            <div class="trp-action-pair trp-furn-actions">
+                                <button type="button" class="editor-btn editor-btn-add"
+                                    id="trp-furn-add">เพิ่มลงแปลน</button>
+                                <button type="button" class="editor-btn editor-btn-del"
+                                    id="trp-furn-delete">ลบที่เลือก</button>
+                            </div>
+                            <div id="trp-furn-selected-info" class="trp-furn-selected-info" aria-live="polite">
+                                ยังไม่ได้เลือกเฟอร์นิเจอร์</div>
+                            <button type="button" class="trp-tool" data-tool="furniture" id="trp-furn-place"
+                                style="margin-top:7px">วางที่ตำแหน่งบนแปลน</button>
+                            <p class="trp-hint">“เพิ่มลงแปลน” สร้างวัตถุใกล้มุมห้องทันทีและเลือกให้ลากย้ายได้ ·
+                                “วางที่ตำแหน่งบนแปลน” ให้คลิกเลือกตำแหน่งเอง · ไม่มีการบังคับเลือกประเภทโต๊ะ/ตู้</p>
+                            <p id="trp-furn-feedback" class="trp-hint" role="status" aria-live="polite"></p>
+                        </section>
+                    </div>
+                    <p class="trp-hint" id="trp-tool-hint">คลิกวัตถุเพื่อเลือกและลากย้าย แล้วกำหนดพิกัดด้านล่าง</p>
+                    <section class="trp-section">
+                        <div class="editor-sub-title">แก้ไขวัตถุที่เลือก</div>
+                        <div id="trp-selected" class="trp-selected-none">ยังไม่ได้เลือกวัตถุ</div>
+                        <button type="button" class="trp-btn trp-btn-danger" id="trp-delete">ลบวัตถุที่เลือก</button>
+                    </section>
+                    <section class="trp-section">
+                        <div class="editor-sub-title">รายการสิ่งที่สร้าง</div>
+                        <div id="trp-objects" class="trp-objects"></div>
+                    </section>
+                </aside>
+                <main class="trp-workspace">
+                    <div class="trp-workbar"><strong>แปลน 2D · หน่วยเมตร (X ขวา / Y ลง)</strong><span id="trp-status"
+                            class="trp-status" role="status">แบบร่างในเครื่องยังไม่ใช่ข้อมูล Calibration</span></div>
+                    <div class="trp-plan-wrap"><svg id="trp-svg" role="img"
+                            aria-label="แปลนห้องใหม่แบบปรับพิกัดได้"></svg></div>
+                    <div class="trp-summary"><span>ผนัง <strong id="trp-n-walls">0</strong></span><span>ประตู/หน้าต่าง
+                            <strong id="trp-n-openings">0</strong></span><span>เฟอร์นิเจอร์ <strong
+                                id="trp-n-furniture">0</strong></span><span>จุดทดสอบ <strong
+                                id="trp-n-points">0</strong></span><span>AP <strong id="trp-n-ap">1</strong></span>
+                    </div>
+                    <div class="trp-workbar-note" id="trp-map-mode-note">โหมดแปลน 2D · Predicted/Measured แสดงจาก Sidebar</div>
+                    <div class="trp-note" id="trp-footnote">ห้องนี้ยังไม่มีผลวัด RSSI และไม่มี Calibration ในพื้นที่ใหม่
+                        · ส่งออกแปลนเพื่อคำนวณค่า Predicted จากโมเดลเดิมก่อนวัดจริง</div>
+                </main>
+            </div>
+        </div>
+    </div>
+    <!-- 2026-11-03: measured door Case3 parity; no changes to locked models -->
+    <script id="trp-transfer-room-script">
+        (function () {
+            'use strict';
+            if (window.C3TransferPlanner) return;
+            const $ = id => document.getElementById(id);
+            const root = $('trp-root');
+            const svg = $('trp-svg');
+            const NS = 'http://www.w3.org/2000/svg';
+            const MAX_OBJECTS = 160;
+            let plan = null, selected = null, tool = 'select', pending = null, drag = null;
+            let editorEnabled = false; // same Open/Close Editor UX as Case1/2, scoped to the new room only
+            let history = [], baseRevision = 0, currentId = '', dirty = false, currentProfileKey = '';
+            let message = 'แบบร่างยังไม่บันทึกบน Firebase';
+            // TR01 measurement UI state: isolated from Case 3 originals.
+            let workMode = 'predicted', workBand = '24', workMapMode = 'predicted';
+            let workPoint = 'N01', workAngle = '0', workRound = 'R1', workAvg = true;
+            let workThreshold = -67, trpBusy = false, workData = {}, workDataLoading = false;
+            let transferLive = {}, transferConfig = {}, transferLiveReady = false, trpListenerRefs = [];
+            let workArmedScan = '', workInfo = 'ระบบจะสร้าง Predicted RSSI จากโมเดล Final เดิมอัตโนมัติเมื่อเปิด TR01';
+            const WORK_ANGLES = ['0','90','180','270'], WORK_ROUNDS=['R1','R2','R3'];
+            const WORK_STALE_MS = 12000; // same as Case 3 C3_STALE_SEC=12
+            const WORK_SRC = 'WiFi_Scan/current', WORK_CFG='WiFi_Scan/config';
+            // TR01 prediction implementation v2. Keep the original Case 3 Final Evaluation fit untouched.
+            // The original Case 3 precomputed prediction bundle explicitly says
+            //   metadata.ap[0].tx_power_dbm_assumed = 20.0  (ASSUMED, NOT measured).
+            // We use that same historical assumption only when locked fit5.A is absent.
+            const TRP_PREDICTION_VERSION = 'TR01-C3-final-models-5g-legacy-tx-assumption-v4-autopredict';
+            const TRP_LEGACY_5G_TX_ASSUMED_DBM = 20.0;
+            const TRP_5G_FREQ_HZ = 5.0e9;
+            const TRP_LIGHT_SPEED_M_PER_S = 299792458;
+
+            function profile() { return (typeof currentProfile !== 'undefined' && currentProfile) ? String(currentProfile) : String(window.__WIFI_BOOT_PROFILE__ || 'Default'); }
+            function validId(v) { return /^[A-Za-z0-9_-]{1,24}$/.test(v); }
+            function path(id) { if (!validId(id)) throw Error('Room ID ต้องเป็น A–Z, 0–9, _ หรือ - เท่านั้น'); return 'HeatmapData/' + profile() + '/Case3/TransferRoomPlans/' + id; }
+            function storageKey(id) { return 'wifi_Case3_TransferPlan_V1:' + profile() + ':' + id; }
+            function defaults(id) { return { schema: 'Case3_TransferRoomPlan_V1', roomId: id || 'TR01', name: 'ห้องทดสอบใหม่', room: { width: 5.0, depth: 4.0, height: 3.0 }, corridor: { enabled: false, width: 1.8, depth: 4.0, offsetY: 0 }, ap: { x: 2.5, y: 1.2, z: 2.6, device: 'Same physical AP as original Case 3' }, rxHeight: 1.0, objects: [], points: [], protocol: { purpose: 'cross_room_zero_local_calibration', sourceTestbed: 'Case3/TestbedFloor2', model24: 'Calibrated FSPL', model5: 'Simplified COST231 Multi-Wall', parameters: 'USE_ORIGINAL_LOCKED_PARAMETERS_UNCHANGED', predictionsGenerated: false, measurementsCollected: false }, updatedAt: null }; }
+            function finite(n) { const x = Number(n); return Number.isFinite(x) ? x : null; }
+            function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+            function rd(n) { return Math.round(n * 1000) / 1000; }
+            function safeText(s) { return String(s ?? '').replace(/[&<>"']/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[x])); }
+            function clone(v) { return JSON.parse(JSON.stringify(v)); }
+            function tracked(fn) { history.push(clone(plan)); if (history.length > 35) history.shift(); fn(); mark(); }
+            function mark() { dirty = true; plan.updatedAt = new Date().toISOString(); localDraft(); render(); }
+            function setStatus(s) { message = s; $('trp-status').textContent = s; if ($('trp-furn-feedback')) $('trp-furn-feedback').textContent = s; }
+            function localDraft() { try { localStorage.setItem(storageKey(plan.roomId), JSON.stringify({ plan, baseRevision, at: Date.now() })); } catch (e) { console.warn('Local draft unavailable', e); } }
+            function loadLocal(id) { try { const v = JSON.parse(localStorage.getItem(storageKey(id)) || 'null'); if (v && v.plan && v.plan.schema === 'Case3_TransferRoomPlan_V1') return v; } catch (e) { } return null; }
+            function sane(p) { if (!p || p.schema !== 'Case3_TransferRoomPlan_V1' || !validId(p.roomId)) throw Error('ไฟล์แปลนหรือ Schema ไม่ถูกต้อง'); const w = finite(p.room && p.room.width), h = finite(p.room && p.room.depth); if (!(w >= 1 && w <= 50 && h >= 1 && h <= 50)) throw Error('ขนาดห้องต้องอยู่ระหว่าง 1–50 เมตร'); if (!Array.isArray(p.objects) || !Array.isArray(p.points) || p.objects.length > MAX_OBJECTS || p.points.length > 60) throw Error('ข้อมูลแปลนผิดรูปแบบหรือมีวัตถุมากเกินไป'); return p; }
+            function changePlan(p, rev = 0) { plan = sane(clone(p)); workData = {}; workPoint = (plan.points[0] && plan.points[0].id) || 'N01'; workArmedScan = ''; currentId = plan.roomId; baseRevision = rev; history = []; dirty = false; selected = null; pending = null; tool = 'select'; setStatus('เปิดแปลน ' + currentId + ' · ' + (rev ? 'ข้อมูล Firebase' : 'แบบร่างในเครื่อง')); render(); if(!root.hidden){trpListen();trpEnsurePredictions('เปิดแปลน');} }
+            function snapshot() { const p = clone(plan); p.schema = 'Case3_TransferRoomPlan_V1'; p.protocol = { ...p.protocol, purpose: 'cross_room_zero_local_calibration', sourceTestbed: 'Case3/TestbedFloor2', model24: 'Calibrated FSPL', model5: 'Simplified COST231 Multi-Wall', parameters: 'USE_ORIGINAL_LOCKED_PARAMETERS_UNCHANGED', predictionsGenerated: !!(p.predictions && p.predictions.points && p.predictions.points.length), measurementsCollected: trpAllCount()>0 }; return p; }
+            function modelJSON() { return { exportType: 'Case3_TransferRoom_ZeroLocalCalibration_PreMeasurement', profile: profile(), exportedAt: new Date().toISOString(), roomPlan: snapshot(), coordinateSystem: 'X right, Y down, origin top-left room corner, Z above floor, meters', predictionStatus: (trpPredValid() ? (plan.predictions.complete ? (plan.predictions.band5Status==='CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED'?'GENERATED_BOTH_BANDS_WITH_5G_TX_ASSUMPTION':'GENERATED_LOCKED_BOTH_BANDS') : 'PARTIAL_2_4_ONLY') : 'NOT_GENERATED_OR_STALE'), parameterSource: 'Original Case3 locked Final Evaluation; 2.4 GHz A unchanged. 5 GHz legacy Case3 heatmap used TX 20 dBm ASSUMED, NOT MEASURED (only where fit5.A is absent). No fit on TR01.', warning: 'Plan geometry is user-entered and must be verified; perimeter guide is not a material wall until drawn as segments. Measured doors cut auto-generated perimeter walls, but hand-drawn continuous walls or windows must be inspected and split where necessary before prediction.' }; }
+            function download(name, body, mime) { const b = new Blob([body], { type: mime || 'application/octet-stream' }), u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1500); }
+            function selObj() { if (!selected) return null; if (selected === 'AP') return plan.ap; if (selected.startsWith('P:')) return plan.points.find(x => x.id === selected.slice(2)) || null; return plan.objects.find(x => x.id === selected.slice(2)) || null; }
+            function itemLabel(o) { return o.type === 'wall' ? 'ผนัง' : o.type === 'door' ? 'ประตู' : o.type === 'window' ? 'หน้าต่าง' : o.type === 'table' ? 'โต๊ะ' : o.type === 'cabinet' ? 'ตู้' : 'เฟอร์นิเจอร์'; }
+            function makeSvg(tag, attrs, parent, text) { const e = document.createElementNS(NS, tag); Object.entries(attrs || {}).forEach(([k, v]) => e.setAttribute(k, String(v))); if (text !== undefined) e.textContent = String(text); (parent || svg).appendChild(e); return e; }
+            function screenXY(ev) { const m = svg.getScreenCTM(); if (!m) return null; const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(m.inverse()); return { x: rd(q.x), y: rd(q.y) }; }
+            function bounds() { const c = plan.corridor; return { left: 0, top: Math.min(0, c.enabled ? c.offsetY : 0), right: plan.room.width + (c.enabled ? c.width : 0), bottom: Math.max(plan.room.depth, c.enabled ? c.offsetY + c.depth : plan.room.depth) }; }
+            function inside(q) { const b = bounds(); return q.x >= b.left && q.x <= b.right && q.y >= b.top && q.y <= b.bottom; }
+            function newId(type) { return type.charAt(0).toUpperCase() + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+            function lineObj(type, a, b) { const v = $('trp-material').value; return { id: newId(type), type, name: itemLabel({ type }), x1: rd(a.x), y1: rd(a.y), x2: rd(b.x), y2: rd(b.y), material: type === 'door' ? 'glass' : type === 'window' ? 'glass' : v, thickness: type === 'wall' ? .12 : .03, zBottom: 0, zTop: plan.room.height }; }
+            function near(a, b) { return Math.hypot(a.x - b.x, a.y - b.y) < .05; }
+            // Measured doors copied from Case 3's editor convention: wall, width, height, hinge, offset.
+            // Stored in TransferRoomPlans only; preserve x1/y1/x2/y2 for the existing export schema.
+            function doorLimit(wall) { return (wall === 'top' || wall === 'bottom') ? plan.room.width : plan.room.depth; }
+            function doorEndpoints(wall, offset, width) {
+                const end = offset + width;
+                return wall === 'top' ? [offset, 0, end, 0]
+                    : wall === 'bottom' ? [offset, plan.room.depth, end, plan.room.depth]
+                    : wall === 'left' ? [0, offset, 0, end]
+                    : [plan.room.width, offset, plan.room.width, end];
+            }
+            function doorMeta(o) {
+                if (o.wall && ['top','bottom','left','right'].includes(o.wall) && Number(o.width) > 0) {
+                    return {wall:o.wall,offset:clamp(Number(o.offset)||0,0,Math.max(0,doorLimit(o.wall)-Number(o.width))),width:Number(o.width),hinge:o.hinge || 'start',height:Number(o.height)||Number(o.zTop)||2};
+                }
+                // Legacy two-click door. Project onto nearest actual room boundary visually,
+                // without rewriting any saved coordinates until the user edits the door.
+                const dx=(Number(o.x2)||0)-(Number(o.x1)||0),dy=(Number(o.y2)||0)-(Number(o.y1)||0);
+                const mx=((Number(o.x1)||0)+(Number(o.x2)||0))/2,my=((Number(o.y1)||0)+(Number(o.y2)||0))/2;
+                const edges=[['top',Math.abs(my)],['bottom',Math.abs(my-plan.room.depth)],['left',Math.abs(mx)],['right',Math.abs(mx-plan.room.width)]];
+                edges.sort((a,b)=>a[1]-b[1]); const wall=edges[0][0],width=Math.min(doorLimit(wall),Math.max(.3,Math.hypot(dx,dy)));
+                const axis=(wall==='top'||wall==='bottom')?mx:my;
+                return {wall,offset:clamp(axis-width/2,0,Math.max(0,doorLimit(wall)-width)),width,hinge:'start',height:Number(o.zTop)||2};
+            }
+            function updateDoorGeometry(o) {
+                const xy=doorEndpoints(o.wall,o.offset,o.width);
+                [o.x1,o.y1,o.x2,o.y2]=xy.map(rd);
+                o.zBottom=0; o.zTop=rd(o.height); o.thickness=.03;
+            }
+            function measuredDoorFields() {
+                const wall=$('trp-door-wall').value,width=Number($('trp-door-width').value),height=Number($('trp-door-height').value);
+                if (!Number.isFinite(width)||width<.3||width>Math.min(5,doorLimit(wall))) { setStatus('ขนาดกว้างประตูต้องอยู่ระหว่าง 0.30–5.00 ม. และไม่เกินด้านห้อง'); return null; }
+                if (!Number.isFinite(height)||height<.5||height>plan.room.height) {setStatus('ความสูงประตูต้องอยู่ระหว่าง 0.50 ม. ถึงความสูงห้อง');return null;}
+                return {type:'door',name:$('trp-door-name').value.trim().slice(0,60)||'ประตู',wall,width:rd(width),height:rd(height),hinge:$('trp-door-hinge').value,material:'glass'};
+            }
+            function doorOverlap(spec, ignoreId) {
+                return plan.objects.some(o=>o.type==='door'&&o.id!==ignoreId&&doorMeta(o).wall===spec.wall&&
+                    spec.offset < doorMeta(o).offset+doorMeta(o).width-.001 && spec.offset+spec.width > doorMeta(o).offset+.001);
+            }
+            function addMeasuredDoor(offset) {
+                if (!editorEnabled) return;
+                if (plan.objects.length >= MAX_OBJECTS) return setStatus('จำนวนวัตถุถึงขีดจำกัด');
+                const spec=measuredDoorFields();if(!spec)return;
+                spec.offset=rd(clamp(offset===undefined?(doorLimit(spec.wall)-spec.width)/2:offset,0,doorLimit(spec.wall)-spec.width));
+                if (doorOverlap(spec)) return setStatus('ช่องประตูทับกับประตูอื่นบนผนังด้านเดียวกัน');
+                const o={id:newId('door'),...spec};updateDoorGeometry(o);
+                tool='select';pending=null;
+                tracked(()=>{plan.objects.push(o);selected='O:'+o.id;regenerateAutoPerimeter();});
+                setStatus('เพิ่มประตู '+o.name+' กว้าง '+o.width+' ม. บนผนัง'+({top:'บน',bottom:'ล่าง',left:'ซ้าย',right:'ขวา'}[o.wall])+' สำเร็จ · ลากตามแนวผนังเพื่อย้าย');
+                $('trp-door-feedback').textContent='วางประตูแล้ว · เลือกที่สัญลักษณ์ประตูเพื่อแก้ขนาด/บานพับ';
+            }
+            function doorSymbol(o) {
+                const d=doorMeta(o),wall=d.wall,off=d.offset,w=d.width,hingeEnd=d.hinge==='end';
+                const doubleLeaf=w>=1.2||(wall==='right'&&w>=.8);
+                const displaySpan=Math.min(w,doubleLeaf?1.05:.90),visOff=off+(w-displaySpan)/2;
+                const leaf=doubleLeaf?displaySpan/2:displaySpan,dep=Math.min(leaf*.68,.36);
+                const g=makeSvg('g',{'data-obj':'O:'+o.id,'data-door':'true','aria-label':o.name+' ขนาด '+w+' เมตร'},svg);
+                const selectedDoor=selected==='O:'+o.id;
+                const stroke=selectedDoor?'#2563eb':'#111827';
+                const sx=wall==='left'?0:wall==='right'?plan.room.width:null;
+                const sy=wall==='top'?0:wall==='bottom'?plan.room.depth:null;
+                const along=(u,v)=>wall==='top'||wall==='bottom'?{x:u,y:sy+v*(wall==='bottom'?-1:1)}:{x:sx+v*(wall==='right'?-1:1),y:u};
+                const line=(a,b)=>makeSvg('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke,'stroke-width':selectedDoor?'1.5':'1.1','vector-effect':'non-scaling-stroke','stroke-linecap':'square','pointer-events':'none'},g);
+                const arc=(a,b,r,sweep)=>makeSvg('path',{d:`M ${a.x} ${a.y} A ${wall==='top'||wall==='bottom'?r:dep} ${wall==='top'||wall==='bottom'?dep:r} 0 0 ${sweep} ${b.x} ${b.y}`,fill:'none',stroke,'stroke-width':selectedDoor?'1.5':'1.1','vector-effect':'non-scaling-stroke','pointer-events':'none'},g);
+                // White knockout represents the actual wall opening, not an opaque door slab.
+                const xy=doorEndpoints(wall,off,w);
+                makeSvg('line',{x1:xy[0],y1:xy[1],x2:xy[2],y2:xy[3],stroke:'#fff','stroke-width':'.11','pointer-events':'none'},g);
+                const arcSweep=(wall==='top'||wall==='right')?0:1;
+                if(doubleLeaf){
+                    line(along(visOff,0),along(visOff,dep));
+                    arc(along(visOff,dep),along(visOff+leaf,0),leaf,arcSweep);
+                    line(along(visOff+displaySpan,0),along(visOff+displaySpan,dep));
+                    arc(along(visOff+displaySpan,dep),along(visOff+leaf,0),leaf,1-arcSweep);
+                }else{
+                    const hinge=hingeEnd?visOff+displaySpan:visOff,tip=hingeEnd?visOff:visOff+displaySpan;
+                    line(along(hinge,0),along(hinge,dep));
+                    arc(along(hinge,dep),along(tip,0),leaf,hingeEnd?1-arcSweep:arcSweep);
+                }
+                const center=along(off+w/2,Math.min(.20,dep*.56));
+                makeSvg('text',{x:center.x,y:center.y,'text-anchor':'middle','dominant-baseline':'central','font-size':'.105',fill:selectedDoor?'#1d4ed8':'#334155','font-weight':'700','pointer-events':'none'},g,o.name||'ประตู');
+                makeSvg('line',{x1:xy[0],y1:xy[1],x2:xy[2],y2:xy[3],stroke:'transparent','stroke-width':'.27','pointer-events':'stroke'},g);
+                // Also allow clicking the inward arc for easy selection on a narrow room.
+                const hit=along(visOff+displaySpan/2,dep*.42);
+                makeSvg('circle',{cx:hit.x,cy:hit.y,r:Math.max(.10,Math.min(.19,displaySpan*.15)),fill:'transparent','pointer-events':'all'},g);
+            }
+            // Automatic perimeter segments are regenerated with real openings. Hand-drawn
+            // user walls are never rewritten: their intersection with doors must be reviewed.
+            function regenerateAutoPerimeter(){
+                if(!plan.objects.some(o=>o.perimeterAuto))return;
+                const old=plan.objects.filter(o=>o.perimeterAuto),mat=old[0]?.material||'concrete';
+                plan.objects=plan.objects.filter(o=>!o.perimeterAuto);
+                for(const wall of ['top','right','bottom','left']){
+                    let x=0;
+                    const doors=plan.objects.filter(o=>o.type==='door'&&doorMeta(o).wall===wall)
+                        .map(o=>doorMeta(o)).sort((a,b)=>a.offset-b.offset);
+                    const gaps=doors.reduce((acc,d)=>{
+                        const aa=clamp(d.offset,0,doorLimit(wall)),bb=clamp(d.offset+d.width,0,doorLimit(wall));
+                        if(!acc.length||aa>acc[acc.length-1][1])acc.push([aa,bb]);
+                        else acc[acc.length-1][1]=Math.max(bb,acc[acc.length-1][1]);return acc;
+                    },[]);
+                    for(const [a,b] of [...gaps,[doorLimit(wall),doorLimit(wall)]]){
+                        if(a>x+.0005){const xy=doorEndpoints(wall,x,a-x);
+                            plan.objects.push({id:newId('wall'),type:'wall',name:'ผนังรอบห้อง',x1:rd(xy[0]),y1:rd(xy[1]),x2:rd(xy[2]),y2:rd(xy[3]),material:mat,thickness:.12,zBottom:0,zTop:plan.room.height,perimeterAuto:true,perimeterEdge:wall});}
+                        x=Math.max(x,b);
+                    }
+                }
+            }
+
+            // Copy Case3's measured-furniture workflow: size in cm/m before adding; stored values always meters.
+            // This parser deliberately has no connection to the locked RSSI models or the existing testbed layout.
+            function furnitureSpec() {
+                // Generic furniture: the name can be เสา/โต๊ะ/ตู้/etc.; no forced table/cabinet picker.
+                const type = 'furniture';
+                const unit = $('trp-furn-unit').value, factor = unit === 'cm' ? .01 : 1;
+                const rawW = $('trp-furn-width').value.trim(), rawD = $('trp-furn-depth').value.trim();
+                const rawB = $('trp-furn-zbottom').value.trim(), rawT = $('trp-furn-ztop').value.trim();
+                const w = rawW === '' ? null : finite(rawW), d = rawD === '' ? null : finite(rawD);
+                const bottom = rawB === '' ? 0 : finite(rawB), top = rawT === '' ? null : finite(rawT);
+                if (w === null || d === null || !(w > 0 && d > 0) || w * factor > 20 || d * factor > 20) {
+                    setStatus('กรอกขนาด X/Y ของเฟอร์นิเจอร์ให้มากกว่า 0 และไม่เกิน 20 เมตร'); return null;
+                }
+                // A 2D footprint can be drawn without a measured object height. Preserve unknown
+                // height explicitly as null; NEVER invent height for a 3D signal prediction.
+                const heightUnknown = bottom === 0 && (top === null || top === 0);
+                if (bottom === null || bottom < 0 || (!heightUnknown && (top === null || top <= bottom || top / 100 > plan.room.height + .0001))) {
+                    setStatus('ตรวจระดับ Z: ยอดต้องสูงกว่าฐานและไม่เกินความสูงห้อง หรือเว้น Z Top ว่างเมื่อยังไม่วัด'); return null;
+                }
+                const area = $('trp-furn-area').value;
+                if (area === 'corridor' && !plan.corridor.enabled) { setStatus('ต้องเปิดใช้งานทางเดินก่อนวางเฟอร์นิเจอร์นอกห้อง'); return null; }
+                const width = rd(w * factor), depth = rd(d * factor);
+                const rangeW = area === 'corridor' ? plan.corridor.width : plan.room.width;
+                const rangeD = area === 'corridor' ? plan.corridor.depth : plan.room.depth;
+                if (width > rangeW || depth > rangeD) { setStatus('ขนาดเฟอร์นิเจอร์เกินขนาดห้องหรือทางเดิน'); return null; }
+                const material = $('trp-furn-material').value;
+                const name = $('trp-furn-name').value.trim().slice(0, 60) || 'เฟอร์นิเจอร์';
+                return { type, name, width, depth, zBottom: rd(bottom / 100), zTop: heightUnknown ? null : rd(top / 100), material, area };
+            }
+            function furnitureFits(spec, q) {
+                const x0 = spec.area === 'corridor' ? plan.room.width : 0;
+                const y0 = spec.area === 'corridor' ? plan.corridor.offsetY : 0;
+                const ww = spec.area === 'corridor' ? plan.corridor.width : plan.room.width;
+                const dd = spec.area === 'corridor' ? plan.corridor.depth : plan.room.depth;
+                const e = .0001;
+                return q.x >= x0 - e && q.y >= y0 - e && q.x + spec.width <= x0 + ww + e && q.y + spec.depth <= y0 + dd + e;
+            }
+            function addFurnitureAt(q, providedSpec) {
+                if (plan.objects.length >= MAX_OBJECTS) return setStatus('จำนวนวัตถุถึงขีดจำกัด');
+                const spec = providedSpec || furnitureSpec();
+                if (!spec) return;
+                if (!furnitureFits(spec, q)) return setStatus('ตำแหน่งนี้วางเฟอร์นิเจอร์ทั้งชิ้นไม่พอดีพื้นที่ที่เลือก');
+                const o = { id: newId(spec.type), ...spec, x: rd(q.x), y: rd(q.y) };
+                tool = 'select'; pending = null;
+                tracked(() => { plan.objects.push(o); selected = 'O:' + o.id; });
+                setStatus('เพิ่ม ' + o.name + ' ขนาด ' + o.width + ' × ' + o.depth + ' ม. สำเร็จ · ลากย้ายได้' + (o.zTop === null ? ' · ยังไม่ทราบความสูง Z (ต้องระบุก่อนทำนายแบบ 3D)' : ''));
+            }
+            function createAt(q) {
+                if (!inside(q)) return setStatus('วางวัตถุภายในขอบห้อง/ทางเดินที่กำหนดเท่านั้น'); if (tool === 'select') return;
+                if (tool === 'ap') { tracked(() => { plan.ap.x = q.x; plan.ap.y = q.y; plan.ap.z = Number($('trp-apheight').value) || 2.6; selected = 'AP'; }); return; }
+                if (tool === 'door') { const wall = $('trp-door-wall').value, w = Number($('trp-door-width').value); const a=(wall==='top'||wall==='bottom')?q.x:q.y; addMeasuredDoor(a-w/2); return; }
+                if (tool === 'wall' || tool === 'window') {
+                    if (!pending) { pending = q; paint(); setStatus('เลือกปลายเส้นจุดที่ 2 สำหรับ ' + ({ wall: 'ผนัง', door: 'ประตู', window: 'หน้าต่าง' }[tool])); return; }
+                    if (near(pending, q)) return setStatus('เส้นต้องยาวอย่างน้อย 5 ซม.');
+                    if (plan.objects.length >= MAX_OBJECTS) return setStatus('จำนวนวัตถุถึงขีดจำกัด');
+                    const o = lineObj(tool, pending, q); pending = null; tracked(() => { plan.objects.push(o); selected = 'O:' + o.id; }); return;
+                }
+                if (tool === 'point') { if (plan.points.length >= 60) return setStatus('รองรับจุดทดสอบไม่เกิน 60 จุด'); const used = new Set(plan.points.map(p => p.id)); let i = 1; while (used.has('N' + String(i).padStart(2, '0'))) i++; const id = 'N' + String(i).padStart(2, '0'); tracked(() => { plan.points.push({ id, x: q.x, y: q.y, z: plan.rxHeight }); selected = 'P:' + id; }); return; }
+                if (tool === 'furniture') { addFurnitureAt(q); return; }
+            }
+            function paint() {
+                const rw = plan.room.width, rdp = plan.room.depth, c = plan.corridor, b = bounds(), pad = .6; svg.setAttribute('viewBox', `${b.left - pad} ${b.top - pad} ${b.right - b.left + pad * 2} ${b.bottom - b.top + pad * 2}`); svg.replaceChildren();
+                makeSvg('rect', { x: b.left - .1, y: b.top - .1, width: b.right - b.left + .2, height: b.bottom - b.top + .2, fill: '#fff' }, svg);
+                for (let x = Math.ceil(b.left * 2) / 2; x <= b.right; x += .5)makeSvg('line', { x1: x, y1: b.top, x2: x, y2: b.bottom, stroke: '#e8eef4', 'stroke-width': .009, 'pointer-events': 'none' });
+                for (let y = Math.ceil(b.top * 2) / 2; y <= b.bottom; y += .5)makeSvg('line', { x1: b.left, y1: y, x2: b.right, y2: y, stroke: '#e8eef4', 'stroke-width': .009, 'pointer-events': 'none' });
+                // Match Case 3's real plan boundary: solid #94a3b8 wall-outline visual, no draft dashes.
+                // This outline stays VISUAL ONLY; physical walls still require the separate wall tool.
+                makeSvg('rect', { x: 0, y: 0, width: rw, height: rdp, fill: '#ffffff', 'fill-opacity': '.4', stroke: '#94a3b8', 'stroke-width': .025, 'pointer-events': 'none' });
+                if (c.enabled) { makeSvg('rect', { x: rw, y: c.offsetY, width: c.width, height: c.depth, fill: '#fbfdff', 'fill-opacity': '.55', stroke: '#94a3b8', 'stroke-width': .025, 'pointer-events': 'none' }); makeSvg('text', { x: rw + c.width / 2, y: c.offsetY + .32, 'text-anchor': 'middle', fill: '#6f8598', 'font-size': .17, 'pointer-events': 'none' }, svg, 'ทางเดิน'); }
+                makeSvg('text', { x: rw / 2, y: -.20, 'text-anchor': 'middle', 'font-size': .16, fill: '#66788b', 'pointer-events': 'none' }, svg, `กว้าง ${rw.toFixed(2)} m`);
+                makeSvg('text', { x: -.16, y: rdp / 2, fill: '#66788b', 'font-size': .16, transform: `rotate(-90 -.16 ${rdp / 2})`, 'text-anchor': 'middle', 'pointer-events': 'none' }, svg, `ยาว ${rdp.toFixed(2)} m`);
+                trpOverlay();
+                plan.objects.forEach(o => {
+                    const isSel = selected === 'O:' + o.id, g = makeSvg('g', { 'data-obj': 'O:' + o.id, style: 'cursor:grab' }, svg);
+                    if (o.type === 'door') return; // Draw swing symbol above furniture, like Case 3.
+                    if (['wall', 'window'].includes(o.type)) {
+                        // Case 3: muted gray walls, dark architectural doors, blue glazed-window detail.
+                        let color = o.type === 'wall' ? '#94a3b8' : o.type === 'door' ? '#111827' : '#4A90E2';
+                        // Perimeter walls remain real propagation geometry (thickness=0.12 m).
+                        // Render their outlines at the same width as the base room border,
+                        // so the north/top edge is not visually thicker than other edges.
+                        let stroke = o.type === 'wall' ? (o.perimeterAuto ? .025 : .075) : .055;
+                        makeSvg('line', { x1: o.x1, y1: o.y, x2: o.x2, y2: o.y, stroke: color, 'stroke-width': stroke, 'stroke-linecap': 'round', 'stroke-dasharray': o.type === 'window' ? '.12 .08' : 'none' }, g);
+                        makeSvg('line', { x1: o.x1, y1: o.y, x2: o.x2, y2: o.y, stroke: 'transparent', 'stroke-width': .26 }, g);
+                        if (isSel) { makeSvg('line', { x1: o.x1, y1: o.y, x2: o.x2, y2: o.y, stroke: '#e39b21', 'stroke-width': .12, 'stroke-opacity': '.5', 'pointer-events': 'none' }, g);[[o.x1, o.y1], [o.x2, o.y2]].forEach(a => makeSvg('circle', { cx: a[0], cy: a[1], r: .065, fill: '#df9b29', stroke: 'white', 'stroke-width': .02, 'pointer-events': 'none' }, g)); }
+                    } else {
+                        // Exactly mirror the existing Case 3 room furniture palette by MATERIAL, not type.
+                        // Steel = blue-gray. Other materials = light warm ivory. Selection uses Case 3's corresponding stroke.
+                        const steel = o.material === 'steel';
+                        makeSvg('rect', { x: o.x, y: o.y, width: o.width, height: o.depth, rx: .025, fill: isSel ? (steel ? '#cbd5e1' : '#f3e7da') : (steel ? '#e3e8ed' : '#faf6f1'), stroke: isSel ? (steel ? '#475569' : '#9a6b3d') : (steel ? '#758399' : '#c6a47a'), 'stroke-width': isSel ? 1.2 : 1, 'vector-effect': 'non-scaling-stroke' }, g);
+                        makeSvg('text', { x: o.x + o.width / 2, y: o.y + o.depth / 2 + .045, fill: isSel ? '#684321' : '#76512f', 'font-size': clamp(o.width * .13, .11, .2), 'text-anchor': 'middle', 'pointer-events': 'none' }, g, o.name || itemLabel(o));
+                    }
+                });
+                plan.objects.filter(o => o.type === 'door').forEach(doorSymbol);
+                // Case 3-style per-point numeric RSSI tags. The heatmap is already drawn
+                // behind furniture, so draw the labels AFTER furniture/doors but ABOVE
+                // the color overlay. Never display predicted values as measurements.
+                const labelsUseMeasured = workMapMode === 'measured' ||
+                    (workMapMode === 'threshold' && workMode === 'measured');
+                const predsAvailable = trpPredValid();
+                const predictionById = predsAvailable
+                    ? new Map((plan.predictions.points || []).map(q => [q.id, q]))
+                    : new Map();
+                plan.points.forEach(p => {
+                    const g = makeSvg('g', { 'data-obj': 'P:' + p.id, style: 'cursor:grab' }, svg);
+                    const yes = selected === 'P:' + p.id;
+                    makeSvg('circle', { cx: p.x, cy: p.y, r: .135,
+                        fill: yes ? '#287c79' : '#547b99', stroke: '#fff', 'stroke-width': .04 }, g);
+                    if (yes) makeSvg('circle', { cx: p.x, cy: p.y, r: .18,
+                        fill: 'none', stroke: '#dd9a30', 'stroke-width': .032, 'pointer-events': 'none' }, g);
+                    makeSvg('text', { x: p.x, y: p.y + .036, 'text-anchor': 'middle',
+                        fill: '#fff', 'font-size': .103, 'font-weight': '800',
+                        'pointer-events': 'none' }, g, p.id);
+
+                    const pred = predictionById.get(p.id);
+                    const val = labelsUseMeasured
+                        ? trpPointMeasuredForDisplay(p.id, workBand)
+                        : (pred ? pred[workBand === '24' ? 'predicted24' : 'predicted5'] : null);
+                    const hasValue = val !== null && val !== undefined && Number.isFinite(Number(val));
+                    if (!hasValue && !labelsUseMeasured) return;
+                    // Keep numeric tags legible at the compact 3.50-m room width.
+                    const label = hasValue ? Number(val).toFixed(1) + ' dBm' : 'ยังไม่วัด';
+                    const labelW = hasValue ? 1.20 : 1.12, labelH = .285;
+                    let lx = Math.min(Math.max(p.x - labelW/2, .06), Math.max(.06, rw - labelW - .06));
+                    let ly = p.y - .47;
+                    // Bottom two points are close in Y; stagger tags to avoid collision.
+                    if (p.id === 'N09') { lx = .08; ly = p.y - .55; }
+                    if (p.id === 'N10') { lx = Math.min(Math.max(p.x - .38, .06), rw - labelW - .06); ly = p.y - .48; }
+                    ly = Math.max(.04, Math.min(ly, rdp - labelH - .04));
+                    const labelGroup = makeSvg('g', { 'data-trp-rssi': p.id,
+                        'aria-label': p.id + ' ' + label + ' ' +
+                            (labelsUseMeasured ? 'Measured' : 'Predicted') +
+                            ' ' + (workBand === '24' ? '2.4 GHz' : '5 GHz'),
+                        'pointer-events': 'none' }, g);
+                    // Guide line connects the value back to the point, like Case 3.
+                    makeSvg('line', { x1: p.x, y1: p.y - .13, x2: lx + labelW / 2,
+                        y2: ly + labelH, stroke: '#0891b2', 'stroke-width': .024,
+                        'pointer-events': 'none' }, labelGroup);
+                    makeSvg('rect', { x: lx, y: ly, width: labelW, height: labelH,
+                        rx: .055, fill: hasValue ? '#102f49' : '#64748b',
+                        stroke: '#13b5e4', 'stroke-width': .023 }, labelGroup);
+                    makeSvg('text', { x: lx + labelW / 2, y: ly + .196,
+                        'text-anchor': 'middle', fill: '#fff', 'font-size': .166,
+                        'font-weight': '800', 'pointer-events': 'none' }, labelGroup, label);
+                });
+                const ap = plan.ap, ag = makeSvg('g', { 'data-obj': 'AP', style: 'cursor:grab' }, svg); makeSvg('circle', { cx: ap.x, cy: ap.y, r: .21, fill: 'white', stroke: '#FF8C00', 'stroke-width': .07 }, ag); makeSvg('text', { x: ap.x, y: ap.y + .048, 'text-anchor': 'middle', fill: '#7d4300', 'font-size': .14, 'font-weight': '900', 'pointer-events': 'none' }, ag, 'AP');
+                if (pending) { makeSvg('circle', { cx: pending.x, cy: pending.y, r: .09, fill: '#e77b26', 'pointer-events': 'none' }); makeSvg('text', { x: pending.x + .12, y: pending.y - .12, fill: '#be5616', 'font-size': .13, 'pointer-events': 'none' }, svg, 'จุดเริ่ม'); }
+                makeSvg('text', { x: b.right, y: b.bottom + .34, fill: '#94a3b8', 'font-size': .13, 'text-anchor': 'end', 'pointer-events': 'none' }, svg, `0,0 = มุมซ้ายบน · 1 ช่อง = 0.5 m`);
+            }
+            function setFields() { $('trp-room-id').value = plan.roomId; $('trp-room-name').value = plan.name; $('trp-width').value = plan.room.width; $('trp-depth').value = plan.room.depth; $('trp-height').value = plan.room.height; $('trp-rxheight').value = plan.rxHeight; $('trp-corridor-enabled').checked = !!plan.corridor.enabled; $('trp-corridor-width').value = plan.corridor.width; $('trp-corridor-depth').value = plan.corridor.depth; $('trp-corridor-offset').value = plan.corridor.offsetY; $('trp-corridor-fields').style.display = plan.corridor.enabled ? 'grid' : 'none'; $('trp-apheight').value = plan.ap.z; }
+            // -------- Case 3-style Predicted + Measured, TR01 isolated data paths --------
+            function trpMeasurementBase() { return 'HeatmapData/' + profile() + '/Case3/TransferRoomMeasurements/' + plan.roomId; }
+            function trpGeometrySignature() {
+                if (!plan) return '';
+                const geom={ap:plan.ap,rxHeight:plan.rxHeight,room:plan.room,
+                    points:plan.points.map(p=>[p.id,p.x,p.y,p.z]),
+                    walls:plan.objects.filter(o=>o.type==='wall').map(o=>[o.id,o.x1,o.y1,o.x2,o.y2,o.zBottom,o.zTop,o.material])};
+                return JSON.stringify(geom);
+            }
+            // Stable, read-only snapshot of the original Case3 Final Evaluation,
+            // already present in this HTML (also confirmed by calibrated_parameters.json).
+            // This is NOT a new fit, and only applies to the "Case3 final" profile.
+            const TRP_CASE3_FINAL_LOCKED_SNAPSHOT = Object.freeze({
+                model24:'Calibrated FSPL', model5:'Simplified COST231 Multi-Wall', locked:true,
+                fit24:Object.freeze({A:-37.118758838384265,n:2.0,bias:-17.066160773527017}),
+                fit5:Object.freeze({n:1.044171035250096,Lw:7.903261751994603,bias:-8.834433500027927})
+            });
+            const TRP_ACCIDENTAL_WALL_IDS = Object.freeze([
+                'Wmw0eqz5219m','Wmw0ev0a3qc3','Wmw0ev4icwyi'
+            ]);
+            function trpAccidentalWalls(){return plan?plan.objects.filter(o=>o.type==='wall'&&TRP_ACCIDENTAL_WALL_IDS.includes(o.id)):[];}
+            function trpFitParams() {
+                const live=(window.C3&&typeof window.C3.getEvaluationSetup==='function')?window.C3.getEvaluationSetup():null;
+                const correctName=f=>f&&f.locked===true&&f.model24==='Calibrated FSPL'&&f.model5==='Simplified COST231 Multi-Wall';
+                const hasFullFit=f=>correctName(f)&&f.fit24&&Number.isFinite(Number(f.fit24.A))&&f.fit5&&
+                    Number.isFinite(Number(f.fit5.n))&&Number.isFinite(Number(f.fit5.Lw??f.fit5.L_concrete_db))&&
+                    ((f.fit5.A!==undefined&&Number.isFinite(Number(f.fit5.A)))||
+                     Number.isFinite(Number(f.fit5.bias??f.fit5.bias_db)));
+                // C3 may start with defaults and then load EvaluationSetup asynchronously.
+                // In Case3 final use the identical known locked parameters if its live fit is missing.
+                // Never silently use these frozen numbers in a different profile.
+                const useLockedSnapshot=String(profile()).trim()==='Case3 final'&&!hasFullFit(live);
+                const fit=useLockedSnapshot?TRP_CASE3_FINAL_LOCKED_SNAPSHOT:live;
+                if(!hasFullFit(fit))return null;
+                const a24=Number(fit.fit24.A),f5=fit.fit5;
+                const n5=Number(f5.n),lw=Number(f5.Lw??f5.L_concrete_db);
+                const biasParam=f5.bias??f5.bias_db;
+                const bias5=(biasParam!==undefined&&biasParam!==null&&biasParam!=='')?Number(biasParam):NaN;
+                const directA5=(f5.A!==undefined&&f5.A!==null&&f5.A!=='')?Number(f5.A):NaN;
+                if(!(n5>0&&lw>=0))return null;
+                const hasOriginalA5=Number.isFinite(directA5);
+                const canUseLegacy5=!hasOriginalA5&&Number.isFinite(bias5);
+                const fspl5At1m=20*Math.log10(4*Math.PI*TRP_5G_FREQ_HZ/TRP_LIGHT_SPEED_M_PER_S);
+                const a5=hasOriginalA5?directA5:(canUseLegacy5?TRP_LEGACY_5G_TX_ASSUMED_DBM-fspl5At1m+bias5:null);
+                const basis5=hasOriginalA5?'LOCKED_FIT5_A':(canUseLegacy5?'CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED':'MISSING_FIT5_REFERENCE');
+                // Do not misrepresent an assumed model input as measured transmitter power.
+                return {model24:fit.model24,model5:fit.model5,A24:a24,A5:a5,n5,Lw:lw,
+                    bias5:Number.isFinite(bias5)?bias5:null,basis5,
+                    txPower5AssumedDbm:canUseLegacy5?TRP_LEGACY_5G_TX_ASSUMED_DBM:null,
+                    txPower5MeasuredDbm:null,fspl5At1mDb:canUseLegacy5?fspl5At1m:null,
+                    lockedSource:useLockedSnapshot?'EMBEDDED_ORIGINAL_CASE3_FINAL_SNAPSHOT':'CASE3_LIVE_FINAL_EVALUATION',
+                    reference5Note:canUseLegacy5?'TX=20 dBm is a historical Case 3 MODEL ASSUMPTION, NOT measured AP power':
+                        (hasOriginalA5?'Original locked 5 GHz A':'No 5 GHz reference')};
+            }
+            function trp3dDistance(x,y,z) {return Math.max(.05,Math.hypot(x-plan.ap.x,y-plan.ap.y,z-plan.ap.z));}
+            function trpIntersection(x1,y1,x2,y2,x3,y3,x4,y4) {
+                const dx=x2-x1,dy=y2-y1,ex=x4-x3,ey=y4-y3,den=dx*ey-dy*ex;
+                if(Math.abs(den)<1e-9)return null;
+                const t=((x3-x1)*ey-(y3-y1)*ex)/den,u=((x3-x1)*dy-(y3-y1)*dx)/den;
+                return t>1e-5&&t<1-1e-5&&u>=-1e-5&&u<=1+1e-5?t:null;
+            }
+            function trpKw(x,y,z) {
+                // Count walls actually crossed in 3D; perimeter endpoints are excluded for indoor-to-indoor paths.
+                let count=0;const seen=[];
+                for(const o of plan.objects){if(o.type!=='wall')continue;
+                    const t=trpIntersection(plan.ap.x,plan.ap.y,x,y,o.x1,o.y1,o.x2,o.y2);
+                    if(t===null)continue;
+                    const height=plan.ap.z+(z-plan.ap.z)*t;
+                    if(height<(Number(o.zBottom)||0)-.001||height>(Number(o.zTop)||plan.room.height)+.001)continue;
+                    if(seen.some(v=>Math.abs(v-t)<.004))continue;seen.push(t);count++;
+                }return count;
+            }
+            function trpPredRaw(x,y,z,band,fit) {
+                if(!fit)return null;const d=trp3dDistance(x,y,z);
+                if(band==='24')return fit.A24-20*Math.log10(d);
+                if(fit.A5===null)return null;
+                return fit.A5-10*fit.n5*Math.log10(d)-trpKw(x,y,z)*fit.Lw;
+            }
+            // Reject stale model versions, geometry, or fitted parameters. The locked fit can
+            // finish loading after the room plan, so both sides must match.
+            function trpFitSignature(f) {return f?JSON.stringify([f.model24,f.model5,f.A24,f.A5,f.n5,f.Lw,f.bias5,f.basis5]):'';}
+            function trpPredValid(){return !!(plan&&plan.predictions&&plan.predictions.algorithmVersion===TRP_PREDICTION_VERSION&&plan.predictions.geometrySignature===trpGeometrySignature()&&plan.predictions.fitSignature===trpFitSignature(trpFitParams()));}
+            function trpPredictionPoint(pid) {return trpPredValid()?((plan.predictions.points||[]).find(x=>x.id===pid)||null):null;}
+            function trpPct(v) {return (v||0).toFixed(1)+'%';}
+            function trpNum(v,dec=1){return v===null||v===undefined||!Number.isFinite(Number(v))?'—':Number(v).toFixed(dec);}
+            function trpMean(arr){return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;}
+            function trpRec(pid,ang,rnd){return (((workData.points||{})[pid]||{}).angles||{})[ang]?.measurements?.[rnd]||null;}
+            function trpPointRecords(pid){const a=[];for(const ang of WORK_ANGLES)for(const r of WORK_ROUNDS){const o=trpRec(pid,ang,r);if(o&&o.rssi24!==null&&o.rssi24!==undefined&&o.rssi5!==null&&o.rssi5!==undefined&&Number.isFinite(Number(o.rssi24))&&Number.isFinite(Number(o.rssi5)))a.push(o);}return a;}
+            function trpPointMeasured(pid,band){const r=trpPointRecords(pid);return trpMean(r.map(x=>Number(band==='24'?x.rssi24:x.rssi5)));}
+            // Case 3 original lets operators view individual rounds and AVG for the active orientation.
+            // This is intentionally separate from trpPointMeasured (the 12-scan overall mean
+            // used for the final per-point RMSE/MAE/Bias evaluation and export).
+            function trpPointMeasuredForDisplay(pid,band){
+                const key=band==='24'?'rssi24':'rssi5';
+                const valid=r=>r&&r[key]!==null&&r[key]!==undefined&&Number.isFinite(Number(r[key]));
+                if(workRound==='AVG'){
+                    const rows=WORK_ROUNDS.map(r=>trpRec(pid,workAngle,r)).filter(valid);
+                    return rows.length?trpMean(rows.map(r=>Number(r[key]))):null;
+                }
+                const r=trpRec(pid,workAngle,workRound);
+                return valid(r)?Number(r[key]):null;
+            }
+            function trpPointCount(pid){return trpPointRecords(pid).length;}
+            function trpAllCount(){return plan.points.reduce((a,p)=>a+trpPointCount(p.id),0);}
+            function trpStats(values){const v=values.filter(x=>x!==null&&Number.isFinite(x));if(!v.length)return null;return {min:Math.min(...v),max:Math.max(...v),avg:trpMean(v),coverage:100*v.filter(x=>x>=workThreshold).length/v.length,count:v.length};}
+            function trpMeasuredAt(x,y,band){const rows=plan.points.map(p=>({x:p.x,y:p.y,v:trpPointMeasuredForDisplay(p.id,band)})).filter(r=>r.v!==null);if(rows.length<3)return null;
+                let n=0,d=0;for(const r of rows){const dist=Math.hypot(x-r.x,y-r.y);if(dist<.02)return r.v;const w=1/Math.pow(Math.max(.1,dist),2);n+=w*r.v;d+=w;}return n/d;
+            }
+            // TR01 heatmap uses EXACTLY the same ABSOLUTE RSSI anchors as the
+            // original Case 1/2/3 v32 professional renderer (see colorAt()).
+            // Do not re-normalize to the room's min/max: the same -45 dBm must
+            // have the same color in Case 3 and TR01 for scientific comparison.
+            const TRP_C3_RSSI_PALETTE = Object.freeze([
+                [-95,[34,37,105]], [-85,[38,73,161]], [-75,[31,140,204]],
+                [-68,[43,197,190]], [-62,[121,208,121]], [-56,[204,221,84]],
+                [-50,[248,214,76]], [-44,[255,153,62]], [-36,[244,90,55]], [-25,[210,42,55]]
+            ]);
+            function trpColor(v) {
+                if(v<=TRP_C3_RSSI_PALETTE[0][0])return TRP_C3_RSSI_PALETTE[0][1];
+                for(let i=1;i<TRP_C3_RSSI_PALETTE.length;i++){
+                    const low=TRP_C3_RSSI_PALETTE[i-1], high=TRP_C3_RSSI_PALETTE[i];
+                    if(v<=high[0]){
+                        const t=(v-low[0])/(high[0]-low[0]);
+                        return low[1].map((c,k)=>Math.round(c+(high[1][k]-c)*t));
+                    }
+                }
+                return TRP_C3_RSSI_PALETTE[TRP_C3_RSSI_PALETTE.length-1][1];
+            }
+            let trpFieldCache = {key:null,url:null};
+            function trpOverlay() {
+                const predValid=trpPredValid(),fit=predValid?plan.predictions.fit:null;
+                const useMeasured=workMapMode==='measured'||(workMapMode==='threshold'&&workMode==='measured');
+                if(!useMeasured&&!predValid)return;
+                if(useMeasured&&plan.points.filter(p=>trpPointMeasuredForDisplay(p.id,workBand)!==null).length<3)return;
+                const roomW=plan.room.width,roomD=plan.room.depth;
+                if(!(roomW>0&&roomD>0))return;
+                // Render a single raster and display it with smooth bilinear interpolation,
+                // like the original Case 3 predicted heatmap (instead of .25 m SVG tiles).
+                // Cache by physics + band + scans, not by selection: point-clicks and drags
+                // must not recreate tens of thousands of samples unnecessarily.
+                const k=JSON.stringify([trpGeometrySignature(),plan.predictions?.fitSignature||'',
+                    predValid?plan.predictions?.createdAt:'none',workMapMode,workMode,workBand,
+                    workThreshold,useMeasured?JSON.stringify(workData.points||{}):'',
+                    useMeasured?workAngle:'',useMeasured?workRound:'']);
+                if(trpFieldCache.key!==k || !trpFieldCache.url){
+                    const resolution=32; // 3.125 cm/px; image interpolates smoothly at display size
+                    const width=Math.max(16,Math.ceil(roomW*resolution));
+                    const height=Math.max(16,Math.ceil(roomD*resolution));
+                    const field=document.createElement('canvas');field.width=width;field.height=height;
+                    const context=field.getContext('2d');
+                    if(!context)return;
+                    const image=context.createImageData(width,height),pixels=image.data;
+                    const thresholdMode=workMapMode==='threshold';
+                    for(let py=0;py<height;py++){
+                        const y=(py+.5)/height*roomD;
+                        for(let px=0;px<width;px++){
+                            const x=(px+.5)/width*roomW;
+                            const v=useMeasured?trpMeasuredAt(x,y,workBand):trpPredRaw(x,y,plan.rxHeight,workBand,fit);
+                            if(v===null||!Number.isFinite(v))continue;
+                            const rgb=thresholdMode?(v>=workThreshold?[37,172,94]:[227,64,83]):trpColor(v);
+                            const pos=(py*width+px)*4;
+                            pixels[pos]=rgb[0];pixels[pos+1]=rgb[1];pixels[pos+2]=rgb[2];
+                            pixels[pos+3]=217; // matches original Case 3 paintField alpha
+                        }
+                    }
+                    context.putImageData(image,0,0);
+                    trpFieldCache={key:k,url:field.toDataURL('image/png')};
+                }
+                // Image is inserted before all furniture, walls, doors and point badges;
+                // color never covers architectural lines or scan markers.
+                const img=makeSvg('image', {x:0,y:0,width:roomW,height:roomD,
+                    href:trpFieldCache.url,opacity:.88,'preserveAspectRatio':'none',
+                    'image-rendering':'auto','pointer-events':'none',
+                    'aria-label':'TR01 RSSI gradient -95 ถึง -25 dBm สเกลเดียวกับ Case 3'},svg);
+                // Keep the room's 0.5 m grid visible without producing blocky color tiles.
+                for(let x=.5;x<roomW;x+=.5)makeSvg('line', {x1:x,y1:0,x2:x,y2:roomD,
+                    stroke:'#ffffff','stroke-opacity':'.23','stroke-width':.012,
+                    'pointer-events':'none'},svg);
+                for(let y=.5;y<roomD;y+=.5)makeSvg('line', {x1:0,y1:y,x2:roomW,y2:y,
+                    stroke:'#ffffff','stroke-opacity':'.23','stroke-width':.012,
+                    'pointer-events':'none'},svg);
+            }
+            // Prediction is independent of ESP32 live-scans. It must appear as soon as
+            // the room/locked fit is available, and when switching back to Prediction.
+            // No measurements are written or changed by this operation.
+            function trpEnsurePredictions(reason){
+                if(!plan||!plan.points?.length||trpPredValid()||trpAccidentalWalls().length)return;
+                trpGeneratePredictions();
+            }
+            function trpGeneratePredictions(){
+                try{
+                    if(!plan||!plan.points.length)return trpSetInfo('ยังไม่มีจุด N ให้ทำนาย');
+                    const extras=trpAccidentalWalls();
+                    if(extras.length)return trpSetInfo('ยังมีผนัง 3 เส้นที่เผลอวาดใกล้ AP: กด “ลบผนังเผลอวาด 3 เส้น” ก่อนสร้าง Predicted (ผนังจริง 5 ส่วนจะคงอยู่)');
+                    const fit=trpFitParams();
+                    if(!fit)return trpSetInfo('โมเดล Final Fit ไม่พร้อม: โปรดเลือกโปรไฟล์ Case3 final และตรวจว่า Case 3 เดิมล็อก Calibrated FSPL / COST231-MW อยู่');
+                    const points=plan.points.map(p=>({id:p.id,x:p.x,y:p.y,z:p.z,
+                        distance3D:rd(trp3dDistance(p.x,p.y,p.z)),Kw:trpKw(p.x,p.y,p.z),
+                        predicted24:trpPredRaw(p.x,p.y,p.z,'24',fit),
+                        predicted5:trpPredRaw(p.x,p.y,p.z,'5',fit)}));
+                    if(points.some(p=>!Number.isFinite(p.predicted24)||
+                        (fit.A5!==null&&!Number.isFinite(p.predicted5))))throw Error('คำนวณค่าไม่เป็นตัวเลข กรุณาตรวจพิกัด AP / จุดวัด / พารามิเตอร์');
+                    const complete=fit.A5!==null;
+                    tracked(()=>{
+                        plan.predictions={
+                            source:'Case3 original locked Final Evaluation (NO local TR01 calibration)',
+                            model24:fit.model24,model5:fit.model5,
+                            algorithmVersion:TRP_PREDICTION_VERSION,
+                            fit,fitSignature:trpFitSignature(fit),
+                            geometrySignature:trpGeometrySignature(),
+                            createdAt:new Date().toISOString(),points,complete,band5Status:fit.basis5,
+                            assumption5:fit.basis5==='CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED'?{
+                                tx_power_dbm_assumed:20,tx_power_dbm_measured:null,
+                                frequency_ghz:5.0,
+                                source:'Case3 C3_PREDICTIONS 5.0 metadata + locked original fit5.bias',
+                                warning:'TX 20 dBm was ASSUMED for historical Case 3 predictions, NOT measured AP power'
+                            }:null,
+                            note:'Original Case 3 Final Evaluation stays unchanged. No TR01 fit.'};
+                        plan.protocol.predictionsGenerated=true;
+                    });
+                    if(!trpPredValid())throw Error('ผลทำนายถูกสร้าง แต่ตรวจสอบเวอร์ชัน/พิกัดไม่ผ่าน กรุณาส่งออก JSON เพื่อตรวจ');
+                    trpSetInfo('สร้าง Predicted RSSI สำเร็จ '+points.length+' จุด · 2.4 GHz + '+(complete?'5 GHz (TX 20 dBm สมมติ ไม่ใช่ค่าจริง)':'5 GHz ยังไม่พร้อม')+' · กรุณาบันทึก Firebase');
+                }catch(e){console.error('TR01 prediction',e);trpSetInfo('สร้าง Predicted ไม่สำเร็จ: '+e.message);}
+            }
+            function trpSetInfo(s){workInfo=s;setStatus(s);if(!root.hidden)renderWorkflow();}
+            function trpCurrentScanId(s){if(!s)return '';
+                let ts=Number(s.timestamp);if(ts>1e9&&ts<1e11)ts*=1000;
+                if(!(ts>=1577836800000&&ts<=Date.now()+3000))return '';
+                return 'TS:'+Math.trunc(ts)+'|SEQ:'+String(s.scan_sequence??'');
+            }
+            function trpArm(){workArmedScan=trpCurrentScanId(transferLive);}
+            function trpConf(names){for(const n of names)if(transferConfig[n]!==undefined&&transferConfig[n]!==null&&transferConfig[n]!=='')return transferConfig[n];return null;}
+            function trpMac(v){const s=String(v??'').trim().toUpperCase().replace(/-/g,':'),bare=s.replace(/[^0-9A-F]/g,'');return bare.length===12?bare.match(/.{2}/g).join(':'):s;}
+            function trpFreshAndMatching(){
+                const s=transferLive,id=trpCurrentScanId(s),ts=Number(s.timestamp),ms=ts>1e9&&ts<1e11?ts*1000:ts;
+                if(workDataLoading)return {ok:false,reason:'กำลังตรวจข้อมูลวัดเดิมของ TR01 จาก Firebase'};
+                if(!transferLiveReady||!id)return {ok:false,reason:'รอ ESP32 ส่ง Scan ที่มี Timestamp จริง'};
+                if(Date.now()-ms>WORK_STALE_MS||Date.now()-ms < -3000)return {ok:false,reason:'Scan เก่าเกิน 12 วินาที'};
+                if(workArmedScan===id)return {ok:false,reason:'รอ Scan ใหม่หลังเลือกจุด / มุม / รอบ'};
+                if(String(s.case_id||'').toLowerCase()!=='case3'||s.measurement_valid===false)return {ok:false,reason:'Case ID หรือ Scan validity ไม่ตรง Case 3'};
+                if(String(trpConf(['case_id'])||'Case3').toLowerCase()!=='case3')return {ok:false,reason:'ESP32 config ไม่ใช่ Case 3'};
+                const b24=trpConf(['target_bssid_24g','targetBssid24','bssid_24g']),b5=trpConf(['target_bssid_5g','targetBssid5','bssid_5g']);
+                const c24=trpConf(['expected_channel_24g','channel24']),c5=trpConf(['expected_channel_5g','channel5']);
+                const targetSSID=trpConf(['target_ssid','ssid']);
+                if(!b24||!b5||c24===null||c5===null||!targetSSID)return {ok:false,reason:'ESP32 ยังไม่มี Target SSID / BSSID / Channel ครบ'};
+                const obs24=trpMac(s.bssid_24g||s.observed_bssid_24g||s.bssid24||s.bssid_24),obs5=trpMac(s.bssid_5g||s.observed_bssid_5g||s.bssid5||s.bssid_5);
+                if(obs24!==trpMac(b24)||obs5!==trpMac(b5))return {ok:false,reason:'BSSID ไม่ตรงอุปกรณ์เป้าหมาย'};
+                if(Number(s.channel_24g)!==Number(c24)||Number(s.channel_5g)!==Number(c5))return {ok:false,reason:'Channel ไม่ตรง Config'};
+                if(s.ssid&&String(s.ssid)!==String(targetSSID))return {ok:false,reason:'SSID ไม่ตรง Config'};
+                const a=Number(s.rssi_24g),b=Number(s.rssi_5g);
+                if(!Number.isFinite(a)||!Number.isFinite(b)||a<=-127||b<=-127||a>0||b>0)return {ok:false,reason:'RSSI ไม่ครบหรือไม่ถูกต้องทั้ง 2 ย่าน'};
+                if(Object.keys(workData.points||{}).some(pid=>WORK_ANGLES.some(ang=>WORK_ROUNDS.some(r=>trpRec(pid,ang,r)?.sourceScanId===id))))return {ok:false,reason:'Scan นี้ถูกใช้ใน TR01 แล้ว'};
+                return {ok:true,id,ms,a,b,obs24,obs5,channel24:Number(c24),channel5:Number(c5)};
+            }
+            function trpConfirmAp(){if(!confirm('ยืนยันว่าได้ติดตั้ง AP เครื่องเดิม ณ พิกัด X='+plan.ap.x+' Y='+plan.ap.y+' Z='+plan.ap.z+' เมตรจริงแล้ว?'))return;
+                tracked(()=>{plan.apConfirmedSignature=JSON.stringify(plan.ap);plan.apConfirmedAt=new Date().toISOString();});trpSetInfo('ยืนยันตำแหน่ง AP ใน TR01 แล้ว');}
+            function trpApConfirmed(){return !!(plan.apConfirmedAt&&plan.apConfirmedSignature===JSON.stringify(plan.ap));}
+            async function trpCapture(){
+                if(trpBusy)return;
+                if(workRound==='AVG')return trpSetInfo('โหมด AVG ใช้ดูค่าเฉลี่ยเท่านั้น ต้องเลือก R1 / R2 / R3 ก่อนบันทึกสแกน');
+                if(typeof db==='undefined'||!window.C3||!window.C3.getFirebaseConnected())return trpSetInfo('Firebase ไม่พร้อม ไม่บันทึก Scan');
+                if(typeof currentCase!=='undefined'&&currentCase!=='Case3')return trpSetInfo('ต้องอยู่ใน Case 3 ก่อนวัด');
+                if(!trpApConfirmed())return trpSetInfo('ต้องยืนยันตำแหน่ง AP ที่ติดตั้งจริงก่อน');
+                const p=plan.points.find(x=>x.id===workPoint);if(!p)return trpSetInfo('เลือกจุดวัด N ก่อน');
+                if(!trpPredValid())return trpSetInfo('ค่าทำนายไม่ตรง geometry ล่าสุด กรุณาสร้าง Predicted ใหม่ก่อน');
+                const r=trpFreshAndMatching();if(!r.ok)return trpSetInfo('ยังบันทึกไม่ได้: '+r.reason);
+                if(trpRec(p.id,workAngle,workRound)&&!confirm('รอบนี้มี Scan แล้ว ต้องการเขียนทับหรือไม่?'))return;
+                const stamp=Date.now(),pointId=p.id,ang=workAngle,round=workRound,profileAtCapture=profile(),roomAtCapture=plan.roomId;
+                const obj={source:'ESP32-C5',captureMethod:'V29_LATEST_SCAN_ON_CLICK',caseId:'Case3',roomId:plan.roomId,pointId,orientationDeg:Number(ang),round,
+                    sourceScanId:r.id,sourceScanTimestamp:r.ms,scanSequence:String(transferLive.scan_sequence??''),
+                    rssi24:r.a,rssi5:r.b,bssid24:r.obs24,bssid5:r.obs5,channel24:r.channel24,channel5:r.channel5,
+                    targetSSID:trpConf(['target_ssid','ssid']),pointX:p.x,pointY:p.y,pointZ:p.z,
+                    apX:plan.ap.x,apY:plan.ap.y,apZ:plan.ap.z,geometrySignature:trpGeometrySignature(),captureAt:stamp};
+                trpBusy=true;renderWorkflow();
+                try{
+                    const ref=db.ref(trpMeasurementBase()+'/points/'+pointId+'/angles/'+ang+'/measurements/'+round);
+                    const before=trpRec(pointId,ang,round);
+                    // Only overwrite after explicit confirmation; block concurrent unrelated data changes.
+                    const result=await ref.transaction(cur=>{
+                        if(cur&&(!before||cur.sourceScanId!==before.sourceScanId))return;
+                        return obj;
+                    },undefined,false);
+                    if(!result.committed)throw Error('มีข้อมูลรอบนี้ถูกบันทึกจากเครื่องอื่นแล้ว กรุณาโหลดข้อมูลใหม่');
+                    if(profile()!==profileAtCapture||plan.roomId!==roomAtCapture)throw Error('โปรไฟล์/ห้องถูกเปลี่ยนระหว่างบันทึก');
+                    const points=workData.points||(workData.points={});
+                    const entry=points[pointId]||(points[pointId]={});const angles=entry.angles||(entry.angles={});const aa=angles[ang]||(angles[ang]={});(aa.measurements||(aa.measurements={}))[round]=obj;
+                    workArmedScan=r.id;workInfo='บันทึก '+pointId+' '+ang+'° '+round+' สำเร็จ · 2.4G '+r.a+' / 5G '+r.b+' dBm';
+                    if(workRound==='R1')workRound='R2';else if(workRound==='R2')workRound='R3';
+                    render();
+                }catch(e){console.error('TR01 capture',e);trpSetInfo('บันทึก Scan ไม่สำเร็จ: '+e.message);}
+                finally{trpBusy=false;renderWorkflow();}
+            }
+            // Safely delete exactly one measured Scan pair (2.4/5 GHz) for the chosen N / angle / round.
+            // This touches ONLY TransferRoomMeasurements/{roomId}; never the original Case3 scans or predictions.
+            async function trpDeleteSelectedScan(){
+                if(trpBusy)return;
+                if(workDataLoading)return trpSetInfo('ยังโหลดข้อมูลวัด TR01 จาก Firebase ไม่เสร็จ จึงยังลบไม่ได้');
+                if(workRound==='AVG')return trpSetInfo('กรุณาเลือก R1, R2 หรือ R3 ที่ต้องการลบก่อน (AVG เป็นค่าเฉลี่ย ไม่ใช่สแกน)');
+                if(typeof db==='undefined'||!window.C3||!window.C3.getFirebaseConnected())return trpSetInfo('Firebase ยังไม่พร้อม ไม่สามารถลบสแกนได้');
+                const pointId=workPoint,ang=workAngle,round=workRound;
+                if(!plan.points.some(p=>p.id===pointId)||!WORK_ANGLES.includes(ang)||!WORK_ROUNDS.includes(round))return trpSetInfo('จุด / ทิศทาง / รอบ ไม่ถูกต้อง');
+                const saved=trpRec(pointId,ang,round);
+                if(!saved)return trpSetInfo('ไม่มีสแกนที่ '+pointId+' · '+ang+'° · '+round+' ให้ลบ');
+                const slot=pointId+' · '+ang+'° · '+round;
+                const prompt='ลบสแกนจริง '+slot+' หรือไม่?\n'+
+                    '2.4 GHz: '+saved.rssi24+' dBm | 5 GHz: '+saved.rssi5+' dBm\n\n'+
+                    'จะลบข้อมูลทั้งสองความถี่ของสแกนนี้จาก Firebase TR01 เท่านั้น\n'+
+                    'ไม่ลบ Predicted RSSI หรือข้อมูล Case 3 เดิม';
+                if(!confirm(prompt))return;
+                const profileAtDelete=profile(),roomAtDelete=plan.roomId;
+                const path=trpMeasurementBase()+'/points/'+pointId+'/angles/'+ang+'/measurements/'+round;
+                trpBusy=true;renderWorkflow();
+                try{
+                    // Firebase transaction fails closed if someone else modified this slot.
+                    const result=await db.ref(path).transaction(cur=>{
+                        if(!cur || cur.sourceScanId!==saved.sourceScanId || Number(cur.captureAt)!==Number(saved.captureAt) ||
+                           String(cur.pointId)!==pointId || String(cur.round)!==round || String(cur.orientationDeg)!==String(ang))return;
+                        return null;
+                    },undefined,false);
+                    if(!result.committed)throw Error('ข้อมูลถูกแก้ไขจากเครื่องอื่น หรือไม่มีข้อมูลแล้ว กรุณาโหลดข้อมูลล่าสุด');
+                    if(profile()!==profileAtDelete||plan.roomId!==roomAtDelete)throw Error('มีการเปลี่ยนห้อง/โปรไฟล์ระหว่างลบ กรุณาโหลดข้อมูลล่าสุด');
+                    // Mirror the confirmed Firebase deletion locally; listener also refreshes the state.
+                    const record=workData.points?.[pointId]?.angles?.[ang]?.measurements;
+                    if(record)delete record[round];
+                    workArmedScan=trpCurrentScanId(transferLive); // next capture must use a NEW scan
+                    workInfo='ลบสแกน '+slot+' สำเร็จ · ลบทั้ง 2.4/5 GHz · กดบันทึกใหม่ได้เมื่อมี Scan ใหม่';
+                    render();
+                }catch(e){console.error('TR01 delete scan',e);trpSetInfo('ลบ Scan ไม่สำเร็จ: '+e.message);}
+                finally{trpBusy=false;renderWorkflow();}
+            }
+            function trpDetach(){for(const [ref,fn]of trpListenerRefs)try{ref.off('value',fn);}catch(e){}trpListenerRefs=[];transferLiveReady=false;}
+            function trpListen(){
+                trpDetach();workDataLoading=true;if(typeof db==='undefined'||!plan){workDataLoading=false;return;}
+                const ids=[WORK_SRC,WORK_CFG,trpMeasurementBase()];
+                for(const name of ids){const ref=db.ref(name);const cb=sn=>{
+                    if(name===WORK_SRC){transferLive=sn.val()||{};transferLiveReady=sn.exists();}
+                    else if(name===WORK_CFG)transferConfig=sn.val()||{};
+                    else{workData=sn.val()||{};workDataLoading=false;}
+                    if(!root.hidden)renderWorkflow();
+                };ref.on('value',cb,e=>{workInfo='Firebase อ่าน '+name+' ไม่สำเร็จ: '+e.message;renderWorkflow();});trpListenerRefs.push([ref,cb]);}
+            }
+            function trpClearExtraWalls(){
+                if(trpAllCount()>0)return trpSetInfo('เริ่มวัดจริงแล้ว ห้ามเปลี่ยน geometry ระหว่างชุดทดลอง');
+                const extras=trpAccidentalWalls();
+                if(!extras.length)return trpSetInfo('ไม่มีผนังเผลอวาด 3 เส้นเดิมแล้ว');
+                if(!confirm('ลบเฉพาะผนังที่เผลอวาด '+extras.length+' เส้นตาม ID ของแปลน TR01? เก็บผนังรอบห้องและผนังอื่นที่ตั้งใจวาดไว้'))return;
+                const ids=new Set(extras.map(o=>o.id));
+                tracked(()=>{plan.objects=plan.objects.filter(o=>!ids.has(o.id));selected=null;});
+                trpSetInfo('ลบผนังเผลอวาด '+extras.length+' เส้นสำเร็จ · คงผนังรอบห้องและประตู · กดบันทึก Firebase');
+                trpEnsurePredictions('ลบผนังเผลอวาด');
+            }
+            function trpEvaluationMetrics(band){if(!trpPredValid()||!plan.points.length)return null;
+                if(plan.points.some(p=>trpPointCount(p.id)!==12))return null;
+                const errors=[];for(const p of plan.points){const pp=trpPredictionPoint(p.id);const pr=pp&&(band==='24'?pp.predicted24:pp.predicted5),me=trpPointMeasured(p.id,band);
+                    if(pr===null||pr===undefined||me===null)return null;errors.push(pr-me);}
+                return {rmse:Math.sqrt(trpMean(errors.map(e=>e*e))),mae:trpMean(errors.map(e=>Math.abs(e))),bias:trpMean(errors)};
+            }
+            function renderWorkflow(){
+                if(!plan||!$('trp-sidebar-panel')||$('trp-sidebar-panel').hidden)return;
+                const panel=$('trp-workflow-panel');if(!panel)return;
+                const count=trpAllCount(),max=plan.points.length*12,fit=trpFitParams(),valid=trpPredValid();
+                const pr=trpPredictionPoint(workPoint),me=trpPointMeasuredForDisplay(workPoint,workBand),r=workRound==='AVG'?null:trpRec(workPoint,workAngle,workRound);
+                const target=workMode==='predicted'?'Predicted':'Measured';
+                const curPoint=plan.points.find(p=>p.id===workPoint)||plan.points[0];
+                const d=curPoint?trp3dDistance(curPoint.x,curPoint.y,curPoint.z):null;
+                const pc=curPoint?trpPointCount(curPoint.id):0;
+                const preds=valid?plan.predictions.points.map(p=>p[workBand==='24'?'predicted24':'predicted5']):[];
+                const meas=plan.points.map(p=>trpPointMeasuredForDisplay(p.id,workBand));
+                const st=trpStats(workMode==='predicted'?preds:meas);
+                const metrics=trpEvaluationMetrics(workBand),ready=trpFreshAndMatching();
+                let html='<div class="trp-work-section"><strong>Final Model · ห้องทดสอบใหม่</strong><div class="trp-mini">2.4G Calibrated FSPL | 5G COST231-MW · Locked จาก Case 3</div>';
+                html+='<div class="trp-work-stat"><span>AP-TR01</span><b>'+trpNum(plan.ap.x,2)+', '+trpNum(plan.ap.y,2)+', '+trpNum(plan.ap.z,2)+' m</b></div>';
+                html+='<div class="trp-mini">จุด '+plan.points.length+' · วัดจริง '+count+'/'+max+' Scan pairs · '+(trpApConfirmed()?'ยืนยัน AP แล้ว':'ยังไม่ยืนยัน AP')+'</div>';
+                html+='<div class="trp-progress"><div style="width:'+(max?100*count/max:0)+'%"></div></div>';
+                html+='<button type="button" data-trp="confirm-ap" class="trp-secondary-btn" style="margin-top:6px">'+(trpApConfirmed()?'✓ ยืนยัน AP อีกครั้ง':'ยืนยันตำแหน่ง AP จริง')+'</button></div>';
+                html+='<div class="trp-work-section"><strong>การแสดงผลแผนที่</strong><div class="trp-work-grid modes">';
+                for(const [id,txt]of [['predicted','Predicted'],['measured','Measured'],['threshold','Threshold']])html+='<button class="trp-work-pill '+(workMapMode===id?'active':'')+'" data-trp="map" data-val="'+id+'">'+txt+'</button>';
+                html+='</div><div class="trp-work-grid modes">';
+                for(const [id,txt]of [['24','2.4 GHz'],['5','5 GHz']])html+='<button class="trp-work-pill '+(workBand===id?'active':'')+'" data-trp="band" data-val="'+id+'">'+txt+'</button>';
+                html+='</div><div class="trp-work-grid modes">';
+                for(const [id,txt]of [['predicted','Prediction'],['measured','Measurement']])html+='<button class="trp-work-pill '+(workMode===id?'active':'')+'" data-trp="mode" data-val="'+id+'">'+txt+'</button>';
+                html+='</div>';
+                if(workMapMode!=='threshold')html+='<div class="trp-rssi-legend"><div class="trp-rssi-legend-title">สี RSSI (สเกลเดียวกับ Case 1/2/3) · อ่อน → แรง</div><div class="trp-rssi-legend-bar" role="img" aria-label="สเกลสี RSSI −95 ถึง −25 dBm"></div><div class="trp-rssi-legend-ticks"><span>−95</span><span>−85</span><span>−75</span><span>−68</span><span>−62</span><span>−56</span><span>−50</span><span>−44</span><span>−36</span><span>−25 dBm</span></div><div class="trp-rssi-legend-foot">แสดงสีตามค่า dBm จริง ไม่ขยายช่วงสีตามค่าต่ำสุด–สูงสุดของห้อง</div></div>';
+                html+='<label class="trp-label">เกณฑ์ Coverage / Threshold (dBm) <input class="trp-work-input" type="number" min="-100" max="-20" step="1" id="trp-threshold" value="'+workThreshold+'"></label>';
+                const assumed5=valid&&plan.predictions?.band5Status==='CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED';
+                const forecastNote=valid?(plan.predictions.complete?(assumed5?'Predicted 2.4 GHz: Final Calibrated FSPL เดิม · 5 GHz: COST231-MW ตาม Case 3 (สมมติ TX 20 dBm ไม่ใช่ค่าที่วัดจริง)':'Predicted ทั้ง 2 ย่านจาก Locked Model'):'2.4 GHz พร้อม · 5 GHz ยังไม่มีพารามิเตอร์อ้างอิงเพียงพอ'):'ยังไม่ได้สร้าง Predicted หรือรูปแบบการคำนวณ/แปลนเปลี่ยน · ต้องทำนายใหม่';
+                html+='<div class="trp-notice '+(valid&&!assumed5?'trp-good':'trp-warn')+'">'+forecastNote+'</div>';
+                const accidentalCount=trpAccidentalWalls().length;
+                if(accidentalCount)html+='<div class="trp-notice trp-error">⚠️ มีผนังที่เผลอวาดอยู่ '+accidentalCount+' เส้นใกล้ AP · ต้องลบก่อนทำนาย เพื่อไม่ให้โมเดลนับเป็นผนังจริง</div>'+
+                    '<button type="button" class="trp-secondary-btn" data-trp="clear-walls">ลบเฉพาะผนังเผลอวาด '+accidentalCount+' เส้น</button>';
+                html+='<button type="button" class="trp-strong-btn" data-trp="predict">สร้าง / อัปเดต Predicted RSSI</button>';
+                html+='<div id="trp-prediction-feedback" role="status" class="trp-notice '+(valid?'trp-good':(workInfo.includes('ไม่สำเร็จ')||workInfo.includes('ยังมีผนัง')||workInfo.includes('ไม่พร้อม')?'trp-error':'trp-warn'))+'" style="margin-top:6px">'+safeText(valid ? ('✓ ค่าทำนายพร้อมทั้ง '+plan.predictions.points.length+' จุด · เลือกจุด N เพื่อดู RSSI · '+(assumed5?'5 GHz ใช้ TX 20 dBm สมมติ ไม่ใช่ค่าจริง':'Final Model เดิม')) : workInfo)+'</div>';
+                if(st)html+='<div class="trp-work-stat"><span>'+target+' · min / avg / max</span><b>'+trpNum(st.min)+' / '+trpNum(st.avg)+' / '+trpNum(st.max)+'</b></div><div class="trp-mini">Coverage ≥ '+workThreshold+' dBm: '+trpPct(st.coverage)+' · '+st.count+' จุดที่มีข้อมูล</div>';
+                html+='</div>';
+                html+='<div class="trp-work-section"><strong>ตำแหน่ง N01–N'+String(plan.points.length).padStart(2,'0')+'</strong><div class="trp-work-grid points">';
+                for(const p of plan.points)html+='<button class="trp-work-pill '+(workPoint===p.id?'active':'')+'" data-trp="point" data-val="'+safeText(p.id)+'">'+safeText(p.id)+'<small>'+trpPointCount(p.id)+'/12</small></button>';
+                html+='</div><div class="trp-work-stat"><span>'+(curPoint?safeText(curPoint.id):'-')+' · d3D '+trpNum(d,2)+' m</span><b>'+trpNum(pr?(workBand==='24'?pr.predicted24:pr.predicted5):null)+' dBm</b></div>';
+                html+='<div class="trp-mini">Predicted '+workBand+'G · Measured มุม '+workAngle+'° '+(workRound==='AVG'?'เฉลี่ย R1–R3':workRound)+' = '+trpNum(me)+' dBm · ผนังผ่าน '+(pr?pr.Kw:'—')+' ชั้น</div>';
+                if(workBand==='5'&&valid&&assumed5)html+='<div class="trp-mini" style="color:#a16207;font-weight:700">⚠️ 5 GHz ใช้ TX 20 dBm ตามสมมติฐาน Case 3 เดิม ไม่ใช่กำลังส่งจริงของ AP</div>';
+                html+='</div>';
+                html+='<div class="trp-work-section"><strong>ทิศทาง ESP32-C5</strong><div class="trp-mini">0° หันหน้าเข้าหา AP · หมุนตามเข็ม 90° / 180° / 270°</div><div class="trp-work-grid">';
+                for(const a of WORK_ANGLES)html+='<button class="trp-work-pill '+(workAngle===a?'active':'')+'" data-trp="angle" data-val="'+a+'">'+a+'°</button>';
+                html+='</div><strong style="display:block;margin-top:10px">รอบการวัด / ค่าเฉลี่ย (เหมือน Case 3)</strong><div class="trp-work-grid">';
+                for(const a of [...WORK_ROUNDS,'AVG'])html+='<button class="trp-work-pill '+(workRound===a?'active':'')+'" data-trp="round" data-val="'+a+'">'+(a==='AVG'?'เฉลี่ย':a+' '+(trpRec(workPoint,workAngle,a)?'✓':'—'))+'</button>';
+                html+='</div>';
+                if(workRound==='AVG')html+='<div class="trp-notice trp-good">มุม '+workAngle+'° · ค่าเฉลี่ย R1–R3: 2.4G '+trpNum(trpPointMeasuredForDisplay(workPoint,'24'))+' dBm / 5G '+trpNum(trpPointMeasuredForDisplay(workPoint,'5'))+' dBm (คำนวณจากรอบที่บันทึกจริง)</div>';
+                html+='<div class="trp-measure-highlights" style="margin-top:8px"><div class="trp-work-stat"><span>2.4 GHz · สด</span><b>'+trpNum(transferLive.rssi_24g,0)+' dBm</b></div><div class="trp-work-stat"><span>5 GHz · สด</span><b>'+trpNum(transferLive.rssi_5g,0)+' dBm</b></div><div class="trp-mini">Channel '+(transferLive.channel_24g??'—')+' / '+(transferLive.channel_5g??'—')+' · Scan: '+(transferLive.scan_sequence??'—')+'</div></div>';
+                html+='<div class="trp-notice '+(ready.ok?'trp-good':'trp-warn')+'">'+(ready.ok?'✓ Firebase scan สด / BSSID / Channel ถูกต้อง · พร้อมบันทึก':'รอข้อมูล Scan ที่ถูกต้อง: '+safeText(ready.reason))+'</div>';
+                html+='<button type="button" class="trp-strong-btn" data-trp="capture" '+(trpBusy||!ready.ok||!trpApConfirmed()||!valid||workRound==='AVG'?'disabled':'')+'>'+(workRound==='AVG'?'โหมดเฉลี่ย R1–R3 · เลือก R1 / R2 / R3 เพื่อบันทึก':'บันทึก Scan สด · '+workPoint+' '+workAngle+'° '+workRound)+'</button>';
+                html+='<div class="trp-mini">หนึ่งคลิก = 1 Scan จริงของทั้ง 2 ความถี่ · ห้ามใช้ Scan เดิมซ้ำ · '+pc+'/12 ที่จุดนี้ · เลือกมุมและรอบเพื่อดูค่า Measured ของแต่ละชุด</div>';
+                if(r)html+='<div class="trp-notice trp-good">บันทึกรอบนี้: 2.4G '+r.rssi24+' / 5G '+r.rssi5+' dBm · ID '+safeText(r.sourceScanId)+'</div>';
+                // Per-slot delete: visible under the scan details, never deletes a whole point or room.
+                if(workRound!=='AVG'){
+                    html+='<button type="button" class="trp-secondary-btn trp-danger-btn" data-trp="delete-scan" '+(trpBusy||workDataLoading||!r?'disabled':'')+'>'+ 
+                        (r?'ลบสแกนนี้ · '+safeText(workPoint)+' / '+workAngle+'° / '+workRound:'ไม่มีสแกนในช่องนี้ให้ลบ')+'</button>';
+                    html+='<div class="trp-mini">เลือกจุด N, ทิศทาง และรอบ R1–R3 ก่อนกดลบ · หนึ่งสแกนมีค่า 2.4 และ 5 GHz คู่กัน · ต้องยืนยันก่อนลบ</div>';
+                }
+                html+='</div>';
+                html+='<div class="trp-work-section"><strong>Evaluation หลังวัดครบ</strong>';
+                html+=(metrics?'<div class="trp-work-stat"><span>RMSE / MAE / Bias</span><b>'+trpNum(metrics.rmse,2)+' / '+trpNum(metrics.mae,2)+' / '+trpNum(metrics.bias,2)+' dB</b></div>':'<div class="trp-mini">ยังไม่คำนวณ RMSE / MAE / Bias จนกว่าทุกจุดจะครบ 4 ทิศ × 3 รอบ และมี Prediction ย่านนั้นครบ</div>');
+                html+='<button class="trp-secondary-btn" data-trp="export-measure">ส่งออก CSV Predicted + Measured</button> <button class="trp-secondary-btn" data-trp="export-measure-json">สำรอง Measurement JSON</button>';
+                html+='<div id="trp-work-message" class="trp-notice">'+safeText(workInfo)+'</div>';
+                html+='<div class="trp-mini">Firebase: Case3/TransferRoomMeasurements/'+safeText(plan.roomId)+' · แยกจาก 432 Scans เดิม</div></div>';
+                panel.innerHTML=html;
+                const foot=$('trp-map-mode-note');if(foot)foot.textContent='แผนที่: '+workMapMode+' · '+(workBand==='24'?'2.4':'5')+' GHz · '+(workMapMode==='measured'?'IDW สำหรับแสดงผลเท่านั้น':(workBand==='5'&&assumed5?'โมเดล Case 3 · TX 20 dBm สมมติ (ไม่ใช่ค่าจริง)':'โมเดล Final เดิมเมื่อมีพารามิเตอร์ครบ'));
+            }
+            function trpExportMeasurement(asJson){const p=plan.points.map(pt=>{const pr=trpPredictionPoint(pt.id);return {point:pt.id,x:pt.x,y:pt.y,z:pt.z,predicted24:pr?.predicted24??null,predicted5:pr?.predicted5??null,
+                measured24:trpPointMeasured(pt.id,'24'),measured5:trpPointMeasured(pt.id,'5'),scanCount:trpPointCount(pt.id)};});
+                const note5=(plan.predictions?.band5Status==='CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED')?'CASE3_ASSUMED_TX_20_DBM_NOT_MEASURED':(plan.predictions?.band5Status||'');
+                if(asJson)return download('TR01_'+plan.roomId+'_Measurements.json',JSON.stringify({profile:profile(),room:plan.roomId,predictions:plan.predictions||null,measurements:workData,points:p,exportedAt:new Date().toISOString()},null,2),'application/json;charset=utf-8');
+                const cols=['point','x','y','z','predicted24','predicted5','measured24','measured5','scanCount','predicted5_basis','tx_power_5ghz_assumed_dbm','tx_power_5ghz_measured_dbm'];
+                const quote=v=>'"'+String(v===null||v===undefined?'':v).replace(/"/g,'""')+'"';
+                const rows=[cols,...p.map(r=>cols.map(k=>k==='predicted5_basis'?note5:k==='tx_power_5ghz_assumed_dbm'?(note5==='CASE3_ASSUMED_TX_20_DBM_NOT_MEASURED'?20:''):k==='tx_power_5ghz_measured_dbm'?'':r[k]))];download('TR01_'+plan.roomId+'_Predicted_Measured.csv','\uFEFF'+rows.map(r=>r.map(quote).join(',')).join('\r\n'),'text/csv;charset=utf-8');}
+            // -------- end TR01 workflow --------
+
+            function selection() {
+                const target = $('trp-selected'), o = selObj(); if (!o) { target.className = 'trp-selected-none'; target.textContent = 'คลิกวัตถุบนแปลนเพื่อแก้พิกัดและขนาด'; return; }
+                target.className = ''; const ap = selected === 'AP', point = selected.startsWith('P:'), line = !ap && !point && ['wall', 'door', 'window'].includes(o.type); let h = '<div class="trp-form-grid">'; const input = (label, key, value, step = '.01') => `<label>${label}<input type="number" data-edit="${key}" value="${value === null || value === undefined ? '' : Number(value)}" step="${step}" ${key === 'zTop' ? 'placeholder="ยังไม่วัด"' : ''}></label>`;
+                if (ap) { h += input('AP X', 'x', o.x) + input('AP Y', 'y', o.y) + input('AP Z', 'z', o.z); }
+                else if (point) { h += `<label>รหัสจุด<input value="${safeText(o.id)}" disabled></label>` + input('X', 'x', o.x) + input('Y', 'y', o.y) + input('RX Z', 'z', o.z); }
+                else if (o.type === 'door') { const d=doorMeta(o); h += input('กว้างช่อง (m)', 'width', d.width) + input('สูงจริง (m)', 'height', d.height) + input('เริ่มที่ผนัง (m)', 'offset', d.offset);
+                    h += `<label>ผนัง<select data-edit="wall">${[['top','บน'],['right','ขวา'],['bottom','ล่าง'],['left','ซ้าย']].map(a=>`<option value="${a[0]}" ${d.wall===a[0]?'selected':''}>${a[1]}</option>`).join('')}</select></label>`;
+                    h += `<label>บานพับ<select data-edit="hinge"><option value="start" ${d.hinge==='start'?'selected':''}>ด้านต้น</option><option value="end" ${d.hinge==='end'?'selected':''}>ด้านปลาย</option></select></label>`; }
+                else if (line) { h += input('X1', 'x1', o.x1) + input('Y1', 'y1', o.y1) + input('X2', 'x2', o.x2) + input('Y2', 'y2', o.y2) + input('หนาผนัง (m)', 'thickness', o.thickness) + input('Z ด้านล่าง', 'zBottom', o.zBottom) + input('Z ด้านบน', 'zTop', o.zTop); }
+                else { h += input('X', 'x', o.x) + input('Y', 'y', o.y) + input('กว้าง X', 'width', o.width) + input('ลึก Y', 'depth', o.depth) + input('Z ด้านล่าง', 'zBottom', o.zBottom) + input('Z ด้านบน', 'zTop', o.zTop); }
+                if (!ap && !point) { h += `<label>วัสดุ<select data-edit="material">${[['concrete', 'คอนกรีต'], ['glass', 'กระจก'], ['wood', 'ไม้'], ['steel', 'เหล็ก'], ['unknown', 'ไม่ระบุ']].map(a => `<option value="${a[0]}" ${o.material === a[0] ? 'selected' : ''}>${a[1]}</option>`).join('')}</select></label>`; h += `<label>ชื่อ<input data-edit="name" value="${safeText(o.name)}" maxlength="60"></label>`; }
+                target.innerHTML = h + '</div><p class="trp-hint">แก้ค่าเป็นเมตร แล้วกด Tab/Enter เพื่อใช้พิกัดใหม่</p>';
+            }
+            function renderObjects() { const target = $('trp-objects'); target.replaceChildren(); const opts = [{ id: 'AP', label: 'AP' }].concat(plan.objects.map(o => ({ id: 'O:' + o.id, label: o.name || itemLabel(o) })), plan.points.map(p => ({ id: 'P:' + p.id, label: p.id }))); opts.forEach(o => { const b = document.createElement('button'); b.type = 'button'; b.className = 'trp-item' + (o.id === selected ? ' active' : ''); b.textContent = o.label; b.onclick = () => { selected = o.id; tool = 'select'; pending = null; render(); }; target.appendChild(b); }); }
+            function render() { if (!plan) return; setFields(); $('trp-status').textContent = message; $('trp-tools-grid').querySelectorAll('[data-tool]').forEach(el => el.classList.toggle('active', el.dataset.tool === tool)); $('trp-tool-hint').textContent = pending ? 'คลิกจุดปลายเส้นที่ 2 หรือกด Escape เพื่อยกเลิก' : tool === 'select' ? 'คลิก/ลากวัตถุเพื่อเลือกและย้าย แล้วแก้พิกัดเชิงตัวเลขด้านล่าง' : tool === 'ap' ? 'คลิกตำแหน่ง AP จริงบนแปลน' : tool === 'point' ? 'คลิกเพื่อเพิ่มจุดทดสอบ N01,N02,...' : tool === 'furniture' ? 'คลิกบนแปลนเพื่อวางเฟอร์นิเจอร์ตามขนาด X/Y และวัสดุที่กรอกไว้' : tool === 'door' ? 'คลิกบนแปลนหนึ่งครั้งเพื่อวางประตูตามผนังที่เลือก (ไม่ต้องเลือกสองจุด)' : 'คลิกบนแปลนเพื่อวางวัตถุ ' + (['wall', 'door', 'window'].includes(tool) ? '(จุดเริ่ม → จุดปลาย)' : ''); selection(); const furniture = selObj(); $('trp-furn-selected-info').textContent = furniture && selected && selected.startsWith('O:') && ['table', 'cabinet', 'furniture'].includes(furniture.type) ? 'เลือก: ' + (furniture.name || itemLabel(furniture)) + ' (' + furniture.width + ' × ' + furniture.depth + ' ม. · ' + (furniture.zTop === null ? 'ยังไม่วัดความสูง Z' : 'Z ' + furniture.zBottom + '–' + furniture.zTop + ' ม.') + ')' : 'ยังไม่ได้เลือกเฟอร์นิเจอร์'; renderObjects(); paint(); $('trp-n-walls').textContent = plan.objects.filter(o => o.type === 'wall').length; $('trp-n-openings').textContent = plan.objects.filter(o => ['door', 'window'].includes(o.type)).length; $('trp-n-furniture').textContent = plan.objects.filter(o => ['table', 'cabinet', 'furniture'].includes(o.type)).length; $('trp-n-points').textContent = plan.points.length; renderWorkflow(); }
+            // Transfer Room uses the SAME sidebar Editor pattern as Case 1/2.
+            // Only the editor UI is reparented. Existing measurements and geometry remain separate.
+            let toolsOriginalParent = null;
+            function ensureSidebar() {
+                const dropdown = $('controls-dropdown');
+                if (!dropdown) throw Error('หาแผงควบคุมหลักไม่พบ');
+                let panel = $('trp-sidebar-panel');
+                if (!panel) {
+                    panel = document.createElement('section');
+                    panel.id = 'trp-sidebar-panel';
+                    panel.hidden = true;
+                    panel.classList.add('trp-measure-panel');
+                    panel.innerHTML = `<header class="trp-side-heading"><h3>Case 3 · ห้องทดสอบ TR01</h3><p>Zero Local Calibration · Predicted + Measured</p></header>
+                        <div id="trp-workflow-panel" aria-live="polite"></div>
+                        <div class="trp-work-section"><strong>Editor แปลน 2D</strong>
+                          <button type="button" id="trp-toggle-editor" class="trp-side-toggle" aria-expanded="false">เปิด Editor</button>
+                          <div id="trp-sidebar-tools-host" hidden></div>
+                          <p id="trp-readonly-info" class="trp-side-readonly">เลือก N บนแผนที่ได้ · กด Editor เพื่อแก้พิกัดและเฟอร์นิเจอร์</p>
+                          <button type="button" class="trp-secondary-btn" data-trp="clear-walls">ลบเฉพาะผนังเผลอวาด 3 เส้น (ถ้ายังมี)</button>
+                          <label class="trp-label">นำเข้าแปลน JSON เดิม / ฉบับแก้ไข
+                            <input type="file" id="trp-import-file" accept=".json,application/json">
+                          </label>
+                        </div>
+                        <button type="button" id="trp-return-sidebar" class="trp-side-return">กลับไป Case 3 เดิม</button>`;
+                    panel.addEventListener('click', ev=>{
+                        const b=ev.target.closest('[data-trp]');if(!b)return;const name=b.dataset.trp,val=b.dataset.val;
+                        if(name==='predict')return trpGeneratePredictions();
+                        if(name==='confirm-ap')return trpConfirmAp();
+                        if(name==='capture')return trpCapture();
+                        if(name==='delete-scan')return trpDeleteSelectedScan();
+                        if(name==='clear-walls')return trpClearExtraWalls();
+                        if(name==='export-measure')return trpExportMeasurement(false);
+                        if(name==='export-measure-json')return trpExportMeasurement(true);
+                        if(name==='point'){if(trpBusy)return trpSetInfo('กำลังบันทึก Scan กรุณารอจนจบก่อนเปลี่ยนตำแหน่งหรือโหมด');workPoint=val;selected='P:'+val;trpArm();return render();}
+                        if(name==='band'){if(trpBusy)return trpSetInfo('กำลังบันทึก Scan กรุณารอจนจบก่อนเปลี่ยนตำแหน่งหรือโหมด');workBand=val;return render();}
+                        if(name==='mode'){if(trpBusy)return trpSetInfo('กำลังบันทึก Scan กรุณารอจนจบก่อนเปลี่ยนตำแหน่งหรือโหมด');workMode=val;if(val==='predicted'&&!trpPredValid())return trpGeneratePredictions();return render();}
+                        if(name==='map'){if(trpBusy)return trpSetInfo('กำลังบันทึก Scan กรุณารอจนจบก่อนเปลี่ยนตำแหน่งหรือโหมด');workMapMode=val;if((val==='predicted'||val==='threshold')&&!trpPredValid())return trpGeneratePredictions();return render();}
+                        if(name==='angle'){if(trpBusy)return trpSetInfo('กำลังบันทึก Scan กรุณารอจนจบก่อนเปลี่ยนตำแหน่งหรือโหมด');workAngle=val;trpArm();return render();}
+                        if(name==='round'){if(trpBusy)return trpSetInfo('กำลังบันทึก Scan กรุณารอจนจบก่อนเปลี่ยนตำแหน่งหรือโหมด');workRound=val;trpArm();return render();}
+                    });
+                    panel.addEventListener('change',async ev=>{
+                        if(ev.target.id==='trp-threshold'){
+                            const v=Number(ev.target.value);if(Number.isFinite(v)&&v>=-100&&v<=-20){workThreshold=v;render();}
+                        }
+                        if(ev.target.id==='trp-import-file'){
+                            const f=ev.target.files && ev.target.files[0];if(!f)return;
+                            try{
+                                const data=JSON.parse(await f.text()),imported=sane(data.roomPlan||data.plan||data);
+                                if(imported.roomId!=='TR01'&&!confirm('ไฟล์นี้เป็นห้อง '+imported.roomId+' ไม่ใช่ TR01 · จะนำเข้าหรือไม่?'))return;
+                                if(!confirm('นำเข้าข้อมูลห้อง '+imported.roomId+' จาก JSON แทนแปลนที่เปิดอยู่?\nข้อมูลวัดจริงใน Firebase จะไม่ถูกลบ'))return;
+                                let rev=0;
+                                if(typeof db!=='undefined'){
+                                    const ss=await db.ref(path(imported.roomId)).once('value');
+                                    rev=ss.exists()?Number((ss.val()||{}).revision)||0:0;
+                                }
+                                changePlan(imported,rev);mark();
+                                trpSetInfo('นำเข้า JSON '+imported.roomId+' สำเร็จ · ตรวจและกดบันทึก Firebase ก่อนวัด');
+                            }catch(e){console.error('TR01 import',e);trpSetInfo('นำเข้า JSON ไม่สำเร็จ: '+e.message);}
+                            finally{ev.target.value='';}
+                        }
+                    });
+                    dropdown.appendChild(panel);
+                    $('trp-toggle-editor').addEventListener('click', () => setEditorMode(!editorEnabled));
+                    $('trp-return-sidebar').addEventListener('click', close);
+                }
+                const tools = root.querySelector('.trp-tools') || panel.querySelector('.trp-tools');
+                if (tools) {
+                    toolsOriginalParent = toolsOriginalParent || root.querySelector('.trp-body');
+                    $('trp-sidebar-tools-host').appendChild(tools);
+                }
+                return panel;
+            }
+            function setEditorMode(on) {
+                if(on&&trpAllCount()>0){trpSetInfo('🔒 เริ่มวัดจริงแล้ว ห้ามแก้ Geometry / AP / จุดวัดแบบ Case 3 เดิม');return;}
+                editorEnabled = !!on;
+                const toggle = $('trp-toggle-editor'), host = $('trp-sidebar-tools-host'), info = $('trp-readonly-info');
+                if (toggle) { toggle.textContent = editorEnabled ? 'ปิด Editor' : 'เปิด Editor'; toggle.classList.toggle('active', editorEnabled); toggle.setAttribute('aria-expanded', String(editorEnabled)); }
+                if (host) host.hidden = !editorEnabled;
+                if (info) info.hidden = editorEnabled;
+                if (!editorEnabled) { tool = 'select'; pending = null; drag = null; }
+                if (plan) render();
+            }
+            async function open() {
+                if (typeof currentCase !== 'undefined' && currentCase !== 'Case3') return;
+                const sidebar = ensureSidebar();
+                sidebar.hidden = false;
+                // Keep regular sidebar + floating "แผงควบคุม" button working.
+                const dropdown = $('controls-dropdown');
+                if (dropdown && !dropdown.classList.contains('show')) {
+                    if (typeof toggleControlsMenu === 'function') toggleControlsMenu();
+                    else { dropdown.classList.add('show'); document.body.classList.add('panel-open'); }
+                }
+                document.body.classList.add('trp-workspace-active');
+                root.hidden = false;
+                setEditorMode(false);  // read-only when first opened, same as Case1/2
+                const id = currentId || 'TR01';
+                if (!plan || currentProfileKey !== profile()) {
+                    const d = loadLocal(id); currentProfileKey = profile();
+                    changePlan(d ? d.plan : defaults(id), d ? Number(d.baseRevision) || 0 : 0);
+                    if (d) setStatus('โหลดแบบร่างจากเครื่องนี้ · ตรวจแล้วกดบันทึก Firebase เมื่อพร้อม');
+                } else render();
+                trpListen();trpArm();trpEnsurePredictions('เปิด TR01');renderWorkflow();
+            }
+            function close() {
+                trpDetach();setEditorMode(false);
+                root.hidden = true;
+                document.body.classList.remove('trp-workspace-active');
+                const panel = $('trp-sidebar-panel');
+                if (panel) panel.hidden = true;
+                const tools = panel && panel.querySelector('.trp-tools');
+                if (tools && toolsOriginalParent) toolsOriginalParent.insertBefore(tools, toolsOriginalParent.firstChild);
+                pending = null; drag = null;
+            }
+            function useTool(t) { if (!editorEnabled) return; tool = t; pending = null; selected = null; render(); if (t === 'furniture') setStatus('คลิกพื้นที่ว่างบนแปลนเพื่อเพิ่มเฟอร์นิเจอร์ตามขนาดที่กรอก'); if (t === 'door') setStatus('เลือกผนังและขนาดประตูในหัวข้อประตู แล้วคลิกตำแหน่งบนแปลน 1 ครั้ง'); }
+            // Commit only the edited room field. The previous version validated every
+            // field (including hidden corridor controls), so any unrelated stale/empty
+            // value caused render() to restore the room dimension the user had entered.
+            const GENERAL_FIELDS = {
+                'trp-width': { group: 'room', key: 'width', min: 1, max: 50, label: 'กว้าง X' },
+                'trp-depth': { group: 'room', key: 'depth', min: 1, max: 50, label: 'ยาว Y' },
+                'trp-height': { group: 'room', key: 'height', min: 1.5, max: 12, label: 'สูงห้อง Z' },
+                'trp-rxheight': { group: null, key: 'rxHeight', min: .1, max: 5, label: 'สูงเครื่องรับ' },
+                'trp-corridor-width': { group: 'corridor', key: 'width', min: .1, max: 20, label: 'ความกว้างทางเดิน' },
+                'trp-corridor-depth': { group: 'corridor', key: 'depth', min: .1, max: 50, label: 'ความยาวทางเดิน' },
+                'trp-corridor-offset': { group: 'corridor', key: 'offsetY', min: -20, max: 50, label: 'ตำแหน่งทางเดิน Y' }
+            };
+            function editGeneral(ev) {
+                const input = ev && ev.target;
+                if (!input || !plan) return;
+                const id = input.id;
+                if (id === 'trp-room-id') {
+                    const requested = input.value.trim();
+                    if (!validId(requested)) return setStatus('รหัสห้องใช้ A–Z, 0–9, _ หรือ - เท่านั้น');
+                    if (requested !== plan.roomId) return setStatus('รหัสห้องใหม่: กด “สร้างแปลนใหม่” หรือ “โหลด Firebase” เพื่อเปิดห้องนั้น');
+                    return;
+                }
+                if (id === 'trp-room-name') {
+                    const nextName = input.value.trim().slice(0, 80) || 'ห้องทดสอบใหม่';
+                    if (nextName !== plan.name) {
+                        tracked(() => { plan.name = nextName; });
+                        setStatus('บันทึกชื่อห้องในแบบร่างแล้ว · ยังไม่ได้บันทึก Firebase');
+                    }
+                    return;
+                }
+                if (id === 'trp-corridor-enabled') {
+                    if (plan.corridor.enabled !== input.checked) {
+                        const enabled = input.checked;
+                        tracked(() => { plan.corridor.enabled = enabled; });
+                        setStatus('ปรับการแสดงทางเดินแล้ว · ยังไม่ได้บันทึก Firebase');
+                    }
+                    return;
+                }
+                const config = GENERAL_FIELDS[id];
+                if (!config) return;
+                const raw = String(input.value).trim();
+                const value = raw === '' ? null : finite(raw);
+                if (value === null || value < config.min || value > config.max) {
+                    input.setAttribute('aria-invalid', 'true');
+                    setStatus('กรุณากรอก ' + config.label + ' ระหว่าง ' + config.min + '–' + config.max + ' เมตร');
+                    // Leave the typed value visible so it can be corrected; do not call render().
+                    return;
+                }
+                input.removeAttribute('aria-invalid');
+                const nextValue = rd(value);
+                const previous = config.group ? plan[config.group][config.key] : plan[config.key];
+                if (previous === nextValue) return;
+                if (config.group === 'room') {
+                    const proposed={...plan.room,[config.key]:nextValue};
+                    if (plan.objects.some(o => o.type==='door' &&
+                        (o.wall==='top'||o.wall==='bottom'?proposed.width:proposed.depth) + .0001 < doorMeta(o).width)) {
+                        setStatus('ปรับขนาดห้องไม่ได้: มีประตูกว้างกว่าด้านห้องใหม่');return;
+                    }
+                    if (config.key === 'height' && plan.objects.some(o => o.type==='door' && doorMeta(o).height > nextValue+.0001)) {
+                        setStatus('ปรับความสูงห้องไม่ได้: ต่ำกว่าประตูที่วางไว้');return;
+                    }
+                }
+                tracked(() => {
+                    if (config.group) plan[config.group][config.key] = nextValue;
+                    else plan[config.key] = nextValue;
+                    if (config.group === 'room') {
+                        plan.objects.filter(o => o.type==='door' && o.wall).forEach(o=>{
+                            o.offset=rd(clamp(o.offset,0,Math.max(0,doorLimit(o.wall)-o.width)));
+                            updateDoorGeometry(o);
+                        });
+                        regenerateAutoPerimeter();
+                    }
+                });
+                setStatus('ใช้ค่า ' + config.label + ' = ' + nextValue + ' ม. แล้ว · แปลนอัปเดตและเก็บเป็นแบบร่างในเครื่อง (ยังไม่บันทึก Firebase)');
+            }
+            function editSelected(ev) {
+                const input = ev.target.closest('[data-edit]'); if (!input) return; const o = selObj(); if (!o) return; const key = input.dataset.edit;
+                if (o.type === 'door') {
+                    const current=doorMeta(o),next={...current};
+                    if (key === 'name' || key === 'material') { const v=String(input.value).trim(); if(o[key]===v)return; tracked(()=>{o[key]=v;});return; }
+                    if (key === 'wall' || key === 'hinge') next[key]=input.value;
+                    else { const v=String(input.value).trim()===''?null:Number(input.value);if(v===null||!Number.isFinite(v)){setStatus('กรอกค่าประตูเป็นตัวเลข');return;} next[key]=rd(v); }
+                    next.offset=clamp(next.offset,0,Math.max(0,doorLimit(next.wall)-next.width));
+                    if (next.width<.3||next.width>Math.min(5,doorLimit(next.wall))||next.height<.5||next.height>plan.room.height) {setStatus('ตรวจความกว้าง/สูงประตู ไม่ให้เกินขนาดห้อง');return;}
+                    if(doorOverlap(next,o.id)){setStatus('ตำแหน่งช่องประตูทับกับช่องอื่น');return;}
+                    if(current[key]===next[key])return;
+                    tracked(()=>{ Object.assign(o,next);updateDoorGeometry(o);regenerateAutoPerimeter(); });
+                    setStatus('ปรับประตูแล้ว · ช่องประตูและแนวผนังอัตโนมัติอัปเดต');return;
+                } const val = key === 'name' || key === 'material' ? String(input.value).trim() : (key === 'zTop' && String(input.value).trim() === '' ? null : finite(input.value)); if ((val === null && key !== 'zTop') || (!['name', 'material'].includes(key) && val !== null && !Number.isFinite(val))) { setStatus('กรอกตัวเลขที่ถูกต้องก่อน'); render(); return; }
+                if (key === 'width' || key === 'depth' || key === 'thickness') { if (!(val > 0 && val <= 20)) { setStatus('ขนาดต้องมากกว่า 0 และไม่เกิน 20 เมตร'); render(); return; } }
+                if (key === 'z' || key === 'zTop' || key === 'zBottom') { if (val !== null && (val < 0 || val > 12)) { setStatus('ค่า Z ต้องอยู่ระหว่าง 0–12 เมตร'); render(); return; } }
+                if (!['name', 'material'].includes(key)) {
+                    const next = { ...o, [key]: rd(val) };
+                    if (['table', 'cabinet', 'furniture'].includes(o.type) && !furnitureFits(next, { x: next.x, y: next.y })) { setStatus('แก้ขนาด/พิกัดแล้วเฟอร์นิเจอร์จะเกินขอบพื้นที่'); render(); return; }
+                    if (['table', 'cabinet', 'furniture'].includes(o.type) && !((next.zTop === null && next.zBottom === 0) || (next.zTop > next.zBottom && next.zBottom >= 0 && next.zTop <= plan.room.height))) { setStatus('ระดับ Z ต้องอยู่ในความสูงห้องและ Z Top > Z Bottom'); render(); return; }
+                }
+                const nextValue = typeof val === 'number' ? rd(val) : val;
+                if (o[key] === nextValue) return; // no phantom undo step after blur or repeated change
+                tracked(() => { o[key] = nextValue; });
+            }
+            function shift(o, dx, dy) { if (selected === 'AP' || selected.startsWith('P:')) { o.x = rd(o.x + dx); o.y = rd(o.y + dy); } else if (o.type === 'door') { const d=doorMeta(o); const delta=(d.wall==='top'||d.wall==='bottom')?dx:dy; const newOffset=rd(clamp(d.offset+delta,0,doorLimit(d.wall)-d.width)); if(!doorOverlap({...d,offset:newOffset},o.id)){Object.assign(o,d,{offset:newOffset});updateDoorGeometry(o);} } else if (['wall', 'window'].includes(o.type)) { o.x1 = rd(o.x1 + dx); o.y1 = rd(o.y1 + dy); o.x2 = rd(o.x2 + dx); o.y2 = rd(o.y2 + dy); } else { o.x = rd(o.x + dx); o.y = rd(o.y + dy); } }
+            svg.addEventListener('pointerdown', ev => { if (!editorEnabled || tool !== 'select') return; const g = ev.target.closest('[data-obj]'); if (!g) return; const q = screenXY(ev); if (!q) return; selected = g.getAttribute('data-obj'); const o = selObj(); if (!o) return; history.push(clone(plan)); if (history.length > 35) history.shift(); drag = { id: selected, start: q, last: q, moved: false }; svg.setPointerCapture(ev.pointerId); render(); });
+            svg.addEventListener('pointermove', ev => { if (!drag) return; const q = screenXY(ev); if (!q) return; const dx = q.x - drag.last.x, dy = q.y - drag.last.y; if (Math.abs(dx) + Math.abs(dy) < .005) return; const o = selObj(); if (!o) return; const before = clone(o); shift(o, dx, dy); let representative = selected === 'AP' || selected.startsWith('P:') ? { x: o.x, y: o.y } : ['wall', 'door', 'window'].includes(o.type) ? { x: o.x1, y: o.y1 } : { x: o.x, y: o.y }; if (!inside(representative) || (['table', 'cabinet', 'furniture'].includes(o.type) && !furnitureFits(o, representative))) Object.assign(o, before); else { drag.last = q; drag.moved = true; paint(); } });
+            svg.addEventListener('pointerup', ev => { if (!drag) return; const wasMoved = drag.moved; drag = null; if (wasMoved) { if (selObj()?.type==='door') regenerateAutoPerimeter(); mark(); } else { history.pop(); render(); } });
+            svg.addEventListener('pointercancel', () => { if (drag) { drag = null; mark(); } });
+            svg.addEventListener('click', ev => { if (drag) return; const g = ev.target.closest('[data-obj]'); if (!editorEnabled) { if (g) { selected = g.getAttribute('data-obj'); if(selected.startsWith('P:')) { workPoint=selected.slice(2);trpArm(); } render(); } return; } if (g && tool === 'select') { selected = g.getAttribute('data-obj'); render(); return; } if (tool === 'select') return; const q = screenXY(ev); if (q) createAt(q); });
+            root.addEventListener('keydown', ev => { if (ev.key === 'Escape' && pending) { pending = null; render(); } });
+            $('trp-tools-grid').addEventListener('click', ev => { const b = ev.target.closest('[data-tool]'); if (b) useTool(b.dataset.tool); });
+            $('trp-furn-unit').addEventListener('change', () => {
+                const toCm = $('trp-furn-unit').value === 'cm';
+                for (const id of ['trp-furn-width', 'trp-furn-depth']) {
+                    const el = $(id), n = finite(el.value);
+                    if (n !== null) el.value = toCm ? String(rd(n * 100)) : String(rd(n / 100));
+                    el.step = toCm ? '1' : '0.01'; el.min = toCm ? '1' : '0.01'; el.max = toCm ? '2000' : '20';
+                }
+                root.querySelectorAll('#trp-furniture-editor .trp-furn-unit').forEach(el => el.textContent = toCm ? 'cm' : 'm');
+            });
+            $('trp-furn-add').addEventListener('click', () => {
+                if (!editorEnabled) return;
+                const spec = furnitureSpec(); if (!spec) return;
+                const x0 = spec.area === 'corridor' ? plan.room.width : 0;
+                const y0 = spec.area === 'corridor' ? plan.corridor.offsetY : 0;
+                const ww = spec.area === 'corridor' ? plan.corridor.width : plan.room.width;
+                const dd = spec.area === 'corridor' ? plan.corridor.depth : plan.room.depth;
+                const x = x0 + Math.min(.5, Math.max(0, ww - spec.width));
+                const y = y0 + Math.min(.5, Math.max(0, dd - spec.depth));
+                tool = 'select'; pending = null;
+                addFurnitureAt({ x: rd(x), y: rd(y) }, spec);
+            });
+            $('trp-furn-delete').addEventListener('click', () => {
+                const o = selObj();
+                if (!editorEnabled || !o || !['table', 'cabinet', 'furniture'].includes(o.type)) return setStatus('เลือกเฟอร์นิเจอร์บนแปลนก่อนกดลบ');
+                $('trp-delete').click();
+            });
+            ['trp-width', 'trp-depth', 'trp-height', 'trp-rxheight', 'trp-corridor-width', 'trp-corridor-depth', 'trp-corridor-offset', 'trp-corridor-enabled', 'trp-room-name', 'trp-room-id'].forEach(id => {
+                const el = $(id);
+                el.addEventListener('change', editGeneral);
+                // Enter must commit the field, not submit an enclosing form or revert it.
+                if (el.type === 'number') el.addEventListener('keydown', ev => {
+                    if (ev.key !== 'Enter') return;
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    editGeneral({ target: el });
+                    el.blur();
+                });
+            });
+            $('trp-selected').addEventListener('change', editSelected);
+            $('trp-apheight').addEventListener('change', () => { const v = finite($('trp-apheight').value); if (v === null || v < .2 || v > 10) { setStatus('ความสูง AP ไม่ถูกต้อง'); render(); return; } tracked(() => { plan.ap.z = rd(v); }); });
+            $('trp-delete').onclick = () => { if (!selected) return; const s = selected; if (s === 'AP') { setStatus('AP ต้องมีหนึ่งตำแหน่ง ใช้เครื่องมือ AP เพื่อย้าย'); return; } tracked(() => { if (s.startsWith('P:')) plan.points = plan.points.filter(p => p.id !== s.slice(2)); else {const wasDoor=plan.objects.some(o=>o.id===s.slice(2)&&o.type==='door');plan.objects=plan.objects.filter(o=>o.id!==s.slice(2));if(wasDoor)regenerateAutoPerimeter();} selected = null; }); };
+            $('trp-undo').onclick = () => { if (!history.length) return setStatus('ไม่มีการเปลี่ยนแปลงให้ย้อนกลับ'); plan = history.pop(); selected = null; pending = null; mark(); };
+            $('trp-auto-points').onclick = () => { if (plan.points.length && !confirm('แทนที่จุด N ที่มีอยู่ด้วย 12 จุดกริด?')) return; tracked(() => { plan.points = []; let n = 1; for (let r = 0; r < 4; r++)for (let c = 0; c < 3; c++)plan.points.push({ id: 'N' + String(n++).padStart(2, '0'), x: rd(plan.room.width * (c + 1) / 4), y: rd(plan.room.depth * (r + 1) / 5), z: plan.rxHeight }); selected = null; }); setStatus('สร้าง 12 จุดเป็นกริดเริ่มต้นแล้ว · ปรับตามการวัดหน้างานก่อนทำนาย'); };
+            $('trp-perimeter').onclick = () => { if (!confirm('สร้างผนังรอบห้องแบบมีช่องเว้นตรงประตูที่วางแล้ว? (ผนังที่วาดเองจะไม่ถูกแก้)'))return; tracked(()=>{const old=plan.objects.filter(o=>o.perimeterAuto); plan.objects=plan.objects.filter(o=>!o.perimeterAuto); plan.objects.push({id:newId('wall'),type:'wall',name:'ผนังรอบห้อง',material:old[0]?.material||$('trp-material').value,perimeterAuto:true,perimeterEdge:'top',x1:0,y1:0,x2:0,y2:0,thickness:.12,zBottom:0,zTop:plan.room.height});regenerateAutoPerimeter();});setStatus('สร้างผนังรอบห้องพร้อมเว้นช่องประตูแล้ว · ผนังที่วาดเองไม่ถูกเปลี่ยน'); };
+            $('trp-door-add').addEventListener('click',()=>addMeasuredDoor());
+            $('trp-new').onclick = () => { const id = $('trp-room-id').value.trim(); if (!validId(id)) return setStatus('รหัสห้องไม่ถูกต้อง'); if (dirty && !confirm('สร้างแปลนใหม่? ข้อมูลที่ยังไม่บันทึกบน Firebase จะถูกเก็บเป็นแบบร่างเฉพาะในเครื่องนี้')) return; if (id === currentId && !confirm('เริ่มแปลน ' + id + ' ใหม่? ระบบจะไม่ลบข้อมูลบน Firebase จนกว่าจะกดบันทึก')) return; changePlan(defaults(id), 0); currentId = id; localDraft(); };
+            $('trp-load').onclick = async () => { const id = $('trp-room-id').value.trim(); if (!validId(id)) return setStatus('รหัสห้องไม่ถูกต้อง'); if (dirty && !confirm('โหลดข้อมูล Firebase ทับแบบร่างที่กำลังแสดง? (แบบร่างยังเก็บไว้ในเครื่อง)')) return; if (typeof db === 'undefined') return setStatus('Firebase ยังไม่พร้อม'); try { setStatus('กำลังอ่านแปลนจาก Firebase...'); const s = await db.ref(path(id)).once('value'); if (!s.exists()) return setStatus('ยังไม่มีแปลน ' + id + ' บน Firebase · สร้างใหม่และบันทึกได้'); const r = s.val(); changePlan(r.plan || r, Number(r.revision) || 0); localDraft(); setStatus('โหลดแปลน ' + id + ' จาก Firebase สำเร็จ'); } catch (e) { console.error('Transfer room load', e); setStatus('โหลด Firebase ไม่สำเร็จ: ' + e.message); } };
+            $('trp-save').onclick = async () => {
+                if (typeof currentCase !== 'undefined' && currentCase !== 'Case3') return setStatus('เปิด Case 3 ก่อน'); if (typeof db === 'undefined') return setStatus('Firebase ยังไม่พร้อม'); try {
+                    sane(plan); const id = plan.roomId, ref = db.ref(path(id)), baseline = baseRevision; const saved = snapshot(); const result = await ref.transaction(current => { const revision = current && Number(current.revision) || 0; if (revision !== baseline) return; return { schema: 'Case3_TransferRoomPlan_V1', roomId: id, profile: profile(), revision: revision + 1, savedAt: new Date().toISOString(), plan: saved }; }, undefined, false);
+                    if (!result.committed) return setStatus('ไม่บันทึก: แปลน Firebase ถูกแก้จากเครื่องอื่นแล้ว · โหลดตรวจสอบก่อน'); baseRevision = Number(result.snapshot.val().revision) || baseline + 1; dirty = false; localDraft(); setStatus('บันทึกเฉพาะ TransferRoomPlans/' + id + ' สำเร็จ · revision ' + baseRevision);
+                } catch (e) { console.error('Transfer room save', e); setStatus('บันทึก Firebase ไม่สำเร็จ: ' + e.message); }
+            };
+            $('trp-export-json').onclick = () => { if (!plan) return; download('Case3_TransferRoom_' + plan.roomId + '_Plan.json', JSON.stringify(modelJSON(), null, 2), 'application/json;charset=utf-8'); };
+            $('trp-export-csv').onclick = () => { if (!plan) return; const q = s => '"' + String(s).replace(/"/g, '""') + '"'; const st=trpPredValid()?plan.predictions.band5Status:''; const rows = [['roomId', 'pointId', 'xMeters', 'yMeters', 'zMeters', 'predicted24', 'predicted5', 'measured24', 'measured5', 'predicted5_basis', 'tx_power_5ghz_assumed_dbm', 'tx_power_5ghz_measured_dbm'], ...plan.points.map(p => {const pr=trpPredictionPoint(p.id);return [plan.roomId,p.id,p.x,p.y,p.z,pr?.predicted24??'',pr?.predicted5??'',trpPointMeasured(p.id,'24')??'',trpPointMeasured(p.id,'5')??'',st,st==='CASE3_LEGACY_ASSUMED_TX_20_DBM_NOT_MEASURED'?20:'',''];})]; download('Case3_TransferRoom_' + plan.roomId + '_Points.csv', '\uFEFF' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv;charset=utf-8'); };
+            $('trp-close').onclick = close; // docked workspace, not a modal backdrop
+            // Stable sibling of Case 3 controls: renderControls() may rewrite its own contents.
+            function mountLauncher() { const host = $('case-condition-controls'); if (!host || !host.parentElement) return; let launcher = $('trp-launcher'); if (!launcher) { launcher = document.createElement('div'); launcher.id = 'trp-launcher'; launcher.innerHTML = '<button type="button" class="trp-launch" id="trp-open">แปลนห้องทดสอบใหม่ <span aria-hidden="true">เปิด ›</span></button><small>สำหรับทดสอบโมเดลเดิมในห้องใหม่ · บันทึกแยกจาก 432 Scan</small>'; $('trp-root').before(launcher); $('trp-open').addEventListener('click', open); } if (launcher.parentElement !== host.parentElement || launcher.nextSibling !== host) { host.parentElement.insertBefore(launcher, host); } }
+            function init() { mountLauncher(); const host = $('case-condition-controls'); if (host) { const parent = host.parentElement; if (parent) { const observer = new MutationObserver(() => { if (!$('trp-launcher') || $('trp-launcher').nextSibling !== host) mountLauncher(); }); observer.observe(parent, { childList: true }); } } }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
+            window.C3TransferPlanner = { open, close, setEditorMode,
+                getEditorMode: () => editorEnabled,
+                getPlan: () => plan ? clone(plan) : null,
+                getPath: () => plan ? path(plan.roomId) : null,
+                getPredictionStatus: () => ({valid:trpPredValid(),fitReady:!!trpFitParams(),
+                    accidentalWalls:trpAccidentalWalls().map(o=>o.id),
+                    nPoints:plan?.points?.length||0,
+                    prediction:plan?.predictions?.band5Status||null,
+                    info:workInfo}),
+                generatePredictions:trpGeneratePredictions };
         })();
     </script>
 
