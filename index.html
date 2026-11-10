@@ -34239,9 +34239,30 @@
                             trpMeasuredHeatmapEnabled = value === 'heatmap';
                             trpHeatmapToolbarForwarding = true;
                         }
-                        try { if (original) original.click(); }
-                        finally { trpHeatmapToolbarForwarding = false; }
-                        // If the original delegated button is unavailable, do not fabricate a state update.
+                        // v118: The compact transfer-room sidebar (v105) removed its old
+                        // map/band buttons. Forward through the SAME delegated sidebar
+                        // handler using a short-lived hidden button when that target
+                        // is absent. Do not set prediction or measurement state here.
+                        try {
+                            if (original) {
+                                original.click();
+                            } else {
+                                const workflow = $('trp-workflow-panel');
+                                if (!workflow || !workflow.closest('#trp-sidebar-panel')) {
+                                    console.warn('Transfer-room map controls: delegated sidebar target unavailable');
+                                    return;
+                                }
+                                const relay = document.createElement('button');
+                                relay.type = 'button';
+                                relay.hidden = true;
+                                relay.dataset.trp = action;
+                                relay.dataset.val = baseValue;
+                                workflow.appendChild(relay);
+                                try { relay.click(); }
+                                finally { relay.remove(); }
+                            }
+                        } finally { trpHeatmapToolbarForwarding = false; }
+                        // Preserve the original busy guard, model checks and render path.
                     });
                     bar.querySelector('#trp-v62-numbers').addEventListener('change', ev => {
                         trpShowNumbers = Boolean(ev.target.checked);
