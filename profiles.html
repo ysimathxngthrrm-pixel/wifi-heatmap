@@ -1136,6 +1136,187 @@
             color: #986349;
         }
     </style>
+    <style id="v104-profile-card-compact">
+        .profiles-grid {
+            align-items: start;
+        }
+
+        .profiles-grid .main-profile-card {
+            min-height: 0 !important;
+            padding: 18px 18px 17px !important;
+            justify-content: flex-start !important;
+            gap: 0 !important;
+        }
+
+        .main-profile-card .research-card-top {
+            margin-bottom: 12px;
+        }
+
+        .main-profile-card .research-card-title {
+            margin-bottom: 7px;
+        }
+
+        .main-profile-card .research-card-desc {
+            min-height: 0 !important;
+            margin-bottom: 13px;
+            color: #617780;
+            font-size: 12px;
+        }
+
+        .main-profile-card .research-card-actions {
+            margin-top: 0;
+        }
+
+        .main-profile-card .research-point-count {
+            font-size: 11px;
+        }
+
+        .main-profile-card .v80-tr01-option {
+            margin-top: 14px;
+            padding: 11px 12px;
+            background: #f3faf8;
+        }
+
+        .main-profile-card .v80-tr01-option strong {
+            font-size: 13px;
+        }
+
+        .main-profile-card .v80-tr01-option p {
+            margin: 3px 0 9px;
+        }
+
+        @media (max-width: 720px) {
+            .profiles-grid .main-profile-card {
+                padding: 15px !important;
+            }
+        }
+    </style>
+
+    <style id="v105-equal-profile-cards">
+        /* One row of truly equal-height primary experiments. Transfer room is a separate entry. */
+        #primary-profiles-grid {
+            align-items: stretch !important;
+            grid-auto-rows: 1fr;
+        }
+
+        #primary-profiles-grid>.main-profile-card {
+            height: 100% !important;
+            min-height: 262px !important;
+            padding: 21px 22px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+        }
+
+        #primary-profiles-grid>.main-profile-card .research-card-title {
+            min-height: 0;
+            font-size: 17px !important;
+            line-height: 1.45 !important;
+            margin-bottom: 10px !important;
+        }
+
+        #primary-profiles-grid>.main-profile-card .research-card-desc {
+            font-size: 13px !important;
+            margin-bottom: 12px !important;
+        }
+
+        #primary-profiles-grid>.main-profile-card .research-card-actions {
+            margin-top: auto !important;
+        }
+
+        #primary-transfer-room[hidden] {
+            display: none !important;
+        }
+
+        #primary-transfer-room {
+            margin-top: 13px;
+        }
+
+        #primary-transfer-room .v80-tr01-option {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 18px;
+            margin: 0;
+            padding: 13px 18px;
+            border-radius: 13px;
+            background: #fff;
+            border: 1px solid #d9e8e6;
+        }
+
+        #primary-transfer-room .v80-tr01-option strong {
+            flex: 1 1 280px;
+            font-size: 15px;
+            color: #195f5a;
+        }
+
+        #primary-transfer-room .v80-tr01-option p {
+            flex: 0 1 auto;
+            margin: 0;
+            font-size: 13px;
+        }
+
+        #primary-transfer-room .v80-tr01-actions {
+            margin-left: auto;
+        }
+
+        #primary-transfer-room .v80-tr01-actions .btn {
+            min-height: 39px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 720px) {
+            #primary-profiles-grid {
+                grid-auto-rows: auto;
+            }
+
+            #primary-profiles-grid>.main-profile-card {
+                min-height: 228px !important;
+            }
+
+            #primary-transfer-room .v80-tr01-actions {
+                margin-left: 0;
+            }
+        }
+    </style>
+
+    <style id="v110-primary-profile-cleanup">
+        /* Presentation only: three official cards plus the transfer-room entry.
+         Historical/empty profiles remain untouched in Firebase. */
+        .filter-bar,
+        #archive-details,
+        #empty-details,
+        .research-footnote,
+        .header-title>p,
+        .section-heading p,
+        #primary-profiles-count {
+            display: none !important;
+        }
+
+        .header-actions>[onclick*="openCreateModal"] {
+            display: none !important;
+        }
+
+        #primary-profiles-grid>.main-profile-card {
+            min-height: 205px !important;
+            padding: 20px 22px !important;
+        }
+
+        #primary-profiles-grid>.main-profile-card .research-card-title {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+
+        #primary-profiles-grid>.main-profile-card .research-card-actions {
+            margin-top: auto !important;
+        }
+
+        @media (max-width: 720px) {
+            #primary-profiles-grid>.main-profile-card {
+                min-height: 170px !important;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -1185,11 +1366,12 @@
             <div class="section-heading">
                 <div>
                     <h2 id="primary-heading">การทดลองหลัก</h2>
-                    <p>3 การทดลองหลัก · TR01 เป็นการทดสอบถ่ายโอนภายใต้ Case 3</p>
+                    <p>3 การทดลองหลัก · พร้อมห้องทดสอบการถ่ายโอนแบบจำลอง</p>
                 </div>
                 <span class="section-count" id="primary-profiles-count">0 การทดลอง</span>
             </div>
             <div id="primary-profiles-grid" class="profiles-grid"></div>
+            <div id="primary-transfer-room" class="v105-transfer-entry" hidden></div>
         </section>
 
         <details id="archive-details" class="research-fold">
@@ -1206,7 +1388,7 @@
             <div id="empty-profiles-grid" class="profiles-grid archive-grid"></div>
         </details>
 
-        <p class="research-footnote">หมายเหตุ: ชื่อการทดลองและ TR01 เป็นป้ายสำหรับนำเสนอเท่านั้น
+        <p class="research-footnote">หมายเหตุ: ชื่อการทดลองและชื่อห้องทดสอบการถ่ายโอนแบบจำลองเป็นเพียงข้อความแสดงผล
             ไม่เปลี่ยนคีย์โปรไฟล์หรือข้อมูลการวัดใน Firebase</p>
     </div>
 
@@ -1332,19 +1514,19 @@
 
                     <div id="summary-case-filter-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
 
-                        <span style="font-size:12px;font-weight:bold;color:#495057;">Case:</span>
+                        <span style="font-size:12px;font-weight:bold;color:#495057;">การทดลอง:</span>
 
                         <button class="segmented-btn active" id="summary-case-all"
                             onclick="filterSummaryData('case','all')">ทั้งหมด</button>
 
                         <button class="segmented-btn" id="summary-case-case1"
-                            onclick="filterSummaryData('case','Case1')">Case 1</button>
+                            onclick="filterSummaryData('case','Case1')">ห้องเรียน</button>
 
                         <button class="segmented-btn" id="summary-case-case2"
-                            onclick="filterSummaryData('case','Case2')">Case 2</button>
+                            onclick="filterSummaryData('case','Case2')">พื้นที่อาคาร</button>
 
                         <button class="segmented-btn" id="summary-case-case3"
-                            onclick="filterSummaryData('case','Case3')">Case 3</button>
+                            onclick="filterSummaryData('case','Case3')">แบบจำลอง</button>
 
                     </div>
 
@@ -1366,7 +1548,7 @@
 
                     <div id="summary-case1-session-row"
                         style="display:none;gap:10px;align-items:center;flex-wrap:wrap;margin-top:11px;">
-                        <span style="font-size:12px;font-weight:bold;color:#495057;">ชุดข้อมูล Case 1:</span>
+                        <span style="font-size:12px;font-weight:bold;color:#495057;">ชุดข้อมูลห้องเรียน:</span>
                         <button type="button" class="segmented-btn" id="summary-session-retest"
                             onclick="filterSummaryData('session','Retest_2026-11-09')">วัดใหม่ 9 พ.ย. 2569</button>
                         <button type="button" class="segmented-btn" id="summary-session-original"
@@ -1391,7 +1573,7 @@
 
                         <div class="num" id="stat-case1">0</div>
 
-                        <div class="lbl">Case 1</div>
+                        <div class="lbl">ห้องเรียน</div>
 
                     </div>
 
@@ -1399,7 +1581,7 @@
 
                         <div class="num" id="stat-case2">0</div>
 
-                        <div class="lbl">Case 2</div>
+                        <div class="lbl">พื้นที่อาคาร</div>
 
                     </div>
 
@@ -1407,7 +1589,7 @@
 
                         <div class="num" id="stat-case3">0</div>
 
-                        <div class="lbl">Case 3</div>
+                        <div class="lbl">แบบจำลอง</div>
 
                     </div>
 
@@ -1432,11 +1614,13 @@
                 <div
                     style="font-size:12px;color:#64748B;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 12px;margin-bottom:12px;text-align:left;">
 
-                    <b>Case 1:</b> ห้องเรียนสำหรับการประเมินสัญญาณ · R1/R2/R3 · 2.4/5 GHz<br>
+                    <b>ห้องเรียน:</b> ห้องเรียนสำหรับการประเมินสัญญาณ · R1/R2/R3 · 2.4/5 GHz<br>
 
-                    <b>Case 2:</b> Network Coverage ของ KMITL-WIFI · ชั้น 2/3 · R1/R2/R3 · Strongest BSSID ต่อ band<br>
+                    <b>พื้นที่อาคาร:</b> Network Coverage ของ KMITL-WIFI · ชั้น 2/3 · R1/R2/R3 · Strongest BSSID ต่อ
+                    band<br>
 
-                    <b>Case 3:</b> Controlled AP Testbed · Calibration / Validation · R1/R2/R3 · AP-CAL/BSSID ที่ล็อกไว้
+                    <b>แบบจำลอง:</b> Controlled AP Testbed · Calibration / Validation · R1/R2/R3 · AP-CAL/BSSID
+                    ที่ล็อกไว้
 
                 </div>
 
@@ -2076,7 +2260,7 @@
             };
             const url = getProfileOpenHref(p);
             if (url === '#') {
-                alert('โปรไฟล์นี้ยังไม่ระบุ Case กรุณาเลือก Case จากรายการในบัตรโปรไฟล์ก่อน');
+                alert('โปรไฟล์นี้ยังไม่ระบุการทดลอง กรุณาเลือกการทดลองจากรายการในบัตรโปรไฟล์ก่อน');
                 return;
             }
             try { localStorage.setItem('wifiLastProfile', profileName); } catch (e) { }
@@ -2118,9 +2302,9 @@
         }
 
         const RESEARCH_EXPERIMENTS = Object.freeze({
-            'case1 final': { code: 'Case1', short: 'Case 1', title: 'การประเมินความครอบคลุมสัญญาณ Wi-Fi ภายในห้องเรียน', description: 'สำรวจ RSSI สองย่านความถี่และประเมินพื้นที่ครอบคลุม', order: 1 },
-            'case2 final': { code: 'Case2', short: 'Case 2', title: 'การวิเคราะห์ความครอบคลุมสัญญาณจากหลายจุดกระจายสัญญาณ', description: 'สำรวจระดับสัญญาณจากเครือข่ายหลาย AP ในพื้นที่อาคาร', order: 2 },
-            'case3 final': { code: 'Case3', short: 'Case 3', title: 'การพัฒนาและประเมินแบบจำลองการทำนาย RSSI', description: 'Calibration, Validation และ Final Evaluation', order: 3 }
+            'case1 final': { code: 'Case1', short: 'ห้องเรียนทดลอง', title: 'การประเมินความครอบคลุมสัญญาณภายในห้องเรียน', description: 'ผลวัดครั้งล่าสุด · 24 จุด · สองย่านความถี่', order: 1 },
+            'case2 final': { code: 'Case2', short: 'ความครอบคลุมเครือข่าย', title: 'การประเมินความครอบคลุมเครือข่ายภายในอาคาร', description: 'พื้นที่ชั้น 2 · ความครอบคลุมจากหลาย AP', order: 2 },
+            'case3 final': { code: 'Case3', short: 'แบบจำลองการทำนาย', title: 'การพัฒนาและประเมินแบบจำลองการทำนายความแรงสัญญาณ Wi-Fi ภายในอาคาร', description: 'Calibration · Validation · Final Evaluation', order: 3 }
         });
         function getProfileCategory(p) {
             if (RESEARCH_EXPERIMENTS[p.name.trim().toLowerCase()]) return 'primary';
@@ -2142,23 +2326,32 @@
             article.className = 'profile-card research-profile-card ' + (info ? 'main-profile-card' : 'archive-profile-card');
             const header = document.createElement('div'); header.className = 'research-card-top';
             const code = document.createElement('span'); code.className = 'research-case-code';
-            code.textContent = (c === 'Case1' ? 'Case 1' : c === 'Case2' ? 'Case 2' : c === 'Case3' ? 'Case 3' : c === 'mixed' ? 'หลาย Case' : 'ยังไม่ระบุ Case');
+            code.textContent = (c === 'Case1' ? 'ห้องเรียนทดลอง' : c === 'Case2' ? 'พื้นที่อาคาร' : c === 'Case3' ? 'แบบจำลองสัญญาณ' : c === 'mixed' ? 'หลายการทดลอง' : 'ยังไม่ระบุการทดลอง');
             header.appendChild(code);
             const count = document.createElement('span'); count.className = 'research-point-count';
             if (c === 'Case1' && info) {
-                count.textContent = `ใหม่ ${(p.retestCount || 0).toLocaleString('th-TH')} · เดิม ${(p.originalCount || 0).toLocaleString('th-TH')} รายการ RSSI`;
-            } else {
+                // Show only the recent retest as one dataset. Historical data
+                // remains in Firebase and in the detailed summary dialog.
+                count.textContent = (p.retestCount || 0) > 0
+                    ? `วัดใหม่ 1 ชุด · ${(p.retestCount || 0).toLocaleString('th-TH')} รายการ RSSI`
+                    : 'ยังไม่มีข้อมูลวัดใหม่';
+                count.title = 'แสดงเฉพาะชุดวัดใหม่วันที่ 9 พฤศจิกายน 2569 · จำนวนเป็นรายการ RSSI ไม่ใช่จำนวนตำแหน่ง';
+                header.appendChild(count);
+            } else if (!info) {
+                // Show archived-profile counts only; main experiment cards stay concise.
                 count.textContent = p.pointCount === 0 ? 'ยังไม่มีรายการ RSSI' : `${p.pointCount.toLocaleString('th-TH')} รายการ RSSI`;
+                count.title = 'จำนวนรายการข้อมูล RSSI จาก Firebase';
+                header.appendChild(count);
             }
-            count.title = 'นับรายการข้อมูล RSSI จาก Firebase ไม่ใช่จำนวนจุดวัดอิสระ';
-            header.appendChild(count);
-            article.appendChild(header);
+            // v110: primary cards show their official experiment title first; no tiny case badges or raw record counts.
+            if (!info) article.appendChild(header);
             const heading = document.createElement('h3'); heading.className = 'research-card-title';
             heading.textContent = info ? info.title : p.name; article.appendChild(heading);
             const desc = document.createElement('p'); desc.className = 'research-card-desc';
-            desc.textContent = info ? info.description : (p.pointCount === 0 ? 'โปรไฟล์ว่างหรือยังไม่มีข้อมูลวัด' : 'ข้อมูลทดสอบหรือผลย้อนหลัง'); article.appendChild(desc);
+            desc.textContent = info ? info.description : (p.pointCount === 0 ? 'โปรไฟล์ว่างหรือยังไม่มีข้อมูลวัด' : 'ข้อมูลทดสอบหรือผลย้อนหลัง');
+            if (!info) article.appendChild(desc); // no tiny repeated explanations on the three official cards
             const dbname = document.createElement('p'); dbname.className = 'research-profile-key';
-            dbname.textContent = `โปรไฟล์ข้อมูล: ${p.name}`; article.appendChild(dbname);
+            dbname.textContent = `โปรไฟล์ข้อมูล: ${p.name}`; if (!info) article.appendChild(dbname);
             const actions = document.createElement('div'); actions.className = 'research-card-actions';
             const a = document.createElement('a'); a.className = 'btn btn-primary research-main-action';
             a.textContent = info ? 'เปิดการทดลอง' : 'เปิดโปรไฟล์'; a.href = getProfileOpenHref(p);
@@ -2168,9 +2361,9 @@
             if (a.href.endsWith('#')) {
                 const selector = document.createElement('select');
                 selector.className = 'form-input'; selector.style.maxWidth = '135px';
-                selector.setAttribute('aria-label', 'เลือก Case สำหรับโปรไฟล์ ' + p.name);
-                selector.appendChild(new Option('เลือก Case', ''));
-                ['Case1', 'Case2', 'Case3'].forEach(c => selector.appendChild(new Option(c.replace('Case', 'Case '), c)));
+                selector.setAttribute('aria-label', 'เลือกการทดลองสำหรับโปรไฟล์ ' + p.name);
+                selector.appendChild(new Option('เลือกการทดลอง', ''));
+                ['Case1', 'Case2', 'Case3'].forEach(c => selector.appendChild(new Option(({ Case1: 'ห้องเรียนทดลอง', Case2: 'พื้นที่อาคาร', Case3: 'แบบจำลองสัญญาณ' })[c], c)));
                 a.href = '#'; a.setAttribute('aria-disabled', 'true');
                 a.addEventListener('click', e => { if (a.getAttribute('aria-disabled') === 'true') e.preventDefault(); });
                 selector.addEventListener('change', () => {
@@ -2185,7 +2378,7 @@
             const meta = document.createElement('div'); meta.className = 'research-card-meta';
             const ts = Number(p.updated_at); const last = Number.isFinite(ts) ? new Date(ts) : null;
             const formatted = last && !isNaN(last.getTime()) ? last.toLocaleDateString('th-TH', { dateStyle: 'medium' }) : '—';
-            meta.textContent = `แก้ไขข้อมูลล่าสุด: ${formatted}`; article.appendChild(meta);
+            meta.textContent = `แก้ไขข้อมูลล่าสุด: ${formatted}`; if (!info) article.appendChild(meta);
             if (category !== 'primary') {
                 const options = document.createElement('details'); options.className = 'research-card-options';
                 const optTitle = document.createElement('summary'); optTitle.textContent = 'จัดการโปรไฟล์ (ขั้นสูง)'; options.appendChild(optTitle);
@@ -2205,15 +2398,16 @@
             const section = document.createElement('section');
             section.className = 'v80-tr01-option';
             const title = document.createElement('strong');
-            title.textContent = 'การประเมินการถ่ายโอนแบบจำลอง (TR01)';
+            title.textContent = 'การประเมินการถ่ายโอนแบบจำลองในห้องทดสอบ';
             const subtitle = document.createElement('p');
-            subtitle.textContent = 'Zero Local Calibration · ใช้โมเดลที่ตรึงจาก Case 3';
+            subtitle.textContent = 'Zero Local Calibration';
             const linkRow = document.createElement('div');
             linkRow.className = 'v80-tr01-actions';
             if (sourceProfile) {
                 const a = document.createElement('a');
                 a.className = 'btn btn-secondary';
-                a.textContent = 'เปิด TR01';
+                a.textContent = 'เปิดห้องทดสอบ';
+                a.title = 'เข้าสู่การประเมินการถ่ายโอนแบบจำลองในห้องทดสอบ';
                 a.href = getProfileOpenHref(sourceProfile, 'Case3', 'tr01');
                 a.addEventListener('click', () => {
                     try { localStorage.setItem('wifiLastProfile', sourceProfile.name); } catch (e) { }
@@ -2231,6 +2425,9 @@
 
         function renderProfilesGrid(profilesList) {
             const primary = document.getElementById('primary-profiles-grid');
+            const transferEntry = document.getElementById('primary-transfer-room');
+            transferEntry.replaceChildren();
+            transferEntry.hidden = true;
             const archive = document.getElementById('archive-profiles-grid');
             const empty = document.getElementById('empty-profiles-grid');
             [primary, archive, empty].forEach(el => el.replaceChildren());
@@ -2251,7 +2448,6 @@
             groups.primary.forEach(profile => {
                 const card = createProfileCard(profile);
                 if (profile.name.trim().toLowerCase() === 'case3 final') {
-                    card.appendChild(createTR01Card(profile));
                     hasCase3 = true;
                 }
                 primary.appendChild(card);
@@ -2260,9 +2456,15 @@
             // Searching for TR01 reveals the parent Case 3, not a phantom fourth case.
             if (trSearch && !hasCase3 && sourceProfile) {
                 const card = createProfileCard(sourceProfile);
-                card.appendChild(createTR01Card(sourceProfile));
                 primary.appendChild(card);
+                hasCase3 = true;
                 shownPrimaryCount++;
+            }
+            // Transfer room has its own small entry below the three equal-sized
+            // research cards; it remains within the Case 3 Firebase profile.
+            if (hasCase3 && sourceProfile) {
+                transferEntry.appendChild(createTR01Card(sourceProfile));
+                transferEntry.hidden = false;
             }
             groups.archive.forEach(p => archive.appendChild(createProfileCard(p)));
             groups.empty.forEach(p => empty.appendChild(createProfileCard(p)));
@@ -2508,10 +2710,10 @@
 
             summaryFilterFreq = 'all';
             const retestCount = activeSummaryPointsList.filter(p => p.caseId === 'Case1' && p.sessionKey === 'Retest_2026-11-09').length;
-            summaryFilterSession = retestCount > 0 ? 'Retest_2026-11-09' : 'Original';
+            summaryFilterSession = 'Retest_2026-11-09'; // v110 official Case 1 dataset only
             const sessionRow = document.getElementById('summary-case1-session-row');
             const sessionCount = document.getElementById('summary-case1-session-count');
-            const showSession = summaryDetectedCase === 'Case1';
+            const showSession = false; // v110: no Original / Retest dropdown in official summary
             if (sessionRow) sessionRow.style.display = showSession ? 'flex' : 'none';
             if (sessionCount) sessionCount.style.display = showSession ? 'block' : 'none';
 
@@ -2574,7 +2776,7 @@
             }
 
             if (type === 'freq') summaryFilterFreq = value;
-            if (type === 'session' && ['Original', 'Retest_2026-11-09'].includes(value)) summaryFilterSession = value;
+            // v110: Case 1 dataset is frozen to Retest_2026-11-09; no UI/session switch.
 
             renderSummaryView();
 
@@ -2642,7 +2844,7 @@
             const filtered = activeSummaryPointsList
 
                 .filter(p => summaryFilterCase === 'all' || p.caseId === summaryFilterCase)
-                .filter(p => p.caseId !== 'Case1' || summaryDetectedCase !== 'Case1' || p.sessionKey === summaryFilterSession)
+                .filter(p => p.caseId !== 'Case1' || p.sessionKey === 'Retest_2026-11-09')
 
                 .filter(p => summaryFilterFreq === 'all' || p.freq === summaryFilterFreq)
 
