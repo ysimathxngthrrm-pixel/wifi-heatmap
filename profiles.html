@@ -1317,6 +1317,379 @@
             }
         }
     </style>
+    <style id="v167-research-summary-ui">
+        #summary-modal .modal-card.summary-modal-card {
+            width: min(970px, 100%);
+            max-width: 970px;
+            padding: 24px;
+            max-height: min(88vh, 900px);
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .summary-header-v167 {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .summary-header-v167 h3 {
+            font-size: 21px;
+            margin: 0;
+            color: #173a40;
+            line-height: 1.4;
+        }
+
+        .summary-header-v167 p {
+            font-size: 13px;
+            color: #637983;
+            margin-top: 5px;
+            line-height: 1.5;
+        }
+
+        .summary-close-v167 {
+            flex: none;
+            padding: 8px 14px;
+        }
+
+        .summary-filter-v167 {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-bottom: 16px;
+        }
+
+        .summary-filter-v167 .summary-filter-label {
+            font-weight: 700;
+            font-size: 13px;
+            color: #506971;
+            margin-right: 5px;
+        }
+
+        .summary-filter-v167 .summary-choice {
+            min-width: 82px;
+            border: 1px solid #dae6e9;
+            border-radius: 10px;
+            padding: 8px 12px;
+            background: #f8fafb;
+            color: #486068;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .summary-filter-v167 .summary-choice.active {
+            color: #0f6d64;
+            border-color: #82c9bd;
+            background: #e6f6f1;
+        }
+
+        #summary-modal .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        #summary-modal .summary-stats .stat-box {
+            padding: 16px 10px;
+            border: 1px solid #dfe8ea;
+            background: #f8fbfb;
+            border-radius: 12px;
+            min-width: 0;
+        }
+
+        #summary-modal .summary-stats .num {
+            font-size: 23px;
+            line-height: 1.2;
+            color: #16756e;
+            font-variant-numeric: tabular-nums;
+            overflow-wrap: anywhere;
+        }
+
+        #summary-modal .summary-stats .lbl {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #637680;
+        }
+
+        .summary-context-v167 {
+            border-radius: 11px;
+            background: #f1f8f7;
+            padding: 12px 15px;
+            color: #405d63;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .summary-context-v167 strong {
+            color: #155d58;
+        }
+
+        .summary-group-v167 {
+            margin-bottom: 16px;
+        }
+
+        .summary-section-heading-v167 {
+            font-weight: 700;
+            font-size: 15px;
+            color: #274b50;
+            margin: 0 0 9px;
+        }
+
+        .summary-breakdown-v167 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 8px;
+        }
+
+        .summary-breakdown-v167 .summary-break-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border: 1px solid #e4eaed;
+            background: #fff;
+            padding: 10px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            color: #546b73;
+        }
+
+        .summary-breakdown-v167 .summary-break-item b {
+            color: #176d66;
+            white-space: nowrap;
+        }
+
+        .summary-records-v167 {
+            border: 1px solid #dce7e9;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .summary-records-v167>summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #29575a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            background: #f8fbfb;
+        }
+
+        .summary-records-v167>summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .summary-records-v167>summary::after {
+            content: '▾';
+            color: #26766f;
+        }
+
+        .summary-records-v167[open]>summary::after {
+            content: '▴';
+        }
+
+        .summary-records-inner-v167 {
+            padding: 13px;
+        }
+
+        .summary-record-controls-v167 {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 9px;
+            font-size: 12px;
+            color: #5f7580;
+        }
+
+        .summary-record-controls-v167 select {
+            font: inherit;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid #d5e3e6;
+            max-width: 100%;
+            background: #fff;
+        }
+
+        .summary-table-wrap-v167 {
+            max-height: 355px;
+            overflow: auto;
+            border: 1px solid #edf0f1;
+            border-radius: 8px;
+        }
+
+        .summary-table-v167 {
+            margin: 0;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .summary-table-v167 th {
+            background: #eff4f5;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        .summary-table-v167 td,
+        .summary-table-v167 th {
+            padding: 9px 10px;
+            text-align: left;
+            border-bottom: 1px solid #eef2f3;
+        }
+
+        .summary-table-v167 .value {
+            font-weight: 700;
+            white-space: nowrap;
+            color: #167d59;
+        }
+
+        .summary-pages-v167 {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #667780;
+        }
+
+        .summary-pages-v167 button {
+            border: 1px solid #d7e5e8;
+            background: #fff;
+            padding: 6px 11px;
+            border-radius: 8px;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            color: #286763;
+        }
+
+        .summary-pages-v167 button:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .summary-footer-v167 {
+            font-size: 12px;
+            color: #6c7e83;
+            padding-top: 12px;
+            margin-top: 15px;
+            border-top: 1px solid #e5ecef;
+        }
+
+        @media(max-width:700px) {
+            #summary-modal .modal-card.summary-modal-card {
+                padding: 16px;
+                max-height: 92vh;
+            }
+
+            #summary-modal .summary-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .summary-header-v167 h3 {
+                font-size: 17px;
+            }
+
+            .summary-breakdown-v167 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <style id="v197-profiles-style">
+        #summary-modal .v197-summary-source {
+            margin-top: 7px;
+            color: #16665f;
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        #summary-modal .summary-breakdown {
+            max-height: 160px;
+            overflow: auto
+        }
+
+        #summary-modal .v197-profile-band-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+            margin-top: 10px
+        }
+
+        #summary-modal .v197-profile-band-card {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            border: 1px solid #d4e5e5;
+            border-radius: 9px;
+            background: #fff;
+            padding: 10px
+        }
+
+        #summary-modal .v197-profile-band-card b {
+            font-size: 12px;
+            color: #205c64
+        }
+
+        #summary-modal .v197-profile-band-card span {
+            font-weight: 750;
+            color: #14756c;
+            font-size: 16px
+        }
+
+        #summary-modal .v197-profile-band-card small {
+            font-size: 11px;
+            color: #647b85
+        }
+
+        @media(max-width:600px) {
+            #summary-modal .v197-profile-band-stats {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+    <style id="v198-final-profiles">
+        #primary-profiles-grid>.v198-transfer-card {
+            border: 1px solid #c9dfda !important;
+            min-height: 205px !important
+        }
+
+        #primary-profiles-grid>.v198-transfer-card .research-card-title {
+            color: #173a40 !important
+        }
+
+        #summary-modal .v198-rating-note {
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: #577079;
+            padding: 3px 0 9px
+        }
+
+        #summary-modal .summary-table-v167 th:last-child {
+            min-width: 128px
+        }
+
+        @media(max-width:730px) {
+            #primary-profiles-grid {
+                grid-template-columns: 1fr !important
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -1366,7 +1739,7 @@
             <div class="section-heading">
                 <div>
                     <h2 id="primary-heading">การทดลองหลัก</h2>
-                    <p>3 การทดลองหลัก · พร้อมห้องทดสอบการถ่ายโอนแบบจำลอง</p>
+                    <p>3 การทดลองหลัก · ทดสอบระบบ / พัฒนาแบบจำลอง / ทดสอบการถ่ายโอน</p>
                 </div>
                 <span class="section-count" id="primary-profiles-count">0 การทดลอง</span>
             </div>
@@ -1499,173 +1872,86 @@
 
     </div>
 
-    <!-- Data Summary View Modal — Case 1 / Case 2 / Case 3 -->
-
-    <div id="summary-modal" class="modal-overlay">
-
-        <div class="modal-card" style="max-width: 980px;">
-
-            <h3 class="modal-title" id="summary-title">สรุปข้อมูลโปรไฟล์</h3>
-
-            <div class="modal-body">
-
-                <div
-                    style="background:#F8F9FA;padding:12px 16px;border-radius:12px;border:1px solid #E2E8F0;margin-bottom:15px;">
-
-                    <div id="summary-case-filter-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-
-                        <span style="font-size:12px;font-weight:bold;color:#495057;">การทดลอง:</span>
-
-                        <button class="segmented-btn active" id="summary-case-all"
-                            onclick="filterSummaryData('case','all')">ทั้งหมด</button>
-
-                        <button class="segmented-btn" id="summary-case-case1"
-                            onclick="filterSummaryData('case','Case1')">ห้องเรียน</button>
-
-                        <button class="segmented-btn" id="summary-case-case2"
-                            onclick="filterSummaryData('case','Case2')">พื้นที่อาคาร</button>
-
-                        <button class="segmented-btn" id="summary-case-case3"
-                            onclick="filterSummaryData('case','Case3')">แบบจำลอง</button>
-
-                    </div>
-
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;">
-
-                        <span style="font-size:12px;font-weight:bold;color:#495057;">คลื่นความถี่:</span>
-
-                        <button class="segmented-btn active" id="summary-freq-all"
-                            onclick="filterSummaryData('freq','all')">ทั้งหมด</button>
-
-                        <button class="segmented-btn" id="summary-freq-24"
-                            onclick="filterSummaryData('freq','2_4GHz')">2.4 GHz</button>
-
-                        <button class="segmented-btn" id="summary-freq-5" onclick="filterSummaryData('freq','5GHz')">5
-
-                            GHz</button>
-
-                    </div>
-
-                    <div id="summary-case1-session-row"
-                        style="display:none;gap:10px;align-items:center;flex-wrap:wrap;margin-top:11px;">
-                        <span style="font-size:12px;font-weight:bold;color:#495057;">ชุดข้อมูลห้องเรียน:</span>
-                        <button type="button" class="segmented-btn" id="summary-session-retest"
-                            onclick="filterSummaryData('session','Retest_2026-11-09')">วัดใหม่ 9 พ.ย. 2569</button>
-                        <button type="button" class="segmented-btn" id="summary-session-original"
-                            onclick="filterSummaryData('session','Original')">ข้อมูลเดิม (เก็บย้อนหลัง)</button>
-                    </div>
-                    <div id="summary-case1-session-count"
-                        style="display:none;font-size:12px;color:#64748B;margin-top:8px;line-height:1.5;"></div>
-
+    <!-- Unified research summary: a compact overview, not a duplicate analytics/CSV page. -->
+    <div id="summary-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="summary-title">
+        <div class="modal-card summary-modal-card">
+            <div class="summary-header-v167">
+                <div>
+                    <h3 id="summary-title">สรุปข้อมูลการทดลอง</h3>
+                    <p id="summary-subtitle"></p>
                 </div>
-
-                <div class="summary-stats">
-
-                    <div class="stat-box">
-
-                        <div class="num" id="stat-total">0</div>
-
-                        <div class="lbl">รายการวัดทั้งหมด</div>
-
-                    </div>
-
-                    <div class="stat-box">
-
-                        <div class="num" id="stat-case1">0</div>
-
-                        <div class="lbl">ห้องเรียน</div>
-
-                    </div>
-
-                    <div class="stat-box">
-
-                        <div class="num" id="stat-case2">0</div>
-
-                        <div class="lbl">พื้นที่อาคาร</div>
-
-                    </div>
-
-                    <div class="stat-box">
-
-                        <div class="num" id="stat-case3">0</div>
-
-                        <div class="lbl">แบบจำลอง</div>
-
-                    </div>
-
-                    <div class="stat-box">
-
-                        <div class="num" id="stat-24">0</div>
-
-                        <div class="lbl">2.4 GHz</div>
-
-                    </div>
-
-                    <div class="stat-box">
-
-                        <div class="num" id="stat-5">0</div>
-
-                        <div class="lbl">5 GHz</div>
-
-                    </div>
-
-                </div>
-
-                <div
-                    style="font-size:12px;color:#64748B;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:9px 12px;margin-bottom:12px;text-align:left;">
-
-                    <b>ห้องเรียน:</b> ห้องเรียนสำหรับการประเมินสัญญาณ · R1/R2/R3 · 2.4/5 GHz<br>
-
-                    <b>พื้นที่อาคาร:</b> Network Coverage ของ KMITL-WIFI · ชั้น 2/3 · R1/R2/R3 · Strongest BSSID ต่อ
-                    band<br>
-
-                    <b>แบบจำลอง:</b> Controlled AP Testbed · Calibration / Validation · R1/R2/R3 · AP-CAL/BSSID
-                    ที่ล็อกไว้
-
-                </div>
-
-                <div style="max-height: 380px; overflow:auto;">
-
-                    <table>
-
-                        <thead>
-
-                            <tr>
-
-                                <th>Case</th>
-
-                                <th>พื้นที่</th>
-
-                                <th>รอบ</th>
-
-                                <th>คลื่น</th>
-
-                                <th>Point ID</th>
-
-                                <th>RSSI</th>
-
-                                <th>รายละเอียด</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody id="summary-table-body"></tbody>
-
-                    </table>
-
-                </div>
-
+                <button type="button" class="btn btn-secondary summary-close-v167"
+                    onclick="closeModal('summary-modal')">ปิด</button>
             </div>
-
-            <div class="modal-actions">
-
-                <button class="btn btn-secondary" onclick="closeModal('summary-modal')">ปิด</button>
-
+            <div class="summary-filter-v167" aria-label="ตัวกรองความถี่">
+                <span class="summary-filter-label">ความถี่</span>
+                <button type="button" class="summary-choice active" id="summary-freq-all"
+                    onclick="filterSummaryData('freq','all')">ทั้งหมด</button>
+                <button type="button" class="summary-choice" id="summary-freq-24"
+                    onclick="filterSummaryData('freq','2_4GHz')">2.4 GHz</button>
+                <button type="button" class="summary-choice" id="summary-freq-5"
+                    onclick="filterSummaryData('freq','5GHz')">5 GHz</button>
             </div>
-
+            <div class="summary-stats" aria-live="polite">
+                <div class="stat-box">
+                    <div class="num" id="stat-total">—</div>
+                    <div class="lbl">รายการ RSSI ที่เลือก</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num" id="stat-points">—</div>
+                    <div class="lbl">จุดวัดที่มีข้อมูล</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num" id="stat-24">—</div>
+                    <div class="lbl">รายการ 2.4 GHz</div>
+                </div>
+                <div class="stat-box">
+                    <div class="num" id="stat-5">—</div>
+                    <div class="lbl">รายการ 5 GHz</div>
+                </div>
+            </div>
+            <div class="summary-context-v167" id="summary-context"></div>
+            <section class="summary-group-v167">
+                <h4 class="summary-section-heading-v167" id="summary-break-heading">ข้อมูลชุดทดลอง</h4>
+                <div class="summary-breakdown-v167" id="summary-breakdown"></div>
+            </section>
+            <details class="summary-records-v167" id="summary-records">
+                <summary>ข้อมูลวัดรายจุด <span id="summary-record-count"
+                        style="font-size:12px;color:#69818a;font-weight:500;"></span></summary>
+                <div class="summary-records-inner-v167">
+                    <div class="summary-record-controls-v167">
+                        <label for="summary-stage-select">ชุดข้อมูล</label>
+                        <select id="summary-stage-select" onchange="setSummaryGroup(this.value)">
+                            <option value="all">ทั้งหมด</option>
+                        </select>
+                        <span id="summary-table-caption"></span>
+                    </div>
+                    <div class="v198-rating-note">เกณฑ์ Cisco Catalyst · ดีเยี่ยม ≥ −50 · ดี ≥ −60 · ปานกลาง ≥ −70 ·
+                        อ่อน ≥ −80 · อ่อนมาก &lt; −80 dBm</div>
+                    <div class="summary-table-wrap-v167">
+                        <table class="summary-table-v167">
+                            <thead>
+                                <tr>
+                                    <th>ชุดข้อมูล</th>
+                                    <th>จุดวัด</th>
+                                    <th>รอบ / มุม</th>
+                                    <th>ความถี่</th>
+                                    <th>RSSI</th>
+                                    <th>ระดับความแรงสัญญาณ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-table-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="summary-pages-v167">
+                        <button type="button" id="summary-page-prev" onclick="changeSummaryPage(-1)">ก่อนหน้า</button>
+                        <span id="summary-page-state"></span>
+                        <button type="button" id="summary-page-next" onclick="changeSummaryPage(1)">ถัดไป</button>
+                    </div>
+                </div>
+            </details>
+            <p class="summary-footer-v167">ผลวิเคราะห์ แผนที่ และดาวน์โหลด CSV อยู่ใน Dashboard ของแต่ละการทดลอง</p>
         </div>
-
     </div>
 
     <!-- Firebase SDK -->
@@ -2302,9 +2588,8 @@
         }
 
         const RESEARCH_EXPERIMENTS = Object.freeze({
-            'case1 final': { code: 'Case1', short: 'ห้องเรียนทดลอง', title: 'การประเมินความครอบคลุมสัญญาณภายในห้องเรียน', description: 'ผลวัดครั้งล่าสุด · 24 จุด · สองย่านความถี่', order: 1 },
-            'case2 final': { code: 'Case2', short: 'ความครอบคลุมเครือข่าย', title: 'การประเมินความครอบคลุมเครือข่ายภายในอาคาร', description: 'พื้นที่ชั้น 2 · ความครอบคลุมจากหลาย AP', order: 2 },
-            'case3 final': { code: 'Case3', short: 'แบบจำลองการทำนาย', title: 'การพัฒนาและประเมินแบบจำลองการทำนายความแรงสัญญาณ Wi-Fi ภายในอาคาร', description: 'Calibration · Validation · Final Evaluation', order: 3 }
+            'case1 final': { code: 'Case1', short: 'ทดสอบระบบ', title: 'การทดสอบการทำงานเบื้องต้นของระบบ', description: 'ผลตรวจรับระบบ · 24 จุด · 144 ค่า', order: 1 },
+            'case3 final': { code: 'Case3', short: 'ทดลองหลัก', title: 'การทดลองหลักเพื่อพัฒนาและประเมินแบบจำลอง', description: 'Calibration · Validation · Final Evaluation', order: 2 }
         });
         function getProfileCategory(p) {
             if (RESEARCH_EXPERIMENTS[p.name.trim().toLowerCase()]) return 'primary';
@@ -2373,7 +2658,7 @@
                 actions.appendChild(selector);
             }
             actions.appendChild(a);
-            actions.appendChild(addButton('ดูสรุปข้อมูล', 'btn btn-secondary', () => openSummaryModal(p.name)));
+            actions.appendChild(addButton('ดูสรุปข้อมูล', 'btn btn-secondary', () => openSummaryModal(p.name, info ? info.code : '')));
             article.appendChild(actions);
             const meta = document.createElement('div'); meta.className = 'research-card-meta';
             const ts = Number(p.updated_at); const last = Number.isFinite(ts) ? new Date(ts) : null;
@@ -2394,33 +2679,34 @@
         // This UI card creates no Firebase node and never calibrates a model.
         // v80: TR01 is a transfer evaluation WORKSPACE within the Case 3 research card,
         // not a fourth primary case and not another Firebase profile.
+        // v198: TR01 is the third official experiment card, but still shares
+        // the Case3 final Firebase profile. No data key or experiment record is created.
         function createTR01Card(sourceProfile) {
-            const section = document.createElement('section');
-            section.className = 'v80-tr01-option';
-            const title = document.createElement('strong');
-            title.textContent = 'การประเมินการถ่ายโอนแบบจำลองในห้องทดสอบ';
-            const subtitle = document.createElement('p');
-            subtitle.textContent = 'Zero Local Calibration';
-            const linkRow = document.createElement('div');
-            linkRow.className = 'v80-tr01-actions';
+            const article = document.createElement('article');
+            article.className = 'profile-card research-profile-card main-profile-card v198-transfer-card';
+            const heading = document.createElement('h3');
+            heading.className = 'research-card-title';
+            heading.textContent = 'การประเมินการถ่ายโอนแบบจำลองในห้องทดสอบ';
+            article.appendChild(heading);
+            const actions = document.createElement('div');
+            actions.className = 'research-card-actions';
             if (sourceProfile) {
                 const a = document.createElement('a');
-                a.className = 'btn btn-secondary';
-                a.textContent = 'เปิดห้องทดสอบ';
-                a.title = 'เข้าสู่การประเมินการถ่ายโอนแบบจำลองในห้องทดสอบ';
+                a.className = 'btn btn-primary research-main-action';
+                a.textContent = 'เปิดการทดลอง';
                 a.href = getProfileOpenHref(sourceProfile, 'Case3', 'tr01');
                 a.addEventListener('click', () => {
                     try { localStorage.setItem('wifiLastProfile', sourceProfile.name); } catch (e) { }
                 });
-                linkRow.appendChild(a);
+                actions.append(a, addButton('ดูสรุปข้อมูล', 'btn btn-secondary', () => openSummaryModal(sourceProfile.name, 'TR01')));
             } else {
-                const msg = document.createElement('span');
-                msg.className = 'v80-tr01-unavailable';
-                msg.textContent = 'ยังไม่พบโปรไฟล์ Case3 final';
-                linkRow.appendChild(msg);
+                const unavailable = document.createElement('span');
+                unavailable.className = 'v80-tr01-unavailable';
+                unavailable.textContent = 'ยังไม่พบโปรไฟล์ Case3 final';
+                actions.append(unavailable);
             }
-            section.append(title, subtitle, linkRow);
-            return section;
+            article.appendChild(actions);
+            return article;
         }
 
         function renderProfilesGrid(profilesList) {
@@ -2439,33 +2725,16 @@
             });
             const groups = { primary: [], archive: [], empty: [] };
             ordered.forEach(p => groups[getProfileCategory(p)].push(p));
-            // Keep exactly three primary research cases. TR01 lives *inside* Case 3.
+            // v198: Case1, Case3, TR01: exactly three visible official cards.
+            // Case2 is never promoted to primary. Historical Firebase data stays intact.
             const sourceProfile = allProfilesData.find(p => p.name.trim().toLowerCase() === 'case3 final');
-            const searchTerm = document.getElementById('search-input').value.trim().toLocaleLowerCase('th');
-            const trSearch = /tr01|transfer|ถ่ายโอน|ห้องทดสอบ|zero local/.test(searchTerm);
-            let hasCase3 = false;
             let shownPrimaryCount = 0;
-            groups.primary.forEach(profile => {
-                const card = createProfileCard(profile);
-                if (profile.name.trim().toLowerCase() === 'case3 final') {
-                    hasCase3 = true;
-                }
-                primary.appendChild(card);
-                shownPrimaryCount++;
-            });
-            // Searching for TR01 reveals the parent Case 3, not a phantom fourth case.
-            if (trSearch && !hasCase3 && sourceProfile) {
-                const card = createProfileCard(sourceProfile);
-                primary.appendChild(card);
-                hasCase3 = true;
-                shownPrimaryCount++;
-            }
-            // Transfer room has its own small entry below the three equal-sized
-            // research cards; it remains within the Case 3 Firebase profile.
-            if (hasCase3 && sourceProfile) {
-                transferEntry.appendChild(createTR01Card(sourceProfile));
-                transferEntry.hidden = false;
-            }
+            const case1 = groups.primary.find(p => p.name.trim().toLowerCase() === 'case1 final');
+            const case3 = groups.primary.find(p => p.name.trim().toLowerCase() === 'case3 final');
+            if (case1) { primary.appendChild(createProfileCard(case1)); shownPrimaryCount++; }
+            if (case3) { primary.appendChild(createProfileCard(case3)); shownPrimaryCount++; }
+            // The transfer room is a separate research experiment but not a new data profile.
+            if (sourceProfile) { primary.appendChild(createTR01Card(sourceProfile)); shownPrimaryCount++; }
             groups.archive.forEach(p => archive.appendChild(createProfileCard(p)));
             groups.empty.forEach(p => empty.appendChild(createProfileCard(p)));
             if (!shownPrimaryCount) {
@@ -2659,339 +2928,272 @@
 
         }
 
-        let currentSummaryProfileName = '';
+        // v167 — summary reads existing Firebase cache only; never writes/re-fits models.
+        // TR01 path is the single official measurement dataset, while older archives are excluded.
+        const OFFICIAL_TRANSFER_SESSION = '2026-11-06'; // internal Firebase key; never rendered as a UI label
+        const SUMMARY_PAGE_SIZE = 25;
+        let summaryState = { profile: '', kind: '', rows: [], freq: 'all', stage: 'all', page: 0, scans: 0 };
 
-        let activeSummaryPointsList = [];
-
-        let summaryFilterCase = 'all';
-
-        let summaryFilterFreq = 'all';
-        let summaryFilterSession = 'Original';
-
-        let summaryDetectedCase = 'mixed';
-
-        function openSummaryModal(profileName) {
-
-            currentSummaryProfileName = profileName;
-
-            document.getElementById('summary-title').innerText = `สรุปข้อมูลโปรไฟล์: ${profileName}`;
-
-            activeSummaryPointsList = collectProfileMeasurements(profileName);
-
-            const hasCase1 = activeSummaryPointsList.some(p => p.caseId === 'Case1');
-
-            const hasCase2 = activeSummaryPointsList.some(p => p.caseId === 'Case2');
-
-            const hasCase3 = activeSummaryPointsList.some(p => p.caseId === 'Case3');
-
-            const detectedCases = [
-
-                hasCase1 ? 'Case1' : null,
-
-                hasCase2 ? 'Case2' : null,
-
-                hasCase3 ? 'Case3' : null
-
-            ].filter(Boolean);
-
-            if (detectedCases.length === 1) {
-
-                summaryDetectedCase = detectedCases[0];
-
-                summaryFilterCase = detectedCases[0];
-
-            } else {
-
-                summaryDetectedCase = 'mixed';
-
-                summaryFilterCase = 'all';
-
-            }
-
-            summaryFilterFreq = 'all';
-            const retestCount = activeSummaryPointsList.filter(p => p.caseId === 'Case1' && p.sessionKey === 'Retest_2026-11-09').length;
-            summaryFilterSession = 'Retest_2026-11-09'; // v110 official Case 1 dataset only
-            const sessionRow = document.getElementById('summary-case1-session-row');
-            const sessionCount = document.getElementById('summary-case1-session-count');
-            const showSession = false; // v110: no Original / Retest dropdown in official summary
-            if (sessionRow) sessionRow.style.display = showSession ? 'flex' : 'none';
-            if (sessionCount) sessionCount.style.display = showSession ? 'block' : 'none';
-
-            // ถ้าโปรไฟล์เป็น Case เดียว ให้ซ่อนตัวเลือก Case อื่นทั้งหมด
-
-            const caseRow = document.getElementById('summary-case-filter-row');
-
-            const btnAll = document.getElementById('summary-case-all');
-
-            const btnCase1 = document.getElementById('summary-case-case1');
-
-            const btnCase2 = document.getElementById('summary-case-case2');
-
-            const btnCase3 = document.getElementById('summary-case-case3');
-
-            if (summaryDetectedCase === 'Case1' || summaryDetectedCase === 'Case2' || summaryDetectedCase === 'Case3') {
-
-                if (caseRow) caseRow.style.display = 'none';
-
-                if (btnAll) btnAll.style.display = 'none';
-
-                if (btnCase1) btnCase1.style.display = summaryDetectedCase === 'Case1' ? '' : 'none';
-
-                if (btnCase2) btnCase2.style.display = summaryDetectedCase === 'Case2' ? '' : 'none';
-
-                if (btnCase3) btnCase3.style.display = summaryDetectedCase === 'Case3' ? '' : 'none';
-
-            } else {
-
-                if (caseRow) caseRow.style.display = 'flex';
-
-                if (btnAll) btnAll.style.display = '';
-
-                if (btnCase1) btnCase1.style.display = '';
-
-                if (btnCase2) btnCase2.style.display = '';
-
-                if (btnCase3) btnCase3.style.display = '';
-
-            }
-
-            renderSummaryView();
-
-            openModal('summary-modal');
-
+        function summaryFinite(value) {
+            if (value === null || value === undefined || String(value).trim() === '') return null;
+            const n = Number(value); return Number.isFinite(n) ? n : null;
         }
-
-        function filterSummaryData(type, value) {
-
-            if (type === 'case') {
-
-                if (summaryDetectedCase === 'Case1') summaryFilterCase = 'Case1';
-
-                else if (summaryDetectedCase === 'Case2') summaryFilterCase = 'Case2';
-
-                else if (summaryDetectedCase === 'Case3') summaryFilterCase = 'Case3';
-
-                else summaryFilterCase = value;
-
+        function summaryTimestamp(raw) {
+            if (typeof raw === 'string' && !/^\d+$/.test(raw)) {
+                const parsed = Date.parse(raw); return Number.isFinite(parsed) ? parsed : 0;
             }
-
-            if (type === 'freq') summaryFilterFreq = value;
-            // v110: Case 1 dataset is frozen to Retest_2026-11-09; no UI/session switch.
-
-            renderSummaryView();
-
+            const n = summaryFinite(raw);
+            if (n === null || n < 1000000000) return 0;
+            return n < 100000000000 ? n * 1000 : n;
         }
-
-        function formatFreqLabel(freq) {
-
-            return freq === '2_4GHz' ? '2.4 GHz' : freq === '5GHz' ? '5 GHz' : freq;
-
+        function summaryKindForProfile(name, explicit) {
+            if (['Case1', 'Case2', 'Case3', 'TR01'].includes(explicit)) return explicit;
+            const key = String(name || '').toLowerCase().trim();
+            if (RESEARCH_EXPERIMENTS[key]) return RESEARCH_EXPERIMENTS[key].code;
+            const p = allProfilesData.find(p => p.name === name);
+            return ['Case1', 'Case2', 'Case3'].includes(p?.lockedCase) ? p.lockedCase :
+                (['Case1', 'Case2', 'Case3'].includes(p?.detectedCase) ? p.detectedCase : 'mixed');
         }
-
-        function case1SignalLabel(rssi) {
-
-            if (rssi >= -30) return 'Amazing';
-
-            if (rssi >= -67) return 'Very Good';
-
-            if (rssi >= -70) return 'Okay';
-
-            if (rssi >= -80) return 'Not Good';
-
-            return 'Unusable';
-
-        }
-
-        function renderSummaryView() {
-
-            ['all', 'Case1', 'Case2', 'Case3'].forEach(c => {
-
-                const id = c === 'all' ? 'summary-case-all' : `summary-case-${c.toLowerCase()}`;
-
-                const btn = document.getElementById(id);
-
-                if (btn) btn.classList.toggle('active', summaryFilterCase === c);
-
-            });
-
-            [
-
-                ['all', 'summary-freq-all'],
-
-                ['2_4GHz', 'summary-freq-24'],
-
-                ['5GHz', 'summary-freq-5']
-
-            ].forEach(([value, id]) => {
-
-                const btn = document.getElementById(id);
-
-                if (btn) btn.classList.toggle('active', summaryFilterFreq === value);
-
-            });
-
-            const sessionCount = document.getElementById('summary-case1-session-count');
-            if (summaryDetectedCase === 'Case1') {
-                const oldN = activeSummaryPointsList.filter(p => p.caseId === 'Case1' && p.sessionKey === 'Original').length;
-                const newN = activeSummaryPointsList.filter(p => p.caseId === 'Case1' && p.sessionKey === 'Retest_2026-11-09').length;
-                if (sessionCount) sessionCount.textContent = `นับรายการ RSSI แยก 2 ย่านความถี่ · ข้อมูลเดิม ${oldN} รายการ · วัดใหม่ ${newN} รายการ (ไม่รวมผลสองชุดเข้าด้วยกัน)`;
+        function summaryStageFor(p, kind) {
+            if (kind === 'Case1' || kind === 'Case2') return /^Round([123])$/.test(String(p.round || ''))
+                ? 'R' + String(p.round).slice(-1) : String(p.round || '—');
+            if (kind === 'Case3') {
+                if (p.areaKey === 'Calibration') return 'Calibration';
+                if (p.areaKey === 'Validation') return 'Validation';
+                const ap = /Final Evaluation AP-([ABC])/.exec(String(p.areaLabel || ''));
+                return ap ? 'Final Evaluation AP-' + ap[1] : 'Final Evaluation';
             }
-            ['Original', 'Retest_2026-11-09'].forEach(session => {
-                const id = session === 'Original' ? 'summary-session-original' : 'summary-session-retest';
-                document.getElementById(id)?.classList.toggle('active', summaryFilterSession === session);
-            });
-
-            const filtered = activeSummaryPointsList
-
-                .filter(p => summaryFilterCase === 'all' || p.caseId === summaryFilterCase)
-                .filter(p => p.caseId !== 'Case1' || p.sessionKey === 'Retest_2026-11-09')
-
-                .filter(p => summaryFilterFreq === 'all' || p.freq === summaryFilterFreq)
-
-                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-            const tableBody = document.getElementById('summary-table-body');
-
-            tableBody.innerHTML = '';
-
-            const total = filtered.length;
-
-            const countCase1 = filtered.filter(p => p.caseId === 'Case1').length;
-
-            const countCase2 = filtered.filter(p => p.caseId === 'Case2').length;
-
-            const countCase3 = filtered.filter(p => p.caseId === 'Case3').length;
-
-            const count24 = filtered.filter(p => p.freq === '2_4GHz').length;
-
-            const count5 = filtered.filter(p => p.freq === '5GHz').length;
-
-            document.getElementById('stat-total').innerText = total;
-
-            document.getElementById('stat-case1').innerText = countCase1;
-
-            document.getElementById('stat-case2').innerText = countCase2;
-
-            document.getElementById('stat-case3').innerText = countCase3;
-
-            document.getElementById('stat-24').innerText = count24;
-
-            document.getElementById('stat-5').innerText = count5;
-
-            // โปรไฟล์ Case เดียว: ซ่อนกล่อง Case ที่ไม่เกี่ยวข้อง
-
-            const statCase1Box = document.getElementById('stat-case1')?.closest('.stat-box');
-
-            const statCase2Box = document.getElementById('stat-case2')?.closest('.stat-box');
-
-            const statCase3Box = document.getElementById('stat-case3')?.closest('.stat-box');
-
-            if (summaryDetectedCase === 'Case1' || summaryDetectedCase === 'Case2' || summaryDetectedCase === 'Case3') {
-
-                if (statCase1Box) statCase1Box.style.display = summaryDetectedCase === 'Case1' ? '' : 'none';
-
-                if (statCase2Box) statCase2Box.style.display = summaryDetectedCase === 'Case2' ? '' : 'none';
-
-                if (statCase3Box) statCase3Box.style.display = summaryDetectedCase === 'Case3' ? '' : 'none';
-
-            } else {
-
-                if (statCase1Box) statCase1Box.style.display = '';
-
-                if (statCase2Box) statCase2Box.style.display = '';
-
-                if (statCase3Box) statCase3Box.style.display = '';
-
-            }
-
-            filtered.forEach(p => {
-
-                let detail = '';
-
-                if (p.caseId === 'Case1') {
-
-                    const xy = (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)))
-
-                        ? `(${Number(p.x).toFixed(2)}, ${Number(p.y).toFixed(2)})`
-
-                        : '-';
-
-                    detail = `${xy} · ${case1SignalLabel(p.rssi)}`;
-
-                } else if (p.caseId === 'Case2') {
-
-                    const parts = [];
-
-                    if (p.ssid) parts.push(p.ssid);
-
-                    if (p.bssid) parts.push(`BSSID ${p.bssid}`);
-
-                    if (p.channel !== '') parts.push(`CH ${p.channel}`);
-
-                    if (p.status) parts.push(p.status);
-
-                    detail = parts.join(' · ') || '-';
-
-                } else if (p.caseId === 'Case3') {
-
-                    const parts = [];
-
-                    if (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y))) {
-
-                        parts.push(`(${Number(p.x).toFixed(2)}, ${Number(p.y).toFixed(2)})`);
-
+            if (kind === 'TR01') return String(p.angle || '') + '°';
+            return String(p.areaLabel || 'ข้อมูลวัด');
+        }
+        // v197 — audited local read-only snapshot used ONLY if live official-session records are absent.
+        // Do not present these CSV rows as a successful Firebase live read.
+        const CASE1_OFFICIAL_SNAPSHOT = [{ "caseId": "Case1", "pointId": "R1C1", "freq": "2_4GHz", "rssi": -46.0, "round": "R1", "stage": "R1", "timestamp": 1794217826674, "detail": "(2, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C2", "freq": "2_4GHz", "rssi": -39.0, "round": "R1", "stage": "R1", "timestamp": 1794217873465, "detail": "(4, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C3", "freq": "2_4GHz", "rssi": -37.0, "round": "R1", "stage": "R1", "timestamp": 1794217914340, "detail": "(6, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C4", "freq": "2_4GHz", "rssi": -51.0, "round": "R1", "stage": "R1", "timestamp": 1794218279780, "detail": "(8, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C1", "freq": "2_4GHz", "rssi": -43.0, "round": "R1", "stage": "R1", "timestamp": 1794218523536, "detail": "(2, 2.56)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C2", "freq": "2_4GHz", "rssi": -40.0, "round": "R1", "stage": "R1", "timestamp": 1794218558889, "detail": "(4, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C3", "freq": "2_4GHz", "rssi": -41.0, "round": "R1", "stage": "R1", "timestamp": 1794218599533, "detail": "(6, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C4", "freq": "2_4GHz", "rssi": -54.0, "round": "R1", "stage": "R1", "timestamp": 1794218628423, "detail": "(8, 2.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C1", "freq": "2_4GHz", "rssi": -39.0, "round": "R1", "stage": "R1", "timestamp": 1794218744896, "detail": "(2, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C2", "freq": "2_4GHz", "rssi": -45.0, "round": "R1", "stage": "R1", "timestamp": 1794218779697, "detail": "(4, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C3", "freq": "2_4GHz", "rssi": -44.0, "round": "R1", "stage": "R1", "timestamp": 1794218808587, "detail": "(6, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C4", "freq": "2_4GHz", "rssi": -46.0, "round": "R1", "stage": "R1", "timestamp": 1794218860728, "detail": "(8, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C1", "freq": "2_4GHz", "rssi": -41.0, "round": "R1", "stage": "R1", "timestamp": 1794218965063, "detail": "(2, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C2", "freq": "2_4GHz", "rssi": -43.0, "round": "R1", "stage": "R1", "timestamp": 1794219005532, "detail": "(4, 6.78)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C3", "freq": "2_4GHz", "rssi": -47.0, "round": "R1", "stage": "R1", "timestamp": 1794219034332, "detail": "(6, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C4", "freq": "2_4GHz", "rssi": -47.0, "round": "R1", "stage": "R1", "timestamp": 1794219080569, "detail": "(8, 6.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C1", "freq": "2_4GHz", "rssi": -41.0, "round": "R1", "stage": "R1", "timestamp": 1794219156091, "detail": "(2, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C2", "freq": "2_4GHz", "rssi": -49.0, "round": "R1", "stage": "R1", "timestamp": 1794219196412, "detail": "(4, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C3", "freq": "2_4GHz", "rssi": -50.0, "round": "R1", "stage": "R1", "timestamp": 1794219219457, "detail": "(6, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C4", "freq": "2_4GHz", "rssi": -42.0, "round": "R1", "stage": "R1", "timestamp": 1794219300658, "detail": "(8, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C1", "freq": "2_4GHz", "rssi": -47.0, "round": "R1", "stage": "R1", "timestamp": 1794219375690, "detail": "(2, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C2", "freq": "2_4GHz", "rssi": -52.0, "round": "R1", "stage": "R1", "timestamp": 1794219404739, "detail": "(4, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C3", "freq": "2_4GHz", "rssi": -48.0, "round": "R1", "stage": "R1", "timestamp": 1794219456732, "detail": "(6, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C4", "freq": "2_4GHz", "rssi": -54.0, "round": "R1", "stage": "R1", "timestamp": 1794219497379, "detail": "(8, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C1", "freq": "5GHz", "rssi": -46.0, "round": "R1", "stage": "R1", "timestamp": 1794217826674, "detail": "(2, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C2", "freq": "5GHz", "rssi": -45.0, "round": "R1", "stage": "R1", "timestamp": 1794217873465, "detail": "(4, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C3", "freq": "5GHz", "rssi": -51.0, "round": "R1", "stage": "R1", "timestamp": 1794217914340, "detail": "(6, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C4", "freq": "5GHz", "rssi": -39.0, "round": "R1", "stage": "R1", "timestamp": 1794218279780, "detail": "(8, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C1", "freq": "5GHz", "rssi": -38.0, "round": "R1", "stage": "R1", "timestamp": 1794218523536, "detail": "(2, 2.56)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C2", "freq": "5GHz", "rssi": -47.0, "round": "R1", "stage": "R1", "timestamp": 1794218558889, "detail": "(4, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C3", "freq": "5GHz", "rssi": -39.0, "round": "R1", "stage": "R1", "timestamp": 1794218599533, "detail": "(6, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C4", "freq": "5GHz", "rssi": -43.0, "round": "R1", "stage": "R1", "timestamp": 1794218628423, "detail": "(8, 2.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C1", "freq": "5GHz", "rssi": -39.0, "round": "R1", "stage": "R1", "timestamp": 1794218744896, "detail": "(2, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C2", "freq": "5GHz", "rssi": -42.0, "round": "R1", "stage": "R1", "timestamp": 1794218779697, "detail": "(4, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C3", "freq": "5GHz", "rssi": -40.0, "round": "R1", "stage": "R1", "timestamp": 1794218808587, "detail": "(6, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C4", "freq": "5GHz", "rssi": -44.0, "round": "R1", "stage": "R1", "timestamp": 1794218860728, "detail": "(8, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C1", "freq": "5GHz", "rssi": -40.0, "round": "R1", "stage": "R1", "timestamp": 1794218965063, "detail": "(2, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C2", "freq": "5GHz", "rssi": -44.0, "round": "R1", "stage": "R1", "timestamp": 1794219005532, "detail": "(4, 6.78)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C3", "freq": "5GHz", "rssi": -42.0, "round": "R1", "stage": "R1", "timestamp": 1794219034332, "detail": "(6, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C4", "freq": "5GHz", "rssi": -46.0, "round": "R1", "stage": "R1", "timestamp": 1794219080569, "detail": "(8, 6.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C1", "freq": "5GHz", "rssi": -46.0, "round": "R1", "stage": "R1", "timestamp": 1794219156091, "detail": "(2, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C2", "freq": "5GHz", "rssi": -45.0, "round": "R1", "stage": "R1", "timestamp": 1794219196412, "detail": "(4, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C3", "freq": "5GHz", "rssi": -51.0, "round": "R1", "stage": "R1", "timestamp": 1794219219457, "detail": "(6, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C4", "freq": "5GHz", "rssi": -47.0, "round": "R1", "stage": "R1", "timestamp": 1794219300658, "detail": "(8, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C1", "freq": "5GHz", "rssi": -42.0, "round": "R1", "stage": "R1", "timestamp": 1794219375690, "detail": "(2, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C2", "freq": "5GHz", "rssi": -47.0, "round": "R1", "stage": "R1", "timestamp": 1794219404739, "detail": "(4, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C3", "freq": "5GHz", "rssi": -42.0, "round": "R1", "stage": "R1", "timestamp": 1794219456732, "detail": "(6, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C4", "freq": "5GHz", "rssi": -42.0, "round": "R1", "stage": "R1", "timestamp": 1794219497379, "detail": "(8, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C1", "freq": "2_4GHz", "rssi": -48.0, "round": "R2", "stage": "R2", "timestamp": 1794217832511, "detail": "(2, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C2", "freq": "2_4GHz", "rssi": -39.0, "round": "R2", "stage": "R2", "timestamp": 1794217879348, "detail": "(4, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C3", "freq": "2_4GHz", "rssi": -36.0, "round": "R2", "stage": "R2", "timestamp": 1794217920179, "detail": "(6, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C4", "freq": "2_4GHz", "rssi": -51.0, "round": "R2", "stage": "R2", "timestamp": 1794218303080, "detail": "(8, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C1", "freq": "2_4GHz", "rssi": -44.0, "round": "R2", "stage": "R2", "timestamp": 1794218529380, "detail": "(2, 2.56)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C2", "freq": "2_4GHz", "rssi": -40.0, "round": "R2", "stage": "R2", "timestamp": 1794218570498, "detail": "(4, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C3", "freq": "2_4GHz", "rssi": -43.0, "round": "R2", "stage": "R2", "timestamp": 1794218605295, "detail": "(6, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C4", "freq": "2_4GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794218645768, "detail": "(8, 2.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C1", "freq": "2_4GHz", "rssi": -39.0, "round": "R2", "stage": "R2", "timestamp": 1794218750659, "detail": "(2, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C2", "freq": "2_4GHz", "rssi": -47.0, "round": "R2", "stage": "R2", "timestamp": 1794218785537, "detail": "(4, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C3", "freq": "2_4GHz", "rssi": -43.0, "round": "R2", "stage": "R2", "timestamp": 1794218814411, "detail": "(6, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C4", "freq": "2_4GHz", "rssi": -41.0, "round": "R2", "stage": "R2", "timestamp": 1794218872254, "detail": "(8, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C1", "freq": "2_4GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794218976736, "detail": "(2, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C2", "freq": "2_4GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794219011295, "detail": "(4, 6.78)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C3", "freq": "2_4GHz", "rssi": -49.0, "round": "R2", "stage": "R2", "timestamp": 1794219051693, "detail": "(6, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C4", "freq": "2_4GHz", "rssi": -44.0, "round": "R2", "stage": "R2", "timestamp": 1794219086340, "detail": "(8, 6.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C1", "freq": "2_4GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794219161854, "detail": "(2, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C2", "freq": "2_4GHz", "rssi": -47.0, "round": "R2", "stage": "R2", "timestamp": 1794219202170, "detail": "(4, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C3", "freq": "2_4GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794219248253, "detail": "(6, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C4", "freq": "2_4GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794219312252, "detail": "(8, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C1", "freq": "2_4GHz", "rssi": -45.0, "round": "R2", "stage": "R2", "timestamp": 1794219381605, "detail": "(2, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C2", "freq": "2_4GHz", "rssi": -53.0, "round": "R2", "stage": "R2", "timestamp": 1794219416254, "detail": "(4, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C3", "freq": "2_4GHz", "rssi": -47.0, "round": "R2", "stage": "R2", "timestamp": 1794219474090, "detail": "(6, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C4", "freq": "2_4GHz", "rssi": -48.0, "round": "R2", "stage": "R2", "timestamp": 1794219509051, "detail": "(8, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C1", "freq": "5GHz", "rssi": -44.0, "round": "R2", "stage": "R2", "timestamp": 1794217832511, "detail": "(2, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C2", "freq": "5GHz", "rssi": -46.0, "round": "R2", "stage": "R2", "timestamp": 1794217879348, "detail": "(4, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C3", "freq": "5GHz", "rssi": -45.0, "round": "R2", "stage": "R2", "timestamp": 1794217920179, "detail": "(6, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C4", "freq": "5GHz", "rssi": -38.0, "round": "R2", "stage": "R2", "timestamp": 1794218303080, "detail": "(8, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C1", "freq": "5GHz", "rssi": -39.0, "round": "R2", "stage": "R2", "timestamp": 1794218529380, "detail": "(2, 2.56)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C2", "freq": "5GHz", "rssi": -46.0, "round": "R2", "stage": "R2", "timestamp": 1794218570498, "detail": "(4, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C3", "freq": "5GHz", "rssi": -41.0, "round": "R2", "stage": "R2", "timestamp": 1794218605295, "detail": "(6, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C4", "freq": "5GHz", "rssi": -40.0, "round": "R2", "stage": "R2", "timestamp": 1794218645768, "detail": "(8, 2.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C1", "freq": "5GHz", "rssi": -39.0, "round": "R2", "stage": "R2", "timestamp": 1794218750659, "detail": "(2, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C2", "freq": "5GHz", "rssi": -44.0, "round": "R2", "stage": "R2", "timestamp": 1794218785537, "detail": "(4, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C3", "freq": "5GHz", "rssi": -43.0, "round": "R2", "stage": "R2", "timestamp": 1794218814411, "detail": "(6, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C4", "freq": "5GHz", "rssi": -44.0, "round": "R2", "stage": "R2", "timestamp": 1794218872254, "detail": "(8, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C1", "freq": "5GHz", "rssi": -40.0, "round": "R2", "stage": "R2", "timestamp": 1794218976736, "detail": "(2, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C2", "freq": "5GHz", "rssi": -43.0, "round": "R2", "stage": "R2", "timestamp": 1794219011295, "detail": "(4, 6.78)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C3", "freq": "5GHz", "rssi": -45.0, "round": "R2", "stage": "R2", "timestamp": 1794219051693, "detail": "(6, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C4", "freq": "5GHz", "rssi": -48.0, "round": "R2", "stage": "R2", "timestamp": 1794219086340, "detail": "(8, 6.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C1", "freq": "5GHz", "rssi": -44.0, "round": "R2", "stage": "R2", "timestamp": 1794219161854, "detail": "(2, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C2", "freq": "5GHz", "rssi": -43.0, "round": "R2", "stage": "R2", "timestamp": 1794219202170, "detail": "(4, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C3", "freq": "5GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794219248253, "detail": "(6, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C4", "freq": "5GHz", "rssi": -47.0, "round": "R2", "stage": "R2", "timestamp": 1794219312252, "detail": "(8, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C1", "freq": "5GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794219381605, "detail": "(2, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C2", "freq": "5GHz", "rssi": -46.0, "round": "R2", "stage": "R2", "timestamp": 1794219416254, "detail": "(4, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C3", "freq": "5GHz", "rssi": -42.0, "round": "R2", "stage": "R2", "timestamp": 1794219474090, "detail": "(6, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C4", "freq": "5GHz", "rssi": -54.0, "round": "R2", "stage": "R2", "timestamp": 1794219509051, "detail": "(8, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C1", "freq": "2_4GHz", "rssi": -45.0, "round": "R3", "stage": "R3", "timestamp": 1794217844181, "detail": "(2, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C2", "freq": "2_4GHz", "rssi": -40.0, "round": "R3", "stage": "R3", "timestamp": 1794217890988, "detail": "(4, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C3", "freq": "2_4GHz", "rssi": -36.0, "round": "R3", "stage": "R3", "timestamp": 1794217908580, "detail": "(6, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C4", "freq": "2_4GHz", "rssi": -51.0, "round": "R3", "stage": "R3", "timestamp": 1794218314739, "detail": "(8, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C1", "freq": "2_4GHz", "rssi": -45.0, "round": "R3", "stage": "R3", "timestamp": 1794218535227, "detail": "(2, 2.56)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C2", "freq": "2_4GHz", "rssi": -40.0, "round": "R3", "stage": "R3", "timestamp": 1794218582094, "detail": "(4, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C3", "freq": "2_4GHz", "rssi": -43.0, "round": "R3", "stage": "R3", "timestamp": 1794218616809, "detail": "(6, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C4", "freq": "2_4GHz", "rssi": -41.0, "round": "R3", "stage": "R3", "timestamp": 1794218657294, "detail": "(8, 2.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C1", "freq": "2_4GHz", "rssi": -37.0, "round": "R3", "stage": "R3", "timestamp": 1794218762256, "detail": "(2, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C2", "freq": "2_4GHz", "rssi": -50.0, "round": "R3", "stage": "R3", "timestamp": 1794218791294, "detail": "(4, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C3", "freq": "2_4GHz", "rssi": -42.0, "round": "R3", "stage": "R3", "timestamp": 1794218843373, "detail": "(6, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C4", "freq": "2_4GHz", "rssi": -41.0, "round": "R3", "stage": "R3", "timestamp": 1794218883859, "detail": "(8, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C1", "freq": "2_4GHz", "rssi": -41.0, "round": "R3", "stage": "R3", "timestamp": 1794218988253, "detail": "(2, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C2", "freq": "2_4GHz", "rssi": -43.0, "round": "R3", "stage": "R3", "timestamp": 1794219017056, "detail": "(4, 6.78)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C3", "freq": "2_4GHz", "rssi": -49.0, "round": "R3", "stage": "R3", "timestamp": 1794219057542, "detail": "(6, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C4", "freq": "2_4GHz", "rssi": -43.0, "round": "R3", "stage": "R3", "timestamp": 1794219109771, "detail": "(8, 6.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C1", "freq": "2_4GHz", "rssi": -42.0, "round": "R3", "stage": "R3", "timestamp": 1794219179125, "detail": "(2, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C2", "freq": "2_4GHz", "rssi": -49.0, "round": "R3", "stage": "R3", "timestamp": 1794219207935, "detail": "(4, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C3", "freq": "2_4GHz", "rssi": -42.0, "round": "R3", "stage": "R3", "timestamp": 1794219288731, "detail": "(6, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C4", "freq": "2_4GHz", "rssi": -41.0, "round": "R3", "stage": "R3", "timestamp": 1794219335291, "detail": "(8, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C1", "freq": "2_4GHz", "rssi": -46.0, "round": "R3", "stage": "R3", "timestamp": 1794219387371, "detail": "(2, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C2", "freq": "2_4GHz", "rssi": -55.0, "round": "R3", "stage": "R3", "timestamp": 1794219427770, "detail": "(4, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C3", "freq": "2_4GHz", "rssi": -48.0, "round": "R3", "stage": "R3", "timestamp": 1794219485853, "detail": "(6, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C4", "freq": "2_4GHz", "rssi": -50.0, "round": "R3", "stage": "R3", "timestamp": 1794219520572, "detail": "(8, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C1", "freq": "5GHz", "rssi": -47.0, "round": "R3", "stage": "R3", "timestamp": 1794217844181, "detail": "(2, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C2", "freq": "5GHz", "rssi": -43.0, "round": "R3", "stage": "R3", "timestamp": 1794217890988, "detail": "(4, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C3", "freq": "5GHz", "rssi": -50.0, "round": "R3", "stage": "R3", "timestamp": 1794217908580, "detail": "(6, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R1C4", "freq": "5GHz", "rssi": -38.0, "round": "R3", "stage": "R3", "timestamp": 1794218314739, "detail": "(8, 0.6)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C1", "freq": "5GHz", "rssi": -38.0, "round": "R3", "stage": "R3", "timestamp": 1794218535227, "detail": "(2, 2.56)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C2", "freq": "5GHz", "rssi": -46.0, "round": "R3", "stage": "R3", "timestamp": 1794218582094, "detail": "(4, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C3", "freq": "5GHz", "rssi": -41.0, "round": "R3", "stage": "R3", "timestamp": 1794218616809, "detail": "(6, 2.57)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R2C4", "freq": "5GHz", "rssi": -39.0, "round": "R3", "stage": "R3", "timestamp": 1794218657294, "detail": "(8, 2.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C1", "freq": "5GHz", "rssi": -39.0, "round": "R3", "stage": "R3", "timestamp": 1794218762256, "detail": "(2, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C2", "freq": "5GHz", "rssi": -44.0, "round": "R3", "stage": "R3", "timestamp": 1794218791294, "detail": "(4, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C3", "freq": "5GHz", "rssi": -44.0, "round": "R3", "stage": "R3", "timestamp": 1794218843373, "detail": "(6, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R3C4", "freq": "5GHz", "rssi": -44.0, "round": "R3", "stage": "R3", "timestamp": 1794218883859, "detail": "(8, 4.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C1", "freq": "5GHz", "rssi": -40.0, "round": "R3", "stage": "R3", "timestamp": 1794218988253, "detail": "(2, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C2", "freq": "5GHz", "rssi": -42.0, "round": "R3", "stage": "R3", "timestamp": 1794219017056, "detail": "(4, 6.78)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C3", "freq": "5GHz", "rssi": -44.0, "round": "R3", "stage": "R3", "timestamp": 1794219057542, "detail": "(6, 6.79)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R4C4", "freq": "5GHz", "rssi": -49.0, "round": "R3", "stage": "R3", "timestamp": 1794219109771, "detail": "(8, 6.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C1", "freq": "5GHz", "rssi": -46.0, "round": "R3", "stage": "R3", "timestamp": 1794219179125, "detail": "(2, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C2", "freq": "5GHz", "rssi": -44.0, "round": "R3", "stage": "R3", "timestamp": 1794219207935, "detail": "(4, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C3", "freq": "5GHz", "rssi": -43.0, "round": "R3", "stage": "R3", "timestamp": 1794219288731, "detail": "(6, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R5C4", "freq": "5GHz", "rssi": -47.0, "round": "R3", "stage": "R3", "timestamp": 1794219335291, "detail": "(8, 8.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C1", "freq": "5GHz", "rssi": -41.0, "round": "R3", "stage": "R3", "timestamp": 1794219387371, "detail": "(2, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C2", "freq": "5GHz", "rssi": -48.0, "round": "R3", "stage": "R3", "timestamp": 1794219427770, "detail": "(4, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C3", "freq": "5GHz", "rssi": -42.0, "round": "R3", "stage": "R3", "timestamp": 1794219485853, "detail": "(6, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }, { "caseId": "Case1", "pointId": "R6C4", "freq": "5GHz", "rssi": -52.0, "round": "R3", "stage": "R3", "timestamp": 1794219520572, "detail": "(8, 10.2)", "sessionKey": "Retest_2026-11-09", "source": "Case1_Official_Overview_AllInOne_Firebase(1).csv" }];
+        function summaryOfficialRecords(profileName, kind) {
+            if (kind === 'TR01') {
+                // Only the official transfer-session path. Never mix the older /points archive.
+                const points = allHeatmapDataCache?.[profileName]?.Case3
+                    ?.TransferRoomMeasurements?.TR01?.sessions?.[OFFICIAL_TRANSFER_SESSION]?.points || {};
+                const rows = []; let scans = 0;
+                for (const [key, point] of Object.entries(points)) {
+                    if (!point || typeof point !== 'object') continue;
+                    for (const [angleKey, angle] of Object.entries(point.angles || {})) {
+                        if (!angle || typeof angle !== 'object') continue;
+                        const angleValue = String(angleKey).replace(/[^0-9]/g, '');
+                        if (!['0', '90', '180', '270'].includes(angleValue)) continue;
+                        for (const round of ['R1', 'R2', 'R3']) {
+                            const m = angle.measurements?.[round];
+                            if (!m || typeof m !== 'object') continue;
+                            const a = summaryFinite(m.rssi24), b = summaryFinite(m.rssi5);
+                            if (a === null && b === null) continue;
+                            scans++;
+                            const pointId = String(point.pointId || key);
+                            const stamp = summaryTimestamp(m.captureAt || m.timestamp || m.sourceScanTimestamp);
+                            const detail = `มุม ${angleValue}° · ${round}`;
+                            if (a !== null) rows.push({ caseId: 'TR01', pointId, freq: '2_4GHz', rssi: a, round, angle: angleValue, stage: angleValue + '°', timestamp: stamp, detail });
+                            if (b !== null) rows.push({ caseId: 'TR01', pointId, freq: '5GHz', rssi: b, round, angle: angleValue, stage: angleValue + '°', timestamp: stamp, detail });
+                        }
                     }
-
-                    if (p.bssid) parts.push(`BSSID ${p.bssid}`);
-
-                    if (p.channel !== '') parts.push(`CH ${p.channel}`);
-
-                    detail = parts.join(' · ') || 'AP-CAL';
-
-                } else {
-
-                    detail = 'Legacy data';
-
                 }
-
-                const color = p.rssi >= -50 ? '#2ECC71'
-
-                    : p.rssi >= -70 ? '#F59F00'
-
-                        : '#E74C3C';
-
-                const row = `<tr>
-
-                    <td><b>${p.caseId}</b></td>
-
-                    <td>${p.areaLabel}</td>
-
-                    <td>${p.round}</td>
-
-                    <td>${formatFreqLabel(p.freq)}</td>
-
-                    <td>${p.pointId}</td>
-
-                    <td style="font-weight:bold;color:${color}">${p.rssi} dBm</td>
-
-                    <td style="font-size:11px;color:#64748B;text-align:left;">${detail}</td>
-
-                </tr>`;
-
-                tableBody.insertAdjacentHTML('beforeend', row);
-
-            });
-
-            if (total === 0) {
-
-                tableBody.innerHTML = `<tr><td colspan="7" style="color:#A0AEC0;padding:22px;">
-
-                    ไม่พบข้อมูลในชุดการวัดที่เลือก (ข้อมูลเดิมกับรอบวัดใหม่จัดเก็บแยกกัน)
-
-                </td></tr>`;
-
+                return { rows, scans };
             }
-
+            const raw = collectProfileMeasurements(profileName);
+            const rows = raw.filter(p => {
+                if (kind === 'Case1') return p.caseId === 'Case1' && p.sessionKey === 'Retest_2026-11-09';
+                if (kind === 'Case2') return p.caseId === 'Case2' && p.areaKey === 'Floor2';
+                if (kind === 'Case3') {
+                    if (p.caseId !== 'Case3') return false;
+                    if (p.areaKey !== 'Evaluation') return ['Calibration', 'Validation'].includes(p.areaKey);
+                    // Final Evaluation uses the receiver orientation frozen in Case 3.
+                    return /\(270°\)/.test(String(p.areaLabel || ''));
+                }
+                return true; // archive/uncategorized profiles retain their own content
+            }).map(p => ({
+                ...p, stage: summaryStageFor(p, kind), timestamp: summaryTimestamp(p.timestamp),
+                detail: p.caseId === 'Case2' ? [p.ssid, p.bssid ? 'BSSID ' + p.bssid : '', p.channel !== '' ? 'CH ' + p.channel : ''].filter(Boolean).join(' · ') :
+                    (Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.y)) ? '(' + Number(p.x).toFixed(2) + ', ' + Number(p.y).toFixed(2) + ')' : '')
+            }));
+            if (kind === 'Case1' && rows.length === 0) {
+                // Firebase may be offline or use another historical tree. Use independently audited
+                // November CSV rows for the *results* popup, never claiming a live Firebase pass.
+                return { rows: CASE1_OFFICIAL_SNAPSHOT.map(r => ({ ...r })), scans: 0, source: 'csv-snapshot' };
+            }
+            return { rows, scans: 0, source: 'firebase-live' };
+        }
+        function summaryInfo(kind, profile) {
+            const names = {
+                Case1: ['ห้องเรียนทดลอง', 'แสดงเฉพาะข้อมูลวัดชุดทางการของห้องเรียน ไม่รวมข้อมูลวัดเก่า', 'รอบวัด'],
+                Case2: ['ทางเดินชั้น 2', 'แสดงเฉพาะข้อมูลจากทางเดินชั้น 2 ไม่รวมพื้นที่ชั้นอื่น', 'รอบวัด'],
+                Case3: ['ห้องทดลองพัฒนาแบบจำลอง', 'Calibration / Validation / Final Evaluation ใช้มุมประเมินทางการ 270°', 'ขั้นตอนการทดลอง'],
+                TR01: ['ห้องทดสอบการถ่ายโอน', 'Zero Local Calibration · ใช้โมเดลและพารามิเตอร์จาก Case 3 เท่านั้น', 'มุมที่บันทึก']
+            };
+            return names[kind] || ['โปรไฟล์ ' + profile, 'แสดงรายการวัดที่อยู่ในโปรไฟล์ที่เลือก', 'ชุดข้อมูล'];
+        }
+        function openSummaryModal(profileName, explicitCase = '') {
+            const kind = summaryKindForProfile(profileName, explicitCase);
+            const { rows, scans, source } = summaryOfficialRecords(profileName, kind);
+            summaryState = { profile: profileName, kind, rows, scans, source: source || 'firebase-live', freq: 'all', stage: 'all', page: 0 };
+            const [place, note, groupTitle] = summaryInfo(kind, profileName);
+            document.getElementById('summary-title').textContent = 'สรุปข้อมูลการทดลอง';
+            document.getElementById('summary-subtitle').textContent = place;
+            document.getElementById('summary-break-heading').textContent = groupTitle;
+            const records = document.getElementById('summary-records');
+            records.open = false;
+            updateSummaryStageOptions();
+            renderSummaryView();
+            openModal('summary-modal');
+        }
+        function filterSummaryData(type, value) {
+            if (type !== 'freq' || !['all', '2_4GHz', '5GHz'].includes(value)) return;
+            summaryState.freq = value;
+            summaryState.stage = 'all';
+            summaryState.page = 0;
+            updateSummaryStageOptions();
+            renderSummaryView();
+        }
+        function setSummaryGroup(value) {
+            summaryState.stage = value;
+            summaryState.page = 0;
+            renderSummaryRecords();
+        }
+        function changeSummaryPage(direction) {
+            const maxPage = Math.max(0, Math.ceil(summarySelectedRecords().length / SUMMARY_PAGE_SIZE) - 1);
+            summaryState.page = Math.max(0, Math.min(maxPage, summaryState.page + direction));
+            renderSummaryRecords();
+        }
+        function summaryFilteredBandRows() {
+            return summaryState.rows.filter(r => summaryState.freq === 'all' || r.freq === summaryState.freq);
+        }
+        function summarySelectedRecords() {
+            return summaryFilteredBandRows().filter(r => summaryState.stage === 'all' || r.stage === summaryState.stage);
+        }
+        function updateSummaryStageOptions() {
+            const select = document.getElementById('summary-stage-select');
+            select.replaceChildren(new Option('ทั้งหมด', 'all'));
+            for (const stage of [...new Set(summaryFilteredBandRows().map(r => r.stage))].sort((a, b) => a.localeCompare(b, 'th', { numeric: true }))) {
+                select.add(new Option(stage, stage));
+            }
+            select.value = summaryState.stage;
+        }
+        function summaryNumber(n) { return n.toLocaleString('th-TH'); }
+        function renderSummaryView() {
+            const s = summaryState;
+            for (const [f, id] of [['all', 'summary-freq-all'], ['2_4GHz', 'summary-freq-24'], ['5GHz', 'summary-freq-5']]) {
+                const btn = document.getElementById(id);
+                btn.classList.toggle('active', s.freq === f);
+                btn.setAttribute('aria-pressed', String(s.freq === f));
+            }
+            const filtered = summaryFilteredBandRows();
+            const pts = new Set(filtered.map(r => r.pointId));
+            document.getElementById('stat-total').textContent = summaryNumber(filtered.length);
+            document.getElementById('stat-points').textContent = summaryNumber(pts.size);
+            // Bands report official dataset totals; they do not become zero when filtering to the other band.
+            document.getElementById('stat-24').textContent = summaryNumber(s.rows.filter(r => r.freq === '2_4GHz').length);
+            document.getElementById('stat-5').textContent = summaryNumber(s.rows.filter(r => r.freq === '5GHz').length);
+            const [place, note] = summaryInfo(s.kind, s.profile);
+            const context = document.getElementById('summary-context');
+            context.replaceChildren();
+            const strong = document.createElement('strong'); strong.textContent = place + ' · ';
+            context.appendChild(strong);
+            context.appendChild(document.createTextNode(note));
+            if (s.kind === 'Case1') {
+                const srcLabel = document.createElement('div');
+                srcLabel.className = 'v197-summary-source';
+                srcLabel.textContent = s.source === 'csv-snapshot'
+                    ? 'แหล่งข้อมูล: CSV ทางการที่ตรวจสอบแล้ว (144 ค่า) · ข้อมูลอ้างอิง ไม่ใช่ผลอ่าน Firebase สด'
+                    : 'แหล่งข้อมูล: Firebase ชุดทางการที่อ่านได้ในขณะนี้';
+                context.appendChild(srcLabel);
+                // Compare the two radio bands from the same currently displayed source.
+                const bandStats = document.createElement('div');
+                bandStats.className = 'v197-profile-band-stats';
+                for (const [freq, label] of [['2_4GHz', '2.4 GHz'], ['5GHz', '5 GHz']]) {
+                    const entries = s.rows.filter(r => r.freq === freq && Number.isFinite(Number(r.rssi)));
+                    if (!entries.length) continue;
+                    const byPoint = new Map();
+                    for (const r of entries) {
+                        const v = byPoint.get(r.pointId) || [];
+                        v.push(Number(r.rssi)); byPoint.set(r.pointId, v);
+                    }
+                    const pointMeans = [...byPoint.values()].map(values => values.reduce((a, b) => a + b, 0) / values.length);
+                    const avg = entries.reduce((a, b) => a + Number(b.rssi), 0) / entries.length;
+                    const passed = pointMeans.filter(v => v >= -70).length;
+                    const sampleSD = [...byPoint.values()].filter(v => v.length === 3).map(v => {
+                        const m = v.reduce((a, b) => a + b, 0) / v.length;
+                        return Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / 2);
+                    });
+                    const avgSD = sampleSD.length ? sampleSD.reduce((a, b) => a + b, 0) / sampleSD.length : null;
+                    const card = document.createElement('div'); card.className = 'v197-profile-band-card';
+                    const head = document.createElement('b'); head.textContent = label;
+                    const main = document.createElement('span'); main.textContent = 'RSSI เฉลี่ย ' + avg.toFixed(2) + ' dBm';
+                    const sub = document.createElement('small'); sub.textContent = 'Coverage ' + passed + '/' + pointMeans.length + ' จุด · SD วัดซ้ำ ' + (avgSD === null ? '—' : avgSD.toFixed(2) + ' dB');
+                    card.append(head, main, sub); bandStats.append(card);
+                }
+                context.appendChild(bandStats);
+            }
+            if (s.kind === 'TR01') {
+                const extra = document.createElement('div');
+                extra.style.marginTop = '5px';
+                extra.textContent = `บันทึก Scan ${summaryNumber(s.scans)}/120 รอบ · ผลประเมินใช้มุม 270° · ไม่ใช้ข้อมูลห้องนี้สอบเทียบแบบจำลอง`;
+                context.appendChild(extra);
+            }
+            const breakdown = document.getElementById('summary-breakdown');
+            breakdown.replaceChildren();
+            const counts = new Map();
+            for (const r of filtered) counts.set(r.stage, (counts.get(r.stage) || 0) + 1);
+            for (const [stage, count] of [...counts].sort((a, b) => a[0].localeCompare(b[0], 'th', { numeric: true }))) {
+                const card = document.createElement('div'); card.className = 'summary-break-item';
+                const name = document.createElement('span'); name.textContent = stage;
+                const val = document.createElement('b'); val.textContent = summaryNumber(count) + ' รายการ';
+                card.append(name, val); breakdown.appendChild(card);
+            }
+            if (!counts.size) {
+                const message = document.createElement('div'); message.className = 'summary-break-item';
+                message.textContent = 'ยังไม่มีข้อมูลที่ตรงกับตัวกรอง'; breakdown.appendChild(message);
+            }
+            document.getElementById('summary-record-count').textContent = summaryNumber(filtered.length) + ' รายการ';
+            renderSummaryRecords();
+        }
+        // Cisco Catalyst IW9167E: excellent -30..-50, good -50..-60,
+        // fair -60..-70, weak -70..-80, very poor below -80 dBm.
+        // At shared boundaries, the stronger class is used (e.g. -70 = fair).
+        function classifyCiscoRssi(rssi) {
+            const v = Number(rssi);
+            if (!Number.isFinite(v)) return '—';
+            if (v >= -50) return 'ดีเยี่ยม';
+            if (v >= -60) return 'ดี';
+            if (v >= -70) return 'ปานกลาง';
+            if (v >= -80) return 'อ่อน';
+            return 'อ่อนมาก';
+        }
+        function renderSummaryRecords() {
+            const s = summaryState;
+            const rows = summarySelectedRecords().slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0) ||
+                String(a.pointId).localeCompare(String(b.pointId), 'th', { numeric: true }));
+            const pageCount = Math.max(1, Math.ceil(rows.length / SUMMARY_PAGE_SIZE));
+            s.page = Math.max(0, Math.min(s.page, pageCount - 1));
+            const body = document.getElementById('summary-table-body');
+            body.replaceChildren();
+            for (const r of rows.slice(s.page * SUMMARY_PAGE_SIZE, (s.page + 1) * SUMMARY_PAGE_SIZE)) {
+                const tr = document.createElement('tr');
+                // Cisco Catalyst IW9167E Wi-Fi RSSI rating; indicator only, not SNR/throughput.
+                const level = classifyCiscoRssi(r.rssi);
+                const values = [r.stage || '—', r.pointId || '—', r.caseId === 'TR01' ? (r.round + ' · ' + r.angle + '°') : (r.round || '—'),
+                r.freq === '2_4GHz' ? '2.4 GHz' : '5 GHz', Number(r.rssi).toFixed(1) + ' dBm', level];
+                values.forEach((val, i) => {
+                    const td = document.createElement('td'); td.textContent = val;
+                    if (i === 4) td.className = 'value'; tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            }
+            if (!rows.length) {
+                const tr = document.createElement('tr'), td = document.createElement('td');
+                td.colSpan = 6; td.style.textAlign = 'center'; td.style.color = '#778a90'; td.textContent = 'ไม่พบข้อมูลในชุดที่เลือก';
+                tr.appendChild(td); body.appendChild(tr);
+            }
+            document.getElementById('summary-table-caption').textContent = `${summaryNumber(rows.length)} รายการ`;
+            document.getElementById('summary-page-state').textContent = `${s.page + 1} / ${pageCount}`;
+            document.getElementById('summary-page-prev').disabled = s.page === 0;
+            document.getElementById('summary-page-next').disabled = s.page >= pageCount - 1;
         }
 
         // Initialize Realtime Listener
