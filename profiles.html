@@ -3,16 +3,11 @@
 <html lang="th">
 
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>เลือกโปรไฟล์และการทดลอง — Wi-Fi Heatmap</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
     <style>
         * {
 
@@ -788,7 +783,6 @@
 
         }
     </style>
-
     <style id="v11-12-profile-unassigned-case">
         .profile-unassigned-badge {
 
@@ -800,7 +794,6 @@
 
         }
     </style>
-
     <style id="v11-27-empty-profile-state">
         /* Empty profiles are valid workspaces, but should not look like measured data. */
 
@@ -816,7 +809,6 @@
 
         }
     </style>
-
     <style id="research-landing-v12">
         body {
             background: #f6f8f8;
@@ -1191,7 +1183,6 @@
             }
         }
     </style>
-
     <style id="v105-equal-profile-cards">
         /* One row of truly equal-height primary experiments. Transfer room is a separate entry. */
         #primary-profiles-grid {
@@ -1279,7 +1270,6 @@
             }
         }
     </style>
-
     <style id="v110-primary-profile-cleanup">
         /* Presentation only: three official cards plus the transfer-room entry.
          Historical/empty profiles remain untouched in Firebase. */
@@ -1690,52 +1680,124 @@
             }
         }
     </style>
+    <style id="v231-demo-profile-display">
+        /* Preserve the three locked official cards. Show the profile manager only on demand. */
+        .header-actions>button[onclick*="openCreateModal"] {
+            display: inline-flex !important;
+        }
+
+        #demo-profiles-section[hidden] {
+            display: none !important;
+        }
+
+        #demo-profiles-section {
+            text-align: left;
+            margin-top: 18px;
+        }
+
+        #demo-profiles-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 370px));
+        }
+
+        /* historical and uncategorized groups are not rendered */
+        #create-modal .modal-card,
+        #delete-modal .modal-card {
+            text-align: left;
+        }
+    </style>
+    <style id="v260-demo-only-profiles">
+        /* Only the three official experiment cards and a single collapsed Demo section. */
+        #demo-profiles-section[hidden] {
+            display: none !important;
+        }
+
+        #demo-profiles-section {
+            display: block;
+            margin: 22px 0 10px;
+            padding: 17px 20px;
+        }
+
+        #demo-profiles-section>summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: space-between;
+            cursor: pointer;
+            font-weight: 700;
+            color: #214c51;
+            font-size: 17px;
+            list-style: none;
+        }
+
+        #demo-profiles-section>summary::-webkit-details-marker {
+            display: none;
+        }
+
+        #demo-profiles-section>summary::before {
+            content: '▸';
+            color: #16867b;
+            font-size: 15px;
+        }
+
+        #demo-profiles-section[open]>summary::before {
+            content: '▾';
+        }
+
+        #demo-profiles-section>summary span:first-child {
+            margin-right: auto;
+        }
+
+        #demo-profiles-section #demo-profiles-grid {
+            margin-top: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 370px));
+            gap: 16px;
+        }
+
+        #demo-profiles-section:not([open]) #demo-profiles-grid {
+            display: none;
+        }
+
+        #demo-profiles-grid>.profile-card {
+            min-height: 0 !important;
+        }
+
+        @media(max-width:700px) {
+            #demo-profiles-section {
+                padding: 15px
+            }
+
+            #demo-profiles-section #demo-profiles-grid {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
 </head>
 
 <body>
-
     <div class="container">
-
         <!-- Header Section -->
-
         <div class="header">
-
             <div class="header-title">
-
                 <h1>Wi-Fi Heatmap · เลือกโปรไฟล์และการทดลอง</h1>
-
                 <p>เลือกโปรไฟล์และ Case ที่ต้องการดู จากนั้นเข้าสู่ Dashboard · จัดการข้อมูลเดิมได้ในหน้าเดียว</p>
-
             </div>
-
             <div class="header-actions">
-
-                <a href="#" class="btn btn-secondary"
+                <a class="btn btn-secondary" href="#"
                     onclick="openLastMeasurementPage(); return false;">กลับหน้าการทดลองล่าสุด</a>
-
                 <button class="btn btn-primary" onclick="openCreateModal()">สร้างโปรไฟล์</button>
-
             </div>
-
         </div>
-
         <!-- Filter / Search Bar -->
-
         <div class="filter-bar">
-
-            <input type="text" id="search-input" class="search-input" placeholder="ค้นหาชื่อการทดลองหรือโปรไฟล์..."
-                oninput="filterProfiles()">
-
+            <input class="search-input" id="search-input" oninput="filterProfiles()"
+                placeholder="ค้นหาชื่อการทดลองหรือโปรไฟล์..." type="text" />
             <div style="font-size: 14px; color: #7F8C8D;">
 
                 โปรไฟล์ทั้งหมด: <strong id="total-profiles-count" style="color: #2B7A78;">0</strong>
-
             </div>
-
         </div>
-
         <!-- Main research experiments — Firebase profile names are retained as stable IDs -->
-        <section class="research-section" aria-labelledby="primary-heading">
+        <section aria-labelledby="primary-heading" class="research-section">
             <div class="section-heading">
                 <div>
                     <h2 id="primary-heading">การทดลองหลัก</h2>
@@ -1743,156 +1805,118 @@
                 </div>
                 <span class="section-count" id="primary-profiles-count">0 การทดลอง</span>
             </div>
-            <div id="primary-profiles-grid" class="profiles-grid"></div>
-            <div id="primary-transfer-room" class="v105-transfer-entry" hidden></div>
+            <div class="profiles-grid" id="primary-profiles-grid"></div>
+            <div class="v105-transfer-entry" hidden="" id="primary-transfer-room"></div>
         </section>
-
-        <details id="archive-details" class="research-fold">
-            <summary><span>โปรไฟล์ทดสอบและข้อมูลย้อนหลัง</span><span id="archive-profiles-count" class="fold-count">0
-                    โปรไฟล์</span></summary>
-            <p class="fold-note">เก็บข้อมูลการพัฒนาและทดสอบระบบไว้สำหรับตรวจสอบย้อนหลัง ไม่ใช่ข้อมูลผลหลัก</p>
-            <div id="archive-profiles-grid" class="profiles-grid archive-grid"></div>
+        <details class="research-fold" hidden="" id="demo-profiles-section">
+            <summary><span>โปรไฟล์ทดสอบ Demo</span><span class="fold-count" id="v259-demo-count">0 โปรไฟล์</span>
+            </summary>
+            <div class="profiles-grid archive-grid" id="demo-profiles-grid"></div>
         </details>
 
-        <details id="empty-details" class="research-fold">
-            <summary><span>โปรไฟล์ว่างหรือยังไม่จัดประเภท</span><span id="empty-profiles-count" class="fold-count">0
-                    โปรไฟล์</span></summary>
-            <p class="fold-note">โปรไฟล์ที่ไม่พบรายการ RSSI ไม่ได้ยืนยันว่าไม่มีข้อมูลตั้งค่าอื่น โปรดตรวจสอบก่อนลบ</p>
-            <div id="empty-profiles-grid" class="profiles-grid archive-grid"></div>
-        </details>
 
         <p class="research-footnote">หมายเหตุ: ชื่อการทดลองและชื่อห้องทดสอบการถ่ายโอนแบบจำลองเป็นเพียงข้อความแสดงผล
             ไม่เปลี่ยนคีย์โปรไฟล์หรือข้อมูลการวัดใน Firebase</p>
     </div>
-
     <!-- Create Profile Modal -->
-
-    <div id="create-modal" class="modal-overlay">
-
+    <div class="modal-overlay" id="create-modal">
         <div class="modal-card">
-
             <h3 class="modal-title">สร้างโปรไฟล์ใหม่</h3>
-
             <div class="modal-body">
-
                 <div class="form-group">
-
                     <label for="create-name-input">ชื่อโปรไฟล์:</label>
-
-                    <input type="text" id="create-name-input" class="form-input" placeholder="เช่น Test_Run_2026">
-
+                    <input autocomplete="off" class="form-input" id="create-name-input" maxlength="60"
+                        placeholder="Demo_Case3_YYYYMMDD" type="text" />
                 </div>
-
-            </div>
-
-            <div class="modal-actions">
-
-                <button class="btn btn-secondary" onclick="closeModal('create-modal')">ยกเลิก</button>
-
-                <button class="btn btn-primary" onclick="submitCreateProfile()">สร้างโปรไฟล์</button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- Edit Profile Modal -->
-
-    <div id="edit-modal" class="modal-overlay">
-
-        <div class="modal-card">
-
-            <h3 class="modal-title">แก้ไขชื่อโปรไฟล์</h3>
-
-            <div class="modal-body">
-
-                <input type="hidden" id="edit-old-name">
-
                 <div class="form-group">
-
-                    <label for="edit-name-input">ชื่อโปรไฟล์ใหม่:</label>
-
-                    <input type="text" id="edit-name-input" class="form-input">
-
+                    <label for="create-case-select">ประเภทโปรไฟล์:</label>
+                    <select class="form-input" id="create-case-select" onchange="updateCreateProfileHint()">
+                        <option value="DEMO_CASE3">สาธิต Case 3</option>
+                        <option value="Case3">Case 3 — โปรไฟล์ทั่วไป</option>
+                        <option value="Case1">Case 1 — โปรไฟล์ทั่วไป</option>
+                        <option value="Case2">Case 2 — โปรไฟล์ทั่วไป</option>
+                    </select>
+                    <p id="create-profile-hint"
+                        style="margin:2px 0 0;color:#657982;font-size:12px;line-height:1.6;text-align:left;">
+                        โปรไฟล์สาธิตแยกข้อมูลวัดจาก Case3 final และใช้โหมด Hardware Pilot เดิม โดยไม่ใช้ผลนี้ในงานวิจัย
+                    </p>
                 </div>
-
             </div>
-
             <div class="modal-actions">
-
-                <button class="btn btn-secondary" onclick="closeModal('edit-modal')">ยกเลิก</button>
-
-                <button class="btn btn-primary" onclick="submitEditProfile()">บันทึกการแก้ไข</button>
-
+                <button class="btn btn-secondary" onclick="closeModal('create-modal')">ยกเลิก</button>
+                <button class="btn btn-primary" onclick="submitCreateProfile()">สร้างโปรไฟล์</button>
             </div>
-
         </div>
-
     </div>
-
-    <!-- Delete Profile Modal (Cascading Delete Warning) -->
-
-    <div id="delete-modal" class="modal-overlay">
-
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="edit-modal">
         <div class="modal-card">
-
-            <h3 class="modal-title" style="color: #E03131;">ยืนยันการลบโปรไฟล์</h3>
-
+            <h3 class="modal-title">แก้ไขชื่อโปรไฟล์</h3>
             <div class="modal-body">
-
-                <input type="hidden" id="delete-target-name">
-
+                <input id="edit-old-name" type="hidden" />
+                <div class="form-group">
+                    <label for="edit-name-input">ชื่อโปรไฟล์ใหม่:</label>
+                    <input class="form-input" id="edit-name-input" type="text" />
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('edit-modal')">ยกเลิก</button>
+                <button class="btn btn-primary" onclick="submitEditProfile()">บันทึกการแก้ไข</button>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Profile Modal (Cascading Delete Warning) -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-card">
+            <h3 class="modal-title" style="color: #E03131;">ยืนยันการลบโปรไฟล์</h3>
+            <div class="modal-body">
+                <input id="delete-target-name" type="hidden" />
                 <p style="font-size: 15px; margin-bottom: 12px; color: #495057;">
 
                     คุณต้องการลบโปรไฟล์ <strong id="delete-target-label" style="color: #E03131;"></strong> ใช่หรือไม่?
 
                 </p>
-
                 <div
                     style="background-color: #FFF5F5; border-left: 4px solid #E03131; padding: 12px; border-radius: 6px; font-size: 13px; color: #C92A2A;">
-
                     <strong>การลบแบบ Cascading:</strong> การดำเนินการนี้จะทำการลบข้อมูลจุดสัญญาณ (Heatmap Points)
 
                     ทั้งหมดที่ผูกไว้กับโปรไฟล์นี้ออกจากฐานข้อมูล Firebase โดยสมบูรณ์เพื่อป้องกันข้อมูลขยะตกค้าง
 
                 </div>
-
+                <div class="form-group" hidden="" id="demo-delete-confirm-group"
+                    style="margin-top:16px;text-align:left;">
+                    <label for="demo-delete-confirm">พิมพ์ชื่อโปรไฟล์ Demo ให้ตรงกันก่อนลบ</label>
+                    <input autocomplete="off" class="form-input" id="demo-delete-confirm"
+                        placeholder="ยืนยันชื่อโปรไฟล์" type="text" />
+                </div>
             </div>
-
             <div class="modal-actions">
-
                 <button class="btn btn-secondary" onclick="closeModal('delete-modal')">ยกเลิก</button>
-
                 <button class="btn btn-danger" onclick="submitDeleteProfile()">ยืนยันลบโปรไฟล์</button>
-
             </div>
-
         </div>
-
     </div>
-
     <!-- Unified research summary: a compact overview, not a duplicate analytics/CSV page. -->
-    <div id="summary-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="summary-title">
+    <div aria-labelledby="summary-title" aria-modal="true" class="modal-overlay" id="summary-modal" role="dialog">
         <div class="modal-card summary-modal-card">
             <div class="summary-header-v167">
                 <div>
                     <h3 id="summary-title">สรุปข้อมูลการทดลอง</h3>
                     <p id="summary-subtitle"></p>
                 </div>
-                <button type="button" class="btn btn-secondary summary-close-v167"
-                    onclick="closeModal('summary-modal')">ปิด</button>
+                <button class="btn btn-secondary summary-close-v167" onclick="closeModal('summary-modal')"
+                    type="button">ปิด</button>
             </div>
-            <div class="summary-filter-v167" aria-label="ตัวกรองความถี่">
+            <div aria-label="ตัวกรองความถี่" class="summary-filter-v167">
                 <span class="summary-filter-label">ความถี่</span>
-                <button type="button" class="summary-choice active" id="summary-freq-all"
-                    onclick="filterSummaryData('freq','all')">ทั้งหมด</button>
-                <button type="button" class="summary-choice" id="summary-freq-24"
-                    onclick="filterSummaryData('freq','2_4GHz')">2.4 GHz</button>
-                <button type="button" class="summary-choice" id="summary-freq-5"
-                    onclick="filterSummaryData('freq','5GHz')">5 GHz</button>
+                <button class="summary-choice active" id="summary-freq-all" onclick="filterSummaryData('freq','all')"
+                    type="button">ทั้งหมด</button>
+                <button class="summary-choice" id="summary-freq-24" onclick="filterSummaryData('freq','2_4GHz')"
+                    type="button">2.4 GHz</button>
+                <button class="summary-choice" id="summary-freq-5" onclick="filterSummaryData('freq','5GHz')"
+                    type="button">5 GHz</button>
             </div>
-            <div class="summary-stats" aria-live="polite">
+            <div aria-live="polite" class="summary-stats">
                 <div class="stat-box">
                     <div class="num" id="stat-total">—</div>
                     <div class="lbl">รายการ RSSI ที่เลือก</div>
@@ -1944,22 +1968,18 @@
                         </table>
                     </div>
                     <div class="summary-pages-v167">
-                        <button type="button" id="summary-page-prev" onclick="changeSummaryPage(-1)">ก่อนหน้า</button>
+                        <button id="summary-page-prev" onclick="changeSummaryPage(-1)" type="button">ก่อนหน้า</button>
                         <span id="summary-page-state"></span>
-                        <button type="button" id="summary-page-next" onclick="changeSummaryPage(1)">ถัดไป</button>
+                        <button id="summary-page-next" onclick="changeSummaryPage(1)" type="button">ถัดไป</button>
                     </div>
                 </div>
             </details>
             <p class="summary-footer-v167">ผลวิเคราะห์ แผนที่ และดาวน์โหลด CSV อยู่ใน Dashboard ของแต่ละการทดลอง</p>
         </div>
     </div>
-
     <!-- Firebase SDK -->
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <script>
 
         const firebaseConfig = {
@@ -2086,7 +2106,8 @@
 
                     detectedCase,
 
-                    lockedCase: storedCase
+                    lockedCase: storedCase,
+                    demoPurpose: (val && typeof val === 'object' && val.purpose === 'CASE3_SINGLE_POINT_DEMO' && val.case_id === 'Case3') ? 'CASE3_SINGLE_POINT_DEMO' : ''
 
                 });
 
@@ -2593,8 +2614,11 @@
         });
         function getProfileCategory(p) {
             if (RESEARCH_EXPERIMENTS[p.name.trim().toLowerCase()]) return 'primary';
-            if (p.pointCount === 0) return 'empty';
-            return 'archive';
+            // Display Demo only; do not promote historical/test/empty profiles.
+            if (p.demoPurpose === 'CASE3_SINGLE_POINT_DEMO') return 'demo';
+            // Legacy demo profiles with data but no purpose metadata remain accessible.
+            if (/^Demo[_ -]?Case3(?:[_ -]|$)/i.test(p.name) && p.pointCount > 0) return 'demo';
+            return 'hidden';
         }
         function addButton(label, cls, fn, title = '') {
             const el = document.createElement('button');
@@ -2633,7 +2657,7 @@
             const heading = document.createElement('h3'); heading.className = 'research-card-title';
             heading.textContent = info ? info.title : p.name; article.appendChild(heading);
             const desc = document.createElement('p'); desc.className = 'research-card-desc';
-            desc.textContent = info ? info.description : (p.pointCount === 0 ? 'โปรไฟล์ว่างหรือยังไม่มีข้อมูลวัด' : 'ข้อมูลทดสอบหรือผลย้อนหลัง');
+            desc.textContent = info ? info.description : (category === 'demo' ? 'โปรไฟล์สาธิต Case 3 · แยกจากผลการทดลองทางการ' : 'โปรไฟล์ข้อมูล');
             if (!info) article.appendChild(desc); // no tiny repeated explanations on the three official cards
             const dbname = document.createElement('p'); dbname.className = 'research-profile-key';
             dbname.textContent = `โปรไฟล์ข้อมูล: ${p.name}`; if (!info) article.appendChild(dbname);
@@ -2669,7 +2693,7 @@
                 const optTitle = document.createElement('summary'); optTitle.textContent = 'จัดการโปรไฟล์ (ขั้นสูง)'; options.appendChild(optTitle);
                 const caution = document.createElement('p'); caution.textContent = 'การเปลี่ยนชื่อจริงและการลบมีผลต่อข้อมูล Firebase ไม่ใช่แค่ชื่อที่แสดง'; options.appendChild(caution);
                 const tools = document.createElement('div'); tools.className = 'research-card-actions';
-                tools.appendChild(addButton('แก้ไขชื่อจริง', 'btn btn-warning', () => openEditModal(p.name)));
+                if (p.demoPurpose !== 'CASE3_SINGLE_POINT_DEMO') tools.appendChild(addButton('แก้ไขชื่อจริง', 'btn btn-warning', () => openEditModal(p.name)));
                 tools.appendChild(addButton('ตรวจสอบก่อนลบ', 'btn btn-danger', () => openDeleteModal(p.name)));
                 options.appendChild(tools); article.appendChild(options);
             }
@@ -2711,44 +2735,40 @@
 
         function renderProfilesGrid(profilesList) {
             const primary = document.getElementById('primary-profiles-grid');
+            const demoSection = document.getElementById('demo-profiles-section');
+            const demoGrid = document.getElementById('demo-profiles-grid');
             const transferEntry = document.getElementById('primary-transfer-room');
+            primary.replaceChildren();
+            demoGrid.replaceChildren();
             transferEntry.replaceChildren();
             transferEntry.hidden = true;
-            const archive = document.getElementById('archive-profiles-grid');
-            const empty = document.getElementById('empty-profiles-grid');
-            [primary, archive, empty].forEach(el => el.replaceChildren());
             document.getElementById('total-profiles-count').textContent = allProfilesData.length;
             const ordered = [...profilesList].sort((a, b) => {
                 const oa = RESEARCH_EXPERIMENTS[a.name.trim().toLowerCase()]?.order ?? 99;
                 const ob = RESEARCH_EXPERIMENTS[b.name.trim().toLowerCase()]?.order ?? 99;
                 return oa - ob || b.updated_at - a.updated_at;
             });
-            const groups = { primary: [], archive: [], empty: [] };
-            ordered.forEach(p => groups[getProfileCategory(p)].push(p));
-            // v198: Case1, Case3, TR01: exactly three visible official cards.
-            // Case2 is never promoted to primary. Historical Firebase data stays intact.
+            const official = ordered.filter(p => getProfileCategory(p) === 'primary');
+            const demos = ordered.filter(p => getProfileCategory(p) === 'demo');
+            const case1 = official.find(p => p.name.trim().toLowerCase() === 'case1 final');
+            const case3 = official.find(p => p.name.trim().toLowerCase() === 'case3 final');
             const sourceProfile = allProfilesData.find(p => p.name.trim().toLowerCase() === 'case3 final');
-            let shownPrimaryCount = 0;
-            const case1 = groups.primary.find(p => p.name.trim().toLowerCase() === 'case1 final');
-            const case3 = groups.primary.find(p => p.name.trim().toLowerCase() === 'case3 final');
-            if (case1) { primary.appendChild(createProfileCard(case1)); shownPrimaryCount++; }
-            if (case3) { primary.appendChild(createProfileCard(case3)); shownPrimaryCount++; }
-            // The transfer room is a separate research experiment but not a new data profile.
-            if (sourceProfile) { primary.appendChild(createTR01Card(sourceProfile)); shownPrimaryCount++; }
-            groups.archive.forEach(p => archive.appendChild(createProfileCard(p)));
-            groups.empty.forEach(p => empty.appendChild(createProfileCard(p)));
-            if (!shownPrimaryCount) {
-                const note = document.createElement('p'); note.className = 'research-empty-message';
-                note.textContent = 'ไม่พบโปรไฟล์หลักที่ตรงกับการค้นหา'; primary.appendChild(note);
+            let shown = 0;
+            if (case1) { primary.appendChild(createProfileCard(case1)); shown++; }
+            if (case3) { primary.appendChild(createProfileCard(case3)); shown++; }
+            if (sourceProfile) { primary.appendChild(createTR01Card(sourceProfile)); shown++; }
+            if (!shown) {
+                const note = document.createElement('p');
+                note.className = 'research-empty-message';
+                note.textContent = 'ไม่พบโปรไฟล์การทดลองหลัก';
+                primary.appendChild(note);
             }
-            document.getElementById('primary-profiles-count').textContent = `${shownPrimaryCount} การทดลอง`;
-            document.getElementById('archive-profiles-count').textContent = `${groups.archive.length} โปรไฟล์`;
-            document.getElementById('empty-profiles-count').textContent = `${groups.empty.length} โปรไฟล์`;
-            const filtered = !!document.getElementById('search-input').value.trim();
-            if (filtered) {
-                document.getElementById('archive-details').open = groups.archive.length > 0;
-                document.getElementById('empty-details').open = groups.empty.length > 0;
-            }
+            document.getElementById('primary-profiles-count').textContent = `${shown} การทดลอง`;
+            demos.forEach(p => demoGrid.appendChild(createProfileCard(p)));
+            document.getElementById('v259-demo-count').textContent = `${demos.length} โปรไฟล์`;
+            demoSection.hidden = demos.length === 0;
+            // No archive/uncategorized lists are appended to the page.
+            // Their Firebase records remain untouched.
         }
         function filterProfiles() {
             const query = document.getElementById('search-input').value.toLocaleLowerCase('th').trim();
@@ -2766,58 +2786,69 @@
 
         function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-        function openCreateModal() {
+        const V231_PROTECTED_NAMES = new Set(['case1 final', 'case2 final', 'case3 final', 'default']);
+        const V231_DEMO_PURPOSE = 'CASE3_SINGLE_POINT_DEMO';
+        function v231IsProtectedName(name) { return V231_PROTECTED_NAMES.has(String(name || '').trim().toLowerCase()); }
 
-            document.getElementById('create-name-input').value = '';
-
-            openModal('create-modal');
-
+        function updateCreateProfileHint() {
+            const isDemo = document.getElementById('create-case-select').value === 'DEMO_CASE3';
+            document.getElementById('create-profile-hint').textContent = isDemo
+                ? 'Case 3 · Hardware Pilot: วัดจริงเพื่อสาธิต 1 จุด ไม่ใช้เป็น Calibration/Validation หรือผลประเมินทางการ ข้อมูลบันทึกแยกจาก Case3 final'
+                : 'สร้างโปรไฟล์ใหม่สำหรับการทดลองที่เลือก โดยจัดเก็บข้อมูลแยกตามชื่อโปรไฟล์ใน Firebase';
         }
 
-        function submitCreateProfile() {
+        function openCreateModal() {
+            const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }).replace(/-/g, '');
+            const base = 'Demo_Case3_' + today;
+            let suggested = base, counter = 2;
+            while (allProfilesData.some(p => p.name.toLowerCase() === suggested.toLowerCase())) suggested = base + '_' + counter++;
+            document.getElementById('create-name-input').value = suggested;
+            document.getElementById('create-case-select').value = 'DEMO_CASE3';
+            updateCreateProfileHint();
+            openModal('create-modal');
+        }
 
-            let input = document.getElementById('create-name-input').value.trim();
-
-            // Automatically replace forward slashes '/' with '-' because '/' is a key delimiter in Firebase RTDB
-
-            if (input.includes('/')) {
-
-                input = input.replace(/\//g, '-');
-
-            }
-
-            if (!input || /[#$.[\]]/.test(input)) {
-
-                alert('โปรดระบุชื่อโปรไฟล์ให้ถูกต้อง และไม่มีอักขระพิเศษห้ามใช้ (เช่น #, $, ., [, ])');
-
+        async function submitCreateProfile() {
+            const input = document.getElementById('create-name-input').value.trim();
+            const choice = document.getElementById('create-case-select').value;
+            const isDemo = choice === 'DEMO_CASE3';
+            const caseId = isDemo ? 'Case3' : choice;
+            if (!/^[A-Za-z0-9_-]{3,60}$/.test(input) || v231IsProtectedName(input)) {
+                alert('ชื่อโปรไฟล์ต้องยาว 3–60 ตัว ใช้ A–Z, 0–9, _ หรือ - เท่านั้น และห้ามใช้ชื่อโปรไฟล์วิจัยหลัก');
                 return;
-
             }
-
-            if (allProfilesData.some(p => p.name === input)) {
-
-                alert('มีโปรไฟล์ชื่อนี้อยู่ในระบบแล้ว');
-
-                return;
-
+            if (!['Case1', 'Case2', 'Case3'].includes(caseId)) return;
+            if (allProfilesData.some(p => p.name.toLowerCase() === input.toLowerCase())) {
+                alert('มีโปรไฟล์ชื่อนี้อยู่ในระบบแล้ว'); return;
             }
-
-            const now = Date.now();
-
-            db.ref(`Profiles/${input}`).set({
-
-                name: input,
-
-                created_at: now,
-
-                updated_at: now
-
-            }).then(() => {
-
+            const button = document.querySelector('#create-modal .modal-actions .btn-primary');
+            if (button.disabled) return;
+            button.disabled = true;
+            try {
+                // Avoid attaching a new Profile to any orphan HeatmapData subtree.
+                const oldData = await db.ref('HeatmapData/' + input).once('value');
+                if (oldData.exists()) throw Error('ชื่อที่เลือกมีข้อมูล HeatmapData เดิมอยู่แล้ว กรุณาเลือกชื่อใหม่');
+                const now = Date.now();
+                const metadata = {
+                    name: input, case_id: caseId, case_assigned_at: now,
+                    case_lock_source: isDemo ? 'CASE3_DEMO_CREATE_V231' : 'PROFILE_CREATE_V231',
+                    created_at: now, updated_at: now
+                };
+                if (isDemo) Object.assign(metadata, {
+                    purpose: V231_DEMO_PURPOSE,
+                    profile_type: 'HARDWARE_LIVE_PILOT',
+                    is_hardware_pilot: true, researchExcluded: true,
+                    demo_single_point: true
+                });
+                // RTDB transaction refuses to overwrite an existing Profiles/<name> node.
+                const result = await db.ref('Profiles/' + input).transaction(current => current == null ? metadata : undefined, undefined, false);
+                if (!result.committed) throw Error('มีโปรไฟล์ชื่อนี้ใน Firebase อยู่แล้ว');
                 closeModal('create-modal');
-
-            }).catch(err => alert('เกิดข้อผิดพลาดในการสร้างโปรไฟล์: ' + err.message));
-
+                try { localStorage.setItem('wifiLastProfile', input); } catch (_) { }
+                alert('สร้างโปรไฟล์สำเร็จ: ' + input + '\nแยกเส้นทางข้อมูลจาก Case3 final แล้ว เลือกเปิดโปรไฟล์ Demo เพื่อวัด 1 จุด');
+            } catch (err) {
+                alert('สร้างโปรไฟล์ไม่สำเร็จ: ' + (err.message || String(err)));
+            } finally { button.disabled = false; }
         }
 
         function openEditModal(oldName) {
@@ -2899,33 +2930,52 @@
         }
 
         function openDeleteModal(targetName) {
-
+            if (v231IsProtectedName(targetName)) { alert('ป้องกันการลบโปรไฟล์วิจัยหลัก'); return; }
+            const p = allProfilesData.find(p => p.name === targetName);
+            if (!p) { alert('ไม่พบโปรไฟล์นี้'); return; }
             document.getElementById('delete-target-name').value = targetName;
-
-            document.getElementById('delete-target-label').innerText = targetName;
-
+            document.getElementById('delete-target-label').textContent = targetName;
+            const isDemo = p.demoPurpose === V231_DEMO_PURPOSE;
+            document.getElementById('demo-delete-confirm-group').hidden = !isDemo;
+            document.getElementById('demo-delete-confirm').value = '';
             openModal('delete-modal');
-
         }
 
-        function submitDeleteProfile() {
-
+        async function submitDeleteProfile() {
             const targetName = document.getElementById('delete-target-name').value;
-
-            // Cascading delete: remove both Profiles node and HeatmapData node
-
-            const updates = {};
-
-            updates[`Profiles/${targetName}`] = null;
-
-            updates[`HeatmapData/${targetName}`] = null;
-
-            db.ref().update(updates).then(() => {
-
+            if (!targetName || v231IsProtectedName(targetName)) { alert('ป้องกันการลบโปรไฟล์วิจัยหลัก'); return; }
+            const p = allProfilesData.find(x => x.name === targetName);
+            if (!p) { alert('ไม่พบโปรไฟล์นี้ กรุณารีเฟรช'); return; }
+            const isDemo = p.demoPurpose === V231_DEMO_PURPOSE;
+            if (isDemo && document.getElementById('demo-delete-confirm').value.trim() !== targetName) {
+                alert('พิมพ์ชื่อโปรไฟล์ Demo ให้ตรงก่อนยืนยันลบ'); return;
+            }
+            const btn = document.querySelector('#delete-modal .modal-actions .btn-danger');
+            if (btn.disabled) return;
+            btn.disabled = true;
+            try {
+                // Re-read live metadata; never trust cached HTML state for deletion.
+                const snap = await db.ref('Profiles/' + targetName).once('value');
+                const meta = snap.val();
+                if (!meta) throw Error('ไม่พบโปรไฟล์ใน Firebase');
+                if (isDemo && !(meta.purpose === V231_DEMO_PURPOSE && meta.case_id === 'Case3' && meta.is_hardware_pilot === true)) {
+                    throw Error('ข้อมูลระบุตัวตน Demo ไม่ตรง ปฏิเสธการลบเพื่อความปลอดภัย');
+                }
+                if (isDemo) {
+                    const data = await db.ref('HeatmapData/' + targetName).once('value');
+                    const caseNodes = Object.keys(data.val() || {});
+                    if (caseNodes.some(k => k !== 'Case3')) throw Error('พบข้อมูลการทดลองอื่นอยู่ในโปรไฟล์นี้ ปฏิเสธการลบ');
+                }
+                // Two exact profile-scoped paths. No RoomLayouts or WiFi_Scan writes.
+                await db.ref().update({
+                    ['Profiles/' + targetName]: null,
+                    ['HeatmapData/' + targetName]: null
+                });
                 closeModal('delete-modal');
-
-            }).catch(err => alert('เกิดข้อผิดพลาดในการลบโปรไฟล์: ' + err.message));
-
+                try { if (localStorage.getItem('wifiLastProfile') === targetName) localStorage.removeItem('wifiLastProfile'); } catch (_) { }
+            } catch (err) {
+                alert('ลบโปรไฟล์ไม่สำเร็จ: ' + (err.message || String(err)));
+            } finally { btn.disabled = false; }
         }
 
         // v167 — summary reads existing Firebase cache only; never writes/re-fits models.
@@ -3201,7 +3251,6 @@
         initProfilesListener();
 
     </script>
-
 </body>
 
 </html>
